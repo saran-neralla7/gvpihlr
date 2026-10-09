@@ -363,7 +363,7 @@ function resolveSubjectDef(raw: string): SubjectDef | null {
     return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26PH101L")! : SUBJECT_DEFS.find((d) => d.code === "26PH101")!;
   }
   if (s.includes("CALCULUS") || s.includes("CAL")) return SUBJECT_DEFS.find((d) => d.code === "26MA101")!;
-  if (s.includes("PSUC") || s.includes("C LAB")) {
+  if (s.includes("PSUC") || s.includes("C LAB") || s.includes("PPSTC")) {
     return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26CS101L")! : SUBJECT_DEFS.find((d) => d.code === "26CS101")!;
   }
   if (s.includes("AITA")) {
@@ -375,6 +375,18 @@ function resolveSubjectDef(raw: string): SubjectDef | null {
   if (s.includes("ENV") || s.includes("ES")) return SUBJECT_DEFS.find((d) => d.code === "26CH101")!;
   if (s.includes("FAI") || s.includes("ML")) {
     return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26AI101L")! : SUBJECT_DEFS.find((d) => d.code === "26AI101")!;
+  }
+  if (s.includes("EME")) {
+    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26ME101L")! : SUBJECT_DEFS.find((d) => d.code === "26ME101")!;
+  }
+  if (s.includes("COM") || s.includes("CHEM")) {
+    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26CH105L")! : SUBJECT_DEFS.find((d) => d.code === "26CH102")!;
+  }
+  if (s.includes("ENG") || s.includes("EE")) {
+    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26EN101L")! : SUBJECT_DEFS.find((d) => d.code === "26EN101")!;
+  }
+  if (s.includes("SUS") || s.includes("SE")) {
+    return SUBJECT_DEFS.find((d) => d.code === "26CE101")!;
   }
 
   return SUBJECT_DEFS[0]; // fallback default
@@ -548,6 +560,11 @@ async function main() {
   }
 
   // 7. Read Timetable Sheets and generate AttendanceSessions + AttendanceRecords
+  console.log("🧹 Clearing previous attendance sessions & records for clean ingest...");
+  await prisma.attendanceRecord.deleteMany({});
+  await prisma.attendanceSession.deleteMany({});
+  console.log("✅ Clean state ready.\n");
+
   console.log("🗓️ Processing 12 Dates of Timetable Schedules & Generating Sessions...");
   const wbTT = xlsx.readFile("1st Sem TIME TABLE 2026-2027_1.1.2.xlsx");
 
@@ -556,6 +573,11 @@ async function main() {
   sections.forEach((s) => {
     secLookup.set(`${s.program.code}_${s.name}`, s);
   });
+
+  // Sort branch patterns by length in descending order so "MECH-ROBOTICS" matches before "MECH"
+  const sortedBranchEntries = Object.entries(BRANCH_MAP).sort(
+    (a, b) => b[0].length - a[0].length
+  );
 
   let totalSessionsCreated = 0;
   let totalRecordsCreated = 0;
@@ -576,9 +598,9 @@ async function main() {
       if (!row) continue;
       const branchCell = String(row[0] || "").trim();
 
-      // Find matching sections
+      // Find matching sections (longest pattern match first)
       let targetSectionKeys: string[] = [];
-      for (const [pattern, keys] of Object.entries(BRANCH_MAP)) {
+      for (const [pattern, keys] of sortedBranchEntries) {
         if (branchCell.includes(pattern)) {
           targetSectionKeys = keys;
           break;

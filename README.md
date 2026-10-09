@@ -101,14 +101,31 @@ npm start
 | **Super Administrator** | `admin` | `Admin@1234` | Full University Control, Master Data Hub, Audit Logs |
 | **Faculty Accounts (78 total)** | **Short Name** (e.g. `KR`, `BHP`, `SP`, `DC`, `BSK`, etc.) | `gvp@2026` | Academic Attendance Portal, Subject Classes, Profile |
 
-### Database Restoration & Seeding
-To populate a fresh database instance with the exact current institutional dataset:
-```bash
-# Option 1: Using Prisma Seed
-npm run db:seed
+### Complete Database Restoration (PostgreSQL Dump)
+The repository includes a comprehensive, production-ready PostgreSQL dump: **`gvpihlr_database_backup.sql`** (13.0 MB).
+This contains all university master data, 1,161 enrolled students across 14 sections, 78 faculty members, and 1,008 conducted sessions with 83,880 attendance marks (including MRB - Robotics & AI and MECH):
 
-# Option 2: Using SQL Dump
-psql -d gvpihlr_erp -f prisma/current_data.sql
+```bash
+# Restore full PostgreSQL database from backup
+psql -h 127.0.0.1 -p 5432 -U postgres -d gvpihlr_erp -f gvpihlr_database_backup.sql
 ```
+
+---
+
+## 6. Attendance Governance & Reporting Module
+
+The `/reports` module provides dual operating registers with official university headers:
+
+1. **📊 Consolidated Attendance Report:**
+   - Institutional student roster summary table (`S.No`, `Roll No`, `Student Name`, `Contact`, `Conducted`, `Attended`, `Absent`, `Percentage %`, `Eligibility Status`).
+   - 4 Live KPI metric cards (Total Conducted, Enrolled, Defaulters `< 75%`, Section Average).
+   - Instant Search & Defaulter Filters.
+   - Portrait **Download PDF** with official GVPIHLR letterhead and **Export Excel** (`.xlsx`).
+
+2. **📑 Daily Matrix Register:**
+   - 3-tier column headers: Date (`22/09`, `23/09`...), Period Timing (`09:00-10:00`, `10:00-11:00`...), and Subject Short Code `(CAL & LA)`.
+   - Per-period `P` (Present) and `A` (Absent) cells with summary totals (`Total`, `P`, `A`, `Percentage`).
+   - Custom Date Range pickers and Quick Date Presets (`22 Sep - 07 Oct`, `Oct 01 - Oct 07`).
+   - Multi-part Landscape **Download PDF**, **Print Register** (clean browser print), and **Export Excel**.
 
 *All schools, programs, regulations, and faculty can be managed in real-time by the Super Admin at `/admin/master`.*

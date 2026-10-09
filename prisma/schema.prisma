@@ -1,0 +1,623 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// =========================================================================
+// ENUMS & CORE TYPES
+// =========================================================================
+
+enum RoleType {
+  SUPER_ADMIN
+  DIRECTOR
+  DEAN
+  HOD
+  FACULTY
+  STUDENT
+  PARENT
+  ACADEMIC_ADMIN
+  EXAM_ADMIN
+  ACCOUNTS
+  OFFICE
+}
+
+enum SubjectType {
+  THEORY
+  LAB
+  TUTORIAL
+  PROJECT
+  SEMINAR
+  PRACTICAL
+  AUDIT
+  OTHER
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  ON_DUTY
+  MEDICAL_LEAVE
+}
+
+enum SessionType {
+  REGULAR
+  EXTRA
+  MAKEUP
+  SUBSTITUTE
+  LAB_PRACTICAL
+}
+
+enum StudentStatus {
+  ACTIVE
+  ALUMNI
+  DETAINED
+  DISCONTINUED
+  SUSPENDED
+}
+
+// =========================================================================
+// 1. AUTHENTICATION & ACCESS CONTROL (RBAC)
+// =========================================================================
+
+model User {
+  id                  String      @id @default(cuid())
+  username            String      @unique // Roll No for Students, Employee Code / Email for Staff
+  email               String?     @unique
+  passwordHash        String      // Argon2id / bcrypt fallback
+  fullName            String
+  phone               String?
+  isActive            Boolean     @default(true)
+  mustChangePassword  Boolean     @default(false)
+  lastLoginAt         DateTime?
+  failedAttempts      Int         @default(0)
+  lockedUntil         DateTime?
+
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  deletedAt           DateTime?
+
+  // Profile relations
+  facultyProfile      Faculty?
+  studentProfile      Student?
+  userRoles           UserRole[]
+  auditLogs           AuditLog[]
+  attendanceSessionsRecorded AttendanceSession[] @relation("RecordedBy")
+  attendanceAuditLogs        AttendanceAuditLog[]
+}
+
+model Role {
+  id          String      @id @default(cuid())
+  name        RoleType    @unique
+  description String?
+  userRoles   UserRole[]
+}
+
+model UserRole {
+  id          String      @id @default(cuid())
+  userId      String
+  roleId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        Role        @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  // Scoped authorization (Resource-Level Access)
+  schoolId      String?
+  departmentId  String?
+  programId     String?
+
+  school        School?     @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  department    Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  program       Program?    @relation(fields: [programId], references: [id], onDelete: SetNull)
+
+  createdAt     DateTime    @default(now())
+
+  @@unique([userId, roleId, schoolId, departmentId, programId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+// =========================================================================
+// 2. ACADEMIC GOVERNANCE HIERARCHY
+// =========================================================================
+
+model AcademicYear {
+  id          String    @id @default(cuid())
+  code        String    @unique // e.g., "2026-27"
+  startDate   DateTime
+  endDate     DateTime
+  isCurrent   Boolean   @default(false)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  // Child relations
+  sections            Section[]
+  enrollments         StudentEnrollment[]
+  subjectOfferings    SubjectOffering[]
+  assignments         FacultySubjectAssignment[]
+  attendanceSessions  AttendanceSession[]
+  timetableEntries    TimetableEntry[]
+
+  @@index([isCurrent])
+}
+
+model School {
+  id          String    @id @default(cuid())
+  code        String    @unique // e.g., "SCSE", "SENG", "SSCI"
+  name        String    // e.g., "School of Computer Science & Engineering"
+  description String?
+  deanId      String?   // User ID of Dean
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  departments   Department[]
+  programs      Program[]
+  userRoles     UserRole[]
+
+  @@index([code])
+}
+
+model Department {
+  id             String    @id @default(cuid())
+  schoolId       String?
+  school         School?   @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  code           String    @unique // e.g., "CSE", "MATH", "PHY", "MECH"
+  name           String    // e.g., "Department of Mathematics"
+  isTeachingOnly Boolean   @default(false) // True for Math/Physics/Humanities that do not award degrees
+  hodId          String?   // User ID of HOD
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  facultyMembers Faculty[]
+  subjects       Subject[]
+  userRoles      UserRole[]
+
+  @@index([schoolId])
+  @@index([code])
+}
+
+model Program {
+  id             String    @id @default(cuid())
+  schoolId       String
+  school         School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  code           String    @unique // e.g., "BTECH-CSE", "BTECH-AIML", "BTECH-MECH"
+  name           String    // e.g., "B.Tech Computer Science and Engineering"
+  degreeType     String    @default("UG") // e.g., "UG", "PG", "Ph.D"
+  durationYears  Int       @default(4)
+  totalSemesters Int       @default(8)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  regulationId   String?
+  regulation     Regulation? @relation(fields: [regulationId], references: [id], onDelete: SetNull)
+
+  sections          Section[]
+  subjectOfferings  SubjectOffering[]
+  enrollments       StudentEnrollment[]
+  userRoles         UserRole[]
+
+  @@index([schoolId])
+  @@index([code])
+  @@index([regulationId])
+}
+
+model Regulation {
+  id                String            @id @default(cuid())
+  code              String            @unique // e.g., "R1"
+  name              String            // e.g., "Regulation R1 (2026 Academic Curriculum)"
+  description       String?
+  academicYearStart String?           // "2026-27"
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  deletedAt         DateTime?
+
+  programs          Program[]
+  subjectOfferings  SubjectOffering[]
+
+  @@index([code])
+}
+
+// =========================================================================
+// 3. SECTION & LAB BATCH ARCHITECTURE (CRITICAL ISOLATION)
+// =========================================================================
+
+model Section {
+  id              String        @id @default(cuid())
+  academicYearId  String
+  academicYear    AcademicYear  @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  programId       String
+  program         Program       @relation(fields: [programId], references: [id], onDelete: Cascade)
+  
+  year            Int           // 1, 2, 3, 4
+  semester        Int           // 1, 2, 3, 4, 5, 6, 7, 8
+  name            String        // "A", "B", "C" (Human display name)
+  displayName     String        // e.g., "B.Tech CSE - Year 1 - Sem 1 - Sec A (2026-27)"
+  
+  capacity        Int           @default(60)
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+
+  // Relations
+  enrollments         StudentEnrollment[]
+  labBatches          LabBatch[]
+  assignments         FacultySubjectAssignment[]
+  attendanceSessions  AttendanceSession[]
+  timetableEntries    TimetableEntry[]
+
+  // Invariant: No duplicate sections in the same academic year, program, year, and semester!
+  @@unique([academicYearId, programId, year, semester, name])
+  @@index([academicYearId])
+  @@index([programId])
+  @@index([year, semester])
+}
+
+model LabBatch {
+  id          String    @id @default(cuid())
+  sectionId   String
+  section     Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  batchNumber Int       // 1, 2, 3 (Configurable N batches)
+  name        String    // "Batch 1", "Batch 2", "Batch 3"
+  capacity    Int?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  students            LabBatchStudent[]
+  attendanceSessions  AttendanceSession[]
+  timetableEntries    TimetableEntry[]
+
+  @@unique([sectionId, batchNumber])
+  @@index([sectionId])
+}
+
+model LabBatchStudent {
+  id          String    @id @default(cuid())
+  labBatchId  String
+  labBatch    LabBatch  @relation(fields: [labBatchId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@unique([labBatchId, studentId])
+  @@index([labBatchId])
+  @@index([studentId])
+}
+
+// =========================================================================
+// 4. FACULTY MASTER & PROFILES
+// =========================================================================
+
+model Faculty {
+  id            String      @id @default(cuid())
+  userId        String      @unique
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  employeeId    String      @unique // e.g., "GVPIHLR-FAC-0142"
+  shortName     String      // e.g., "KR" for Dr. K. Ramesh Kumar
+  designation   String      // "Professor", "Associate Professor", "Assistant Professor"
+  qualification String?     // "Ph.D, M.Tech"
+  
+  departmentId  String      // Administrative Home Department
+  department    Department  @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  
+  joiningDate   DateTime?
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  deletedAt     DateTime?
+
+  assignments         FacultySubjectAssignment[]
+  attendanceSessions  AttendanceSession[]
+  timetableEntries    TimetableEntry[]
+
+  @@index([departmentId])
+  @@index([employeeId])
+  @@index([shortName])
+}
+
+// =========================================================================
+// 5. STUDENT MASTER & PROGRESSIVE ENROLLMENT
+// =========================================================================
+
+model Student {
+  id              String        @id @default(cuid())
+  userId          String        @unique
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  rollNumber      String        @unique // e.g., "5241411014"
+  registerNumber  String?       @unique
+  parentName      String?
+  parentPhone     String?
+  parentEmail     String?
+  dateOfBirth     DateTime?
+  gender          String?
+  bloodGroup      String?
+  status          StudentStatus @default(ACTIVE)
+  admissionYear   String        // e.g., "2026"
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+
+  enrollments         StudentEnrollment[]
+  labBatchMemberships LabBatchStudent[]
+  attendanceRecords   AttendanceRecord[]
+
+  @@index([rollNumber])
+  @@index([status])
+}
+
+model StudentEnrollment {
+  id              String        @id @default(cuid())
+  studentId       String
+  student         Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  academicYearId  String
+  academicYear    AcademicYear  @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  
+  programId       String
+  program         Program       @relation(fields: [programId], references: [id], onDelete: Cascade)
+  
+  year            Int           // 1, 2, 3, 4
+  semester        Int           // 1, 2, 3, 4, 5, 6, 7, 8
+  
+  sectionId       String
+  section         Section       @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  
+  rollNoInSection String?       // Optional serial number within class roster (e.g. 1 to 60)
+  isCurrent       Boolean       @default(true)
+  enrolledAt      DateTime      @default(now())
+
+  @@unique([studentId, academicYearId, semester])
+  @@index([studentId])
+  @@index([academicYearId])
+  @@index([sectionId])
+  @@index([programId, year, semester])
+}
+
+// =========================================================================
+// 6. SUBJECTS, CURRICULUM OFFERINGS & FACULTY ASSIGNMENTS
+// =========================================================================
+
+model Subject {
+  id            String      @id @default(cuid())
+  code          String      @unique // e.g., "26MA101", "26CS102"
+  name          String      // e.g., "Mathematics-I", "Programming for Problem Solving"
+  shortName     String      // e.g., "M-I", "PPS"
+  credits       Float       @default(3.0)
+  type          SubjectType @default(THEORY)
+  
+  departmentId  String      // Department that designs/owns the subject (e.g. Mathematics)
+  department    Department  @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  
+  syllabus      String?     @db.Text // Full syllabus text, course units, and topics
+  description   String?     @db.Text
+  
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  deletedAt     DateTime?
+
+  offerings     SubjectOffering[]
+
+  @@index([departmentId])
+  @@index([code])
+}
+
+model SubjectOffering {
+  id              String        @id @default(cuid())
+  academicYearId  String
+  academicYear    AcademicYear  @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  
+  subjectId       String
+  subject         Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  
+  programId       String
+  program         Program       @relation(fields: [programId], references: [id], onDelete: Cascade)
+  
+  regulationId    String?
+  regulation      Regulation?   @relation(fields: [regulationId], references: [id], onDelete: SetNull)
+
+  year            Int           // 1, 2, 3, 4
+  semester        Int           // 1, 2, 3, 4, 5, 6, 7, 8
+  
+  isElective      Boolean       @default(false)
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  assignments     FacultySubjectAssignment[]
+
+  @@unique([academicYearId, programId, subjectId, year, semester])
+  @@index([academicYearId])
+  @@index([subjectId])
+  @@index([programId, year, semester])
+  @@index([regulationId])
+}
+
+model FacultySubjectAssignment {
+  id                String          @id @default(cuid())
+  academicYearId    String
+  academicYear      AcademicYear    @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  
+  facultyId         String
+  faculty           Faculty         @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  
+  subjectOfferingId String
+  subjectOffering   SubjectOffering @relation(fields: [subjectOfferingId], references: [id], onDelete: Cascade)
+  
+  sectionId         String
+  section           Section         @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  
+  isPrimary         Boolean         @default(true) // Primary vs co-faculty
+  isActive          Boolean         @default(true)
+  assignedAt        DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  attendanceSessions AttendanceSession[]
+  timetableEntries   TimetableEntry[]
+
+  @@unique([academicYearId, facultyId, subjectOfferingId, sectionId])
+  @@index([academicYearId])
+  @@index([facultyId])
+  @@index([sectionId])
+  @@index([subjectOfferingId])
+}
+
+// =========================================================================
+// 7. TIMETABLE (SUPPORTING SCHEDULE ONLY — NOT BLOCKING ATTENDANCE)
+// =========================================================================
+
+model TimetableEntry {
+  id             String                    @id @default(cuid())
+  academicYearId String
+  academicYear   AcademicYear              @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  
+  assignmentId   String
+  assignment     FacultySubjectAssignment  @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  
+  sectionId      String
+  section        Section                   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  
+  facultyId      String
+  faculty        Faculty                   @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  
+  labBatchId     String?
+  labBatch       LabBatch?                 @relation(fields: [labBatchId], references: [id], onDelete: SetNull)
+  
+  dayOfWeek      Int                       // 1 = Monday, 6 = Saturday
+  startTime      String                    // "09:00"
+  endTime        String                    // "09:50"
+  roomNumber     String?
+  isActive       Boolean                   @default(true)
+
+  @@index([sectionId, dayOfWeek])
+  @@index([facultyId, dayOfWeek])
+}
+
+// =========================================================================
+// 8. PRODUCTION ATTENDANCE MODULE
+// =========================================================================
+
+model AttendanceSession {
+  id              String                    @id @default(cuid())
+  academicYearId  String
+  academicYear    AcademicYear              @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  
+  assignmentId    String
+  assignment      FacultySubjectAssignment  @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  
+  sectionId       String
+  section         Section                   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  
+  facultyId       String
+  faculty         Faculty                   @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  
+  labBatchId      String?
+  labBatch        LabBatch?                 @relation(fields: [labBatchId], references: [id], onDelete: SetNull)
+  
+  sessionDate     DateTime                  @db.Date // Actual date of class
+  periodNumber    Int                       @default(1) // 1, 2, 3..
+  sessionType     SessionType               @default(REGULAR)
+  topicCovered    String?                   @db.Text
+  
+  totalStudents   Int                       // Snapshot count
+  presentCount    Int                       // Snapshot count
+  absentCount     Int                       // Snapshot count
+  
+  recordedById    String
+  recordedBy      User                      @relation("RecordedBy", fields: [recordedById], references: [id])
+  
+  submittedAt     DateTime                  @default(now())
+  isLocked        Boolean                   @default(false)
+  updatedAt       DateTime                  @updatedAt
+
+  records         AttendanceRecord[]
+  auditLogs       AttendanceAuditLog[]
+
+  // Invariant: Cannot submit duplicate regular sessions for same section, subject, date, and period!
+  @@unique([academicYearId, sectionId, assignmentId, sessionDate, periodNumber, labBatchId])
+  @@index([academicYearId])
+  @@index([sectionId, sessionDate])
+  @@index([facultyId, sessionDate])
+  @@index([assignmentId])
+}
+
+model AttendanceRecord {
+  id          String            @id @default(cuid())
+  sessionId   String
+  session     AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  studentId   String
+  student     Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  status      AttendanceStatus  @default(PRESENT)
+  remarks     String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([sessionId, studentId])
+  @@index([sessionId])
+  @@index([studentId, status])
+}
+
+model AttendanceAuditLog {
+  id              String            @id @default(cuid())
+  sessionId       String
+  session         AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  studentId       String
+  changedById     String
+  changedBy       User              @relation(fields: [changedById], references: [id])
+  
+  oldStatus       AttendanceStatus
+  newStatus       AttendanceStatus
+  reason          String            @db.Text
+  ipAddress       String?
+  userAgent       String?
+  timestamp       DateTime          @default(now())
+
+  @@index([sessionId])
+  @@index([studentId])
+  @@index([changedById])
+}
+
+// =========================================================================
+// 9. ENTERPRISE AUDIT & SECURITY LOGGING
+// =========================================================================
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  action      String    // e.g., "LOGIN", "FAILED_LOGIN", "ATTENDANCE_SUBMIT", "ROLE_CHANGE"
+  resource    String    // e.g., "AttendanceSession", "Student", "Faculty"
+  resourceId  String?
+  
+  ipAddress   String?
+  userAgent   String?
+  status      String    @default("SUCCESS") // "SUCCESS" | "FAILURE"
+  details     Json?     // Masked payload details (NO SECRETS / PASSWORDS)
+  timestamp   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource, resourceId])
+  @@index([timestamp])
+}

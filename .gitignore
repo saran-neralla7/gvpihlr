@@ -29,3 +29,11 @@ pnpm-debug.log*
 .DS_Store
 *.pem
 *.key
+
+# Cloudflare Tunnel
+cloudflared.exe
+
+# Scratch & Temporary dev scripts
+scratch/
+scratch*
+~$*

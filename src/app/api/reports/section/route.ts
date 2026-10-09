@@ -28,9 +28,12 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const sectionId = searchParams.get("sectionId") || "";
-    const subjectId = searchParams.get("subjectId") || undefined;
-    const startDate = searchParams.get("startDate") || undefined;
-    const endDate = searchParams.get("endDate") || undefined;
+    const rawSub = searchParams.get("subjectId");
+    const subjectId = rawSub && rawSub !== "all" && rawSub.trim() !== "" ? rawSub.trim() : undefined;
+    const rawStart = searchParams.get("startDate");
+    const startDate = rawStart && rawStart.trim() !== "" ? rawStart.trim() : undefined;
+    const rawEnd = searchParams.get("endDate");
+    const endDate = rawEnd && rawEnd.trim() !== "" ? rawEnd.trim() : undefined;
 
     // Faculty resource authorization check:
     if (!isSuperAdmin(session) && session.facultyId) {

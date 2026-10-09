@@ -67,11 +67,18 @@ export default async function ReportsPage() {
 
   const defaultSection = sections[0];
   let initialReport = {
-    sectionName: defaultSection?.name || "A",
-    programName: defaultSection?.program?.name || "B.Tech CSE",
+    sectionName: defaultSection?.name || "1",
+    displayName: defaultSection?.displayName || "",
+    programName: defaultSection?.program?.name || "",
+    year: defaultSection?.year || 1,
+    semester: defaultSection?.semester || 1,
     totalSessionsConducted: 0,
+    sessions: [] as any[],
+    availableSubjects: [] as any[],
     students: [] as any[],
     defaultersCount: 0,
+    startDate: "",
+    endDate: "",
   };
 
   if (defaultSection) {
@@ -79,10 +86,17 @@ export default async function ReportsPage() {
     if (rep.success && rep.section) {
       initialReport = {
         sectionName: rep.section.name,
+        displayName: rep.section.displayName,
         programName: rep.section.program.name,
+        year: rep.section.year,
+        semester: rep.section.semester,
         totalSessionsConducted: rep.totalSessionsConducted,
+        sessions: rep.sessions || [],
+        availableSubjects: rep.availableSubjects || [],
         students: rep.students,
         defaultersCount: rep.defaultersCount,
+        startDate: rep.startDate || "",
+        endDate: rep.endDate || "",
       };
     }
   }
@@ -90,6 +104,7 @@ export default async function ReportsPage() {
   const sectionsFormatted = sections.map((s) => ({
     id: s.id,
     name: s.name,
+    displayName: s.displayName,
     programName: s.program.name,
     year: s.year,
     semester: s.semester,
@@ -99,6 +114,7 @@ export default async function ReportsPage() {
     id: sub.id,
     name: sub.name,
     code: sub.code,
+    shortName: sub.shortName || sub.code,
   }));
 
   return (

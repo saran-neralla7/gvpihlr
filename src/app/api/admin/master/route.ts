@@ -396,16 +396,30 @@ export async function PUT(req: Request) {
         const fac = await prisma.faculty.update({
           where: { id },
           data: {
-            shortName: data.shortName,
-            designation: data.designation,
-            qualification: data.qualification,
-            isActive: data.isActive,
+            shortName: data.shortName?.trim().toUpperCase(),
+            designation: data.designation?.trim(),
+            qualification: data.qualification?.trim(),
+            departmentId: data.departmentId || undefined,
+            isActive: data.isActive !== undefined ? data.isActive : undefined,
           },
         });
-        if (data.fullName) {
+        const userUpdateData: any = {};
+        if (data.fullName) userUpdateData.fullName = data.fullName.trim();
+        if (data.email) userUpdateData.email = data.email.trim();
+        if (data.phone) userUpdateData.phone = data.phone.trim();
+        if (data.password && data.password.trim()) {
+          userUpdateData.passwordHash = await hashPassword(data.password.trim());
+        }
+        if (Object.keys(userUpdateData).length > 0) {
           await prisma.user.update({
             where: { id: fac.userId },
-            data: { fullName: data.fullName },
+            data: userUpdateData,
+          });
+        }
+        if (data.departmentId) {
+          await prisma.userRole.updateMany({
+            where: { userId: fac.userId },
+            data: { departmentId: data.departmentId },
           });
         }
         updated = fac;
@@ -415,12 +429,33 @@ export async function PUT(req: Request) {
       case "student": {
         const stu = await prisma.student.update({
           where: { id },
-          data: { rollNumber: data.rollNumber, parentPhone: data.parentPhone },
+          data: {
+            rollNumber: data.rollNumber?.trim().toUpperCase(),
+            parentPhone: data.parentPhone?.trim(),
+            parentName: data.parentName?.trim(),
+            status: data.status || undefined,
+          },
         });
-        if (data.fullName) {
+        const userUpdateData: any = {};
+        if (data.fullName) userUpdateData.fullName = data.fullName.trim();
+        if (data.email) userUpdateData.email = data.email.trim();
+        if (data.phone) userUpdateData.phone = data.phone.trim();
+        if (data.password && data.password.trim()) {
+          userUpdateData.passwordHash = await hashPassword(data.password.trim());
+        }
+        if (Object.keys(userUpdateData).length > 0) {
           await prisma.user.update({
             where: { id: stu.userId },
-            data: { fullName: data.fullName },
+            data: userUpdateData,
+          });
+        }
+        if (data.sectionId) {
+          await prisma.studentEnrollment.updateMany({
+            where: { studentId: stu.id, isCurrent: true },
+            data: {
+              sectionId: data.sectionId,
+              programId: data.programId || undefined,
+            },
           });
         }
         updated = stu;

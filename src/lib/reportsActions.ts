@@ -40,22 +40,70 @@ export async function getSectionStudentAttendanceReport(filter: ReportFilter) {
     sessionWhere.assignment = { subjectOffering: { subjectId: filter.subjectId } };
   }
   if (filter.startDate) {
-    sessionWhere.sessionDate = { gte: new Date(filter.startDate) };
+    const sDate = new Date(filter.startDate);
+    sDate.setUTCHours(0, 0, 0, 0);
+    sessionWhere.sessionDate = { gte: sDate };
   }
   if (filter.endDate) {
+    const eDate = new Date(filter.endDate);
+    eDate.setUTCHours(23, 59, 59, 999);
     sessionWhere.sessionDate = {
       ...(sessionWhere.sessionDate || {}),
-      lte: new Date(filter.endDate),
+      lte: eDate,
     };
   }
 
   const sessions = await prisma.attendanceSession.findMany({
     where: sessionWhere,
-    select: { id: true, sessionDate: true, periodNumber: true },
+    include: {
+      assignment: {
+        include: {
+          subjectOffering: {
+            include: {
+              subject: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: [
+      { sessionDate: "asc" },
+      { periodNumber: "asc" },
+    ],
   });
 
   const sessionIds = sessions.map((s) => s.id);
   const totalSessionsConducted = sessionIds.length;
+
+  const PERIOD_TIMINGS: Record<number, string> = {
+    1: "09:00-10:00",
+    2: "10:00-11:00",
+    3: "11:15-12:15",
+    4: "12:15-01:15",
+    5: "02:15-03:15",
+    6: "03:15-04:15",
+    7: "04:15-05:15",
+  };
+
+  const formattedSessions = sessions.map((s) => {
+    const d = new Date(s.sessionDate);
+    const day = String(d.getUTCDate()).padStart(2, "0");
+    const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const sub = s.assignment?.subjectOffering?.subject;
+    const shortName = sub?.shortName || sub?.code || "SUB";
+    const periodTiming = PERIOD_TIMINGS[s.periodNumber] || "09:00-10:00";
+
+    return {
+      id: s.id,
+      sessionDate: s.sessionDate.toISOString().slice(0, 10),
+      formattedDate: `${day}/${month}`,
+      periodNumber: s.periodNumber,
+      periodTiming,
+      subjectName: sub?.name || "Subject",
+      subjectCode: sub?.code || "",
+      subjectShortName: `(${shortName})`,
+    };
+  });
 
   // Fetch all active enrolled students in this section
   const enrollments = await prisma.studentEnrollment.findMany({
@@ -78,40 +126,98 @@ export async function getSectionStudentAttendanceReport(filter: ReportFilter) {
   const records = await prisma.attendanceRecord.findMany({
     where: { sessionId: { in: sessionIds } },
     select: {
+      sessionId: true,
       studentId: true,
       status: true,
     },
   });
 
-  // Calculate per-student stats
+  // Fetch active section assignments to list available subjects with session counts
+  const assignments = await prisma.facultySubjectAssignment.findMany({
+    where: { sectionId: filter.sectionId, isActive: true },
+    include: { subjectOffering: { include: { subject: true } } },
+  });
+
+  const subjectMap = new Map<string, { id: string; name: string; code: string; shortName: string; count: number }>();
+  assignments.forEach((a) => {
+    const sub = a.subjectOffering.subject;
+    if (!subjectMap.has(sub.id)) {
+      subjectMap.set(sub.id, {
+        id: sub.id,
+        name: sub.name,
+        code: sub.code,
+        shortName: sub.shortName || sub.code,
+        count: 0,
+      });
+    }
+  });
+
+  // Calculate conducted sessions per subject across all sessions for this section
+  const allSectionSessions = await prisma.attendanceSession.findMany({
+    where: { sectionId: filter.sectionId },
+    select: { assignment: { select: { subjectOffering: { select: { subjectId: true } } } } },
+  });
+
+  allSectionSessions.forEach((s) => {
+    const subId = s.assignment?.subjectOffering?.subjectId;
+    if (subId && subjectMap.has(subId)) {
+      const item = subjectMap.get(subId)!;
+      item.count += 1;
+    }
+  });
+
+  const availableSubjects = Array.from(subjectMap.values()).sort((a, b) => b.count - a.count);
+
+  // Calculate per-student stats and attendanceMap
   const studentReports = enrollments.map((e) => {
     const studentRecords = records.filter((r) => r.studentId === e.student.id);
+    const attendanceMap: Record<string, "P" | "A"> = {};
+
+    studentRecords.forEach((r) => {
+      attendanceMap[r.sessionId] =
+        r.status === AttendanceStatus.PRESENT || r.status === AttendanceStatus.ON_DUTY
+          ? "P"
+          : "A";
+    });
+
     const attendedCount = studentRecords.filter(
       (r) => r.status === AttendanceStatus.PRESENT || r.status === AttendanceStatus.ON_DUTY
     ).length;
     const totalPossible = totalSessionsConducted;
     const percentage =
-      totalPossible > 0 ? ((attendedCount / totalPossible) * 100).toFixed(1) : "100.0";
+      totalPossible > 0 ? parseFloat(((attendedCount / totalPossible) * 100).toFixed(2)) : null;
 
     return {
       studentId: e.student.id,
       rollNumber: e.student.rollNumber,
       fullName: e.student.user.fullName,
       phone: e.student.user.phone,
+      attendanceMap,
       totalClasses: totalPossible,
       attendedClasses: attendedCount,
       absentClasses: totalPossible - attendedCount,
-      percentage: parseFloat(percentage),
-      isDefaulter: totalPossible > 0 && parseFloat(percentage) < 75.0,
+      percentage,
+      isDefaulter: totalPossible > 0 && percentage !== null && percentage < 75.0,
     };
   });
 
   return {
     success: true,
-    section,
+    section: {
+      id: section.id,
+      name: section.name,
+      displayName: section.displayName,
+      year: section.year,
+      semester: section.semester,
+      program: section.program,
+    },
+    sessions: formattedSessions,
+    availableSubjects,
     totalSessionsConducted,
     students: studentReports,
     defaultersCount: studentReports.filter((s) => s.isDefaulter).length,
+    startDate: filter.startDate || (formattedSessions[0]?.sessionDate ?? ""),
+    endDate: filter.endDate || (formattedSessions[formattedSessions.length - 1]?.sessionDate ?? ""),
   };
 }
 

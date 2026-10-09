@@ -350,6 +350,18 @@ model Student {
   status          StudentStatus @default(ACTIVE)
   admissionYear   String        // e.g., "2026"
   
+  // Entrance & Demographic Details (from Admissions Master)
+  casteCategory   String?
+  ews             String?
+  specialCategory String?
+  state           String?
+  region          String?
+  interPercentage String?
+  jeePercentile   String?
+  jeeRank         String?
+  eapcetRank      String?
+  tcVerified      String?
+  
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   deletedAt       DateTime?

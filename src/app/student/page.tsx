@@ -63,7 +63,7 @@ export default async function StudentPortalPage() {
   const absentClasses = totalClasses - attendedClasses;
 
   const overallPercentage =
-    totalClasses > 0 ? ((attendedClasses / totalClasses) * 100).toFixed(1) : "100.0";
+    totalClasses > 0 ? ((attendedClasses / totalClasses) * 100).toFixed(1) : "-";
   const isDefaulter = totalClasses > 0 && parseFloat(overallPercentage) < 75.0;
 
   // Group by Subject for this student only

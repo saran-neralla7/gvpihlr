@@ -87,9 +87,10 @@ export async function verifyPassword(
 export async function setSessionCookie(payload: SessionPayload) {
   const token = signSession(payload);
   const cookieStore = cookies();
+  const isHttps = process.env.NODE_ENV === "production" && !process.env.NEXTAUTH_URL?.includes("localhost");
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isHttps,
     sameSite: "lax",
     path: "/",
     maxAge: SESSION_MAX_AGE_SECONDS,
@@ -101,9 +102,10 @@ export async function setSessionCookie(payload: SessionPayload) {
  */
 export async function clearSessionCookie() {
   const cookieStore = cookies();
+  const isHttps = process.env.NODE_ENV === "production" && !process.env.NEXTAUTH_URL?.includes("localhost");
   cookieStore.set(COOKIE_NAME, "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isHttps,
     sameSite: "lax",
     path: "/",
     maxAge: 0,

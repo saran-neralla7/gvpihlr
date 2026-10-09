@@ -1,27 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Users, GraduationCap, ArrowRight, Lock, User, AlertCircle, Loader2 } from "lucide-react";
+import { Users, GraduationCap, ArrowRight, Lock, User, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
   const [selectedPortal, setSelectedPortal] = useState<"FACULTY" | "STUDENT" | null>(null);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const savedRemember = localStorage.getItem("gvpihlr_remember_me") === "true";
+      if (savedRemember) {
+        setRememberMe(true);
+        const savedUser = localStorage.getItem("gvpihlr_saved_user");
+        const savedPass = localStorage.getItem("gvpihlr_saved_pass");
+        if (savedUser) setUsername(savedUser);
+        if (savedPass) setPassword(savedPass);
+      }
+    } catch {}
+  }, []);
 
   const handlePortalSelect = (portal: "FACULTY" | "STUDENT") => {
     setSelectedPortal(portal);
     setErrorMessage(null);
-    if (portal === "FACULTY") {
-      setUsername("admin");
-      setPassword("Admin@1234");
-    } else {
-      setUsername("5241411014");
-      setPassword("Student@1234");
-    }
+    setUsername("");
+    setPassword("");
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -51,6 +61,20 @@ export default function LoginPage() {
         setErrorMessage(data.error || "Authentication failed. Please check your credentials.");
         setIsLoading(false);
         return;
+      }
+
+      if (rememberMe) {
+        try {
+          localStorage.setItem("gvpihlr_remember_me", "true");
+          localStorage.setItem("gvpihlr_saved_user", username.trim());
+          localStorage.setItem("gvpihlr_saved_pass", password);
+        } catch {}
+      } else {
+        try {
+          localStorage.removeItem("gvpihlr_remember_me");
+          localStorage.removeItem("gvpihlr_saved_user");
+          localStorage.removeItem("gvpihlr_saved_pass");
+        } catch {}
       }
 
       router.push("/dashboard");
@@ -173,7 +197,7 @@ export default function LoginPage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder={
-                    selectedPortal === "FACULTY" ? "e.g. KR, PS, VN, or admin" : "e.g. 5241411014"
+                    selectedPortal === "FACULTY" ? "e.g. KR, PS, VN, or admin" : "e.g. 26UECHE0001 or Roll Number"
                   }
                   required
                   className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0B2545] focus:border-transparent font-medium"
@@ -190,13 +214,36 @@ export default function LoginPage() {
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0B2545] focus:border-transparent"
+                  className="w-full pl-9 pr-10 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0B2545] focus:border-transparent font-medium"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-700 transition"
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Hide password" : "View password"}
+                  title={showPassword ? "Hide password" : "View password"}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+
+              {/* Remember password checkbox below the password field */}
+              <div className="mt-2 flex items-center justify-between text-xs">
+                <label className="flex items-center gap-2 cursor-pointer select-none text-slate-600 hover:text-slate-900 font-medium">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded border-slate-300 text-[#0B2545] focus:ring-[#0B2545] cursor-pointer"
+                  />
+                  <span>Remember password</span>
+                </label>
               </div>
             </div>
 
@@ -215,66 +262,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          {/* Quick Demo Credentials Panel for Evaluators */}
-          <div className="mt-6 pt-5 border-t border-slate-100">
-            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-              Instant Demo Access:
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedPortal("FACULTY");
-                  setUsername("admin");
-                  setPassword("Admin@1234");
-                }}
-                className="p-2 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left font-medium text-slate-700"
-              >
-                <div className="font-bold text-[#0B2545]">Super Admin</div>
-                <div className="text-[10px] text-slate-400">admin / Admin@1234</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedPortal("FACULTY");
-                  setUsername("KR");
-                  setPassword("Faculty@1234");
-                }}
-                className="p-2 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left font-medium text-slate-700"
-              >
-                <div className="font-bold text-[#0B2545]">Dr. KR (Math)</div>
-                <div className="text-[10px] text-emerald-700 font-bold">KR / Faculty@1234</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedPortal("FACULTY");
-                  setUsername("PS");
-                  setPassword("Faculty@1234");
-                }}
-                className="p-2 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left font-medium text-slate-700"
-              >
-                <div className="font-bold text-[#0B2545]">Dr. PS (CSE)</div>
-                <div className="text-[10px] text-emerald-700 font-bold">PS / Faculty@1234</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedPortal("STUDENT");
-                  setUsername("5241411014");
-                  setPassword("Student@1234");
-                }}
-                className="p-2 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left font-medium text-slate-700"
-              >
-                <div className="font-bold text-[#8B1528]">Student Siddartha</div>
-                <div className="text-[10px] text-slate-400">5241411014 / Student@1234</div>
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>

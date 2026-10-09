@@ -9,6 +9,7 @@ import {
   Layers,
   Bookmark,
   CalendarCheck,
+  Clock,
 } from "lucide-react";
 
 interface SubjectAttendance {
@@ -209,12 +210,17 @@ export default function StudentDashboardView({
                     Overall Attendance Health
                   </div>
                   <div className="text-5xl font-black text-slate-900 mt-2 font-mono">
-                    {attendanceSummary.overallPercentage}%
+                    {attendanceSummary.totalClasses > 0 ? `${attendanceSummary.overallPercentage}%` : "—"}
                   </div>
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-slate-100">
-                  {attendanceSummary.isDefaulter ? (
+                  {attendanceSummary.totalClasses === 0 ? (
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs font-semibold">
+                      <Clock className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                      <span>No attendance sessions recorded yet</span>
+                    </div>
+                  ) : attendanceSummary.isDefaulter ? (
                     <div className="flex items-center gap-2 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold">
                       <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0" />
                       <span>Below 75% — Attendance Condonation Warning</span>
@@ -247,7 +253,7 @@ export default function StudentDashboardView({
                   <div className="text-3xl font-black text-emerald-600 mt-2 font-mono">
                     {attendanceSummary.attendedClasses}
                   </div>
-                  <div className="text-[11px] text-emerald-700 font-medium mt-1">Present / On Duty</div>
+                  <div className="text-[11px] text-emerald-700 font-medium mt-1">Present</div>
                 </div>
 
                 <div className="bg-white border border-slate-200/90 rounded-3xl p-5 shadow-xs flex flex-col justify-between">
@@ -285,8 +291,8 @@ export default function StudentDashboardView({
                       const pct =
                         sub.conducted > 0
                           ? ((sub.attended / sub.conducted) * 100).toFixed(1)
-                          : "100.0";
-                      const isLow = parseFloat(pct) < 75.0;
+                          : "-";
+                      const isLow = pct !== "-" && parseFloat(pct) < 75.0;
 
                       return (
                         <tr key={idx} className="hover:bg-slate-50/80 transition">
@@ -301,17 +307,19 @@ export default function StudentDashboardView({
                             {sub.attended}
                           </td>
                           <td className="py-3 px-3 text-center font-mono font-black text-slate-900">
-                            {pct}%
+                            {pct !== "-" ? `${pct}%` : "—"}
                           </td>
                           <td className="py-3 px-3 text-right">
                             <span
                               className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                                isLow
+                                pct === "-"
+                                  ? "bg-slate-100 text-slate-600 border border-slate-200"
+                                  : isLow
                                   ? "bg-rose-50 text-rose-700 border border-rose-200"
                                   : "bg-emerald-50 text-emerald-700 border border-emerald-200"
                               }`}
                             >
-                              {isLow ? "Shortage" : "Good"}
+                              {pct === "-" ? "Not Started" : isLow ? "Shortage" : "Good"}
                             </span>
                           </td>
                         </tr>
@@ -343,8 +351,6 @@ export default function StudentDashboardView({
                           <span>{sess.date}</span>
                           <span>•</span>
                           <span>Period {sess.period}</span>
-                          <span>•</span>
-                          <span>Faculty: {sess.facultyName}</span>
                         </div>
                       </div>
 

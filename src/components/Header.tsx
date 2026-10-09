@@ -19,6 +19,7 @@ import {
   GraduationCap,
   ArrowLeft,
   Home,
+  Users,
 } from "lucide-react";
 
 interface HeaderProps {
@@ -96,7 +97,7 @@ export default function Header({ user }: HeaderProps) {
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-base sm:text-lg font-black tracking-tight text-slate-900 group-hover:text-blue-900 transition-colors">
-              GVPIHLR<span className="text-blue-600 font-black">(A)</span>
+              GVPIHLR
             </span>
             <span className="hidden md:inline-block text-[11px] font-semibold text-slate-400 border-l border-slate-200 pl-2">
               Campus Management System
@@ -254,6 +255,22 @@ export default function Header({ user }: HeaderProps) {
                 >
                   <BookOpen className="w-4 h-4 text-emerald-600" />
                   <span>Mark Attendance</span>
+                </Link>
+                <Link
+                  href="/admin/students"
+                  onClick={closeMobile}
+                  className="w-full flex items-center gap-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100"
+                >
+                  <GraduationCap className="w-4 h-4 text-blue-600" />
+                  <span>Manage Students</span>
+                </Link>
+                <Link
+                  href="/admin/faculty"
+                  onClick={closeMobile}
+                  className="w-full flex items-center gap-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100"
+                >
+                  <Users className="w-4 h-4 text-purple-600" />
+                  <span>Manage Faculty</span>
                 </Link>
                 <Link
                   href="/admin/master"

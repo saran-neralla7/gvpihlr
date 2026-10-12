@@ -132,37 +132,34 @@ export async function getSectionStudentAttendanceReport(filter: ReportFilter) {
     },
   });
 
-  // Fetch active section assignments to list available subjects with session counts
-  const assignments = await prisma.facultySubjectAssignment.findMany({
-    where: { sectionId: filter.sectionId, isActive: true },
-    include: { subjectOffering: { include: { subject: true } } },
+  // Fetch only subjects for classes that actually happened for this section
+  const allSectionSessions = await prisma.attendanceSession.findMany({
+    where: { sectionId: filter.sectionId },
+    include: {
+      assignment: {
+        include: {
+          subjectOffering: {
+            include: { subject: true },
+          },
+        },
+      },
+    },
   });
 
   const subjectMap = new Map<string, { id: string; name: string; code: string; shortName: string; count: number }>();
-  assignments.forEach((a) => {
-    const sub = a.subjectOffering.subject;
-    if (!subjectMap.has(sub.id)) {
-      subjectMap.set(sub.id, {
-        id: sub.id,
-        name: sub.name,
-        code: sub.code,
-        shortName: sub.shortName || sub.code,
-        count: 0,
-      });
-    }
-  });
-
-  // Calculate conducted sessions per subject across all sessions for this section
-  const allSectionSessions = await prisma.attendanceSession.findMany({
-    where: { sectionId: filter.sectionId },
-    select: { assignment: { select: { subjectOffering: { select: { subjectId: true } } } } },
-  });
-
   allSectionSessions.forEach((s) => {
-    const subId = s.assignment?.subjectOffering?.subjectId;
-    if (subId && subjectMap.has(subId)) {
-      const item = subjectMap.get(subId)!;
-      item.count += 1;
+    const sub = s.assignment?.subjectOffering?.subject;
+    if (sub) {
+      if (!subjectMap.has(sub.id)) {
+        subjectMap.set(sub.id, {
+          id: sub.id,
+          name: sub.name,
+          code: sub.code,
+          shortName: sub.shortName || sub.code,
+          count: 0,
+        });
+      }
+      subjectMap.get(sub.id)!.count += 1;
     }
   });
 

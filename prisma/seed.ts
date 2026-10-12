@@ -268,7 +268,7 @@ async function main() {
     Physics: "PHYS",
   };
 
-  const defaultPassword = "gvp@2026";
+  const defaultPassword = "gvpihlr@2026";
   const hashedPassword = await bcrypt.hash(defaultPassword, 12);
   let facultyCreated = 0;
 

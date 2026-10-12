@@ -3,16 +3,21 @@ import { getCurrentSession, hashPassword } from "@/lib/auth";
 import { isSuperAdmin } from "@/lib/rbac";
 import { deleteMasterRecord, toggleMasterActiveStatus } from "@/lib/masterDataActions";
 import prisma from "@/lib/prisma";
-import { recordAuditLog } from "@/lib/audit";
+import { recordAuditLog, extractClientInfo } from "@/lib/audit";
 import { RoleType, SubjectType, StudentStatus } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   const session = await getCurrentSession();
-  if (!session || !isSuperAdmin(session)) {
+  const isSuperAdminUser = session?.roles.includes("SUPER_ADMIN");
+  const isOfficeUser = session?.roles.includes("OFFICE");
+
+  if (!session || (!isSuperAdminUser && !isOfficeUser)) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
   }
+
+  const { ipAddress, userAgent } = extractClientInfo(req);
 
   try {
     const body = await req.json();
@@ -261,8 +266,11 @@ export async function POST(req: Request) {
     await recordAuditLog({
       userId: session.userId,
       action: `CREATE_${entity.toUpperCase()}`,
+      description: `Created new ${entity} record`,
       resource: entity,
       resourceId: created.id,
+      ipAddress,
+      userAgent,
       details: data,
     });
 
@@ -318,9 +326,14 @@ export async function PATCH(req: Request) {
 
 export async function PUT(req: Request) {
   const session = await getCurrentSession();
-  if (!session || !isSuperAdmin(session)) {
+  const isSuperAdminUser = session?.roles.includes("SUPER_ADMIN");
+  const isOfficeUser = session?.roles.includes("OFFICE");
+
+  if (!session || (!isSuperAdminUser && !isOfficeUser)) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
   }
+
+  const { ipAddress, userAgent } = extractClientInfo(req);
 
   try {
     const body = await req.json();
@@ -469,8 +482,11 @@ export async function PUT(req: Request) {
     await recordAuditLog({
       userId: session.userId,
       action: `UPDATE_${entity.toUpperCase()}`,
+      description: `Updated ${entity} record (${id})`,
       resource: entity,
       resourceId: id,
+      ipAddress,
+      userAgent,
       details: data,
     });
 

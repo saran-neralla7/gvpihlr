@@ -35,8 +35,12 @@ export async function GET(req: Request) {
     const rawEnd = searchParams.get("endDate");
     const endDate = rawEnd && rawEnd.trim() !== "" ? rawEnd.trim() : undefined;
 
-    // Faculty resource authorization check:
-    if (!isSuperAdmin(session) && session.facultyId) {
+    // Faculty resource authorization check (Admin and Office have campus-wide access):
+    const isPrivileged =
+      session.roles.includes("SUPER_ADMIN") ||
+      session.roles.includes("OFFICE");
+
+    if (!isPrivileged && session.facultyId) {
       const isAssigned = await prisma.facultySubjectAssignment.findFirst({
         where: {
           sectionId,

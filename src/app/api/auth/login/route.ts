@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { verifyPassword, setSessionCookie, SessionPayload } from "@/lib/auth";
-import { recordAuditLog } from "@/lib/audit";
+import { recordAuditLog, extractClientInfo } from "@/lib/audit";
 import { LoginSchema } from "@/lib/validations";
 
 export async function POST(req: Request) {
   try {
+    const { ipAddress, userAgent, deviceSummary } = extractClientInfo(req);
     const body = await req.json();
     const parsed = LoginSchema.safeParse(body);
 
@@ -41,10 +42,13 @@ export async function POST(req: Request) {
     if (!user) {
       await recordAuditLog({
         action: "FAILED_LOGIN",
+        description: `Failed login attempt for unknown or inactive identifier: "${username}"`,
         resource: "User",
         resourceId: username,
         status: "FAILURE",
-        details: { reason: "User not found or inactive", username },
+        ipAddress,
+        userAgent,
+        details: { reason: "User not found or inactive", username, device: deviceSummary },
       });
       return NextResponse.json(
         { success: false, error: "Invalid username or password" },
@@ -80,10 +84,13 @@ export async function POST(req: Request) {
       await recordAuditLog({
         userId: user.id,
         action: "FAILED_LOGIN",
+        description: `Failed login attempt (Incorrect password) for user: ${user.username}`,
         resource: "User",
         resourceId: user.id,
         status: "FAILURE",
-        details: { failedAttempts: failed, locked: !!lockedUntil },
+        ipAddress,
+        userAgent,
+        details: { failedAttempts: failed, locked: !!lockedUntil, device: deviceSummary },
       });
 
       return NextResponse.json(
@@ -119,10 +126,13 @@ export async function POST(req: Request) {
     await recordAuditLog({
       userId: user.id,
       action: "LOGIN",
+      description: `User "${user.fullName}" (${user.username}) signed in successfully as ${roleNames.join(", ")}`,
       resource: "User",
       resourceId: user.id,
       status: "SUCCESS",
-      details: { roles: roleNames },
+      ipAddress,
+      userAgent,
+      details: { roles: roleNames, device: deviceSummary },
     });
 
     return NextResponse.json({

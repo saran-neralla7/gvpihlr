@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import {
   Users,
   Plus,
@@ -20,17 +21,21 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
+  BookOpen,
 } from "lucide-react";
 import CustomModal from "@/components/ui/CustomModal";
 
 interface FacultyManagerProps {
   faculty: any[];
   departments: any[];
+  canDelete?: boolean;
 }
 
 export default function FacultyManagerClient({
   faculty: initialFaculty,
   departments,
+  canDelete = true,
 }: FacultyManagerProps) {
   const [faculty, setFaculty] = useState<any[]>(initialFaculty);
 
@@ -446,15 +451,23 @@ export default function FacultyManagerClient({
                       {/* Employee Column: Avatar, Name, Code */}
                       <td className="py-3 px-5">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs flex-shrink-0 group-hover:bg-purple-100 group-hover:text-purple-700 transition">
+                          <Link
+                            href={`/admin/faculty/${f.id}`}
+                            className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs flex-shrink-0 group-hover:bg-purple-100 group-hover:text-purple-700 transition"
+                            title="View Faculty Profile"
+                          >
                             {initials}
-                          </div>
+                          </Link>
                           <div>
-                            <div className="font-bold text-blue-600 hover:underline cursor-pointer">
-                              {f.user?.fullName}
-                            </div>
+                            <Link
+                              href={`/admin/faculty/${f.id}`}
+                              className="font-bold text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"
+                            >
+                              <span>{f.user?.fullName}</span>
+                              <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                            </Link>
                             <div className="text-[11px] text-slate-400 font-mono">
-                              {f.employeeId || f.shortName}
+                              Short: <span className="font-bold text-purple-700">{f.shortName}</span> • {f.employeeId}
                             </div>
                           </div>
                         </div>
@@ -476,8 +489,21 @@ export default function FacultyManagerClient({
                       <td className="py-3 px-5">
                         <div className="space-y-1">
                           <div className="flex items-center gap-1.5 text-slate-600 font-mono text-[11px]">
-                            <Phone className="w-3 h-3 text-slate-400" />
-                            <span>{f.user?.phone || "-"}</span>
+                            {f.user?.phone ? (
+                              <a
+                                href={`tel:${f.user.phone}`}
+                                className="flex items-center gap-1 hover:text-purple-700"
+                                title="Click to call on dialpad"
+                              >
+                                <Phone className="w-3 h-3 text-purple-500" />
+                                <span>{f.user.phone}</span>
+                              </a>
+                            ) : (
+                              <>
+                                <Phone className="w-3 h-3 text-slate-400" />
+                                <span>-</span>
+                              </>
+                            )}
                           </div>
                           <div className="flex items-center gap-1.5 text-slate-500 font-mono text-[11px]">
                             <Mail className="w-3 h-3 text-slate-400" />
@@ -486,9 +512,19 @@ export default function FacultyManagerClient({
                         </div>
                       </td>
 
-                      {/* Actions: Edit & Delete */}
+                      {/* Actions: View Details, Edit & Delete */}
                       <td className="py-3 px-5 text-right">
                         <div className="inline-flex items-center gap-2 text-slate-400">
+                          {/* View Dedicated Profile */}
+                          <Link
+                            href={`/admin/faculty/${f.id}`}
+                            className="p-1.5 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition text-slate-400"
+                            title="Open Dedicated Faculty Profile & Assigned Subjects"
+                          >
+                            <BookOpen className="w-3.5 h-3.5" />
+                          </Link>
+
+                          {/* Edit */}
                           <button
                             onClick={() => {
                               setActiveFaculty(f);
@@ -510,16 +546,19 @@ export default function FacultyManagerClient({
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
 
-                          <button
-                            onClick={() => {
-                              setActiveFaculty(f);
-                              setIsDeleteOpen(true);
-                            }}
-                            className="p-1.5 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                            title="Delete Faculty Profile"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {/* Delete (Hidden for Office role) */}
+                          {canDelete && (
+                            <button
+                              onClick={() => {
+                                setActiveFaculty(f);
+                                setIsDeleteOpen(true);
+                              }}
+                              className="p-1.5 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                              title="Delete Faculty Profile"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

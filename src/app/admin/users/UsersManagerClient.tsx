@@ -79,7 +79,7 @@ export default function UsersManagerClient({
         qualification: "Ph.D / M.Tech",
         phone: "+91 9440112233",
         email: "",
-        password: "gvp@2026",
+        password: "gvpihlr@2026",
       });
     } else {
       setCreateFormData({
@@ -782,7 +782,7 @@ export default function UsersManagerClient({
                   <input
                     type="text"
                     required
-                    value={createFormData.password || "gvp@2026"}
+                    value={createFormData.password || "gvpihlr@2026"}
                     onChange={(e) => setCreateFormData({ ...createFormData, password: e.target.value })}
                     className="w-full px-3 py-2 border rounded-xl font-mono"
                   />

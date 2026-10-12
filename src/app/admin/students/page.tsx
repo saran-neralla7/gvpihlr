@@ -8,7 +8,10 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminStudentsPage() {
   const session = await getCurrentSession();
-  if (!session || !isSuperAdmin(session)) {
+  const isSuperAdminUser = session?.roles.includes("SUPER_ADMIN");
+  const isOfficeUser = session?.roles.includes("OFFICE");
+
+  if (!session || (!isSuperAdminUser && !isOfficeUser)) {
     redirect("/dashboard");
   }
 
@@ -48,6 +51,7 @@ export default async function AdminStudentsPage() {
       departments={departments}
       programs={programs}
       sections={sections}
+      canDelete={isSuperAdminUser}
     />
   );
 }

@@ -103,8 +103,24 @@ export default function ReportsClient({
 
   const [reportData, setReportData] = useState(initialReport);
   const [searchQuery, setSearchQuery] = useState("");
-  const [onlyDefaulters, setOnlyDefaulters] = useState(false);
+  const [thresholdMode, setThresholdMode] = useState<"ALL" | "75" | "65" | "60" | "50" | "CUSTOM">("ALL");
+  const [customThreshold, setCustomThreshold] = useState<number>(60);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Active attendance percentage cutoff
+  const activeThresholdCutoff = useMemo(() => {
+    if (thresholdMode === "ALL") return null;
+    if (thresholdMode === "CUSTOM") return Number.isFinite(customThreshold) ? customThreshold : 0;
+    return parseFloat(thresholdMode);
+  }, [thresholdMode, customThreshold]);
+
+  // Count of students below active threshold
+  const countMatchingThreshold = useMemo(() => {
+    if (activeThresholdCutoff === null) return 0;
+    return reportData.students.filter(
+      (s) => s.totalClasses > 0 && s.percentage !== null && s.percentage < activeThresholdCutoff
+    ).length;
+  }, [reportData.students, activeThresholdCutoff]);
 
   // Fetch report when section, subject, or dates change
   const fetchReport = async (secId: string, subId: string, sDate: string, eDate: string) => {
@@ -171,10 +187,16 @@ export default function ReportsClient({
         !searchQuery.trim() ||
         s.rollNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.fullName.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesDefaulter = !onlyDefaulters || s.isDefaulter;
-      return matchesSearch && matchesDefaulter;
+      if (!matchesSearch) return false;
+
+      if (activeThresholdCutoff !== null) {
+        if (s.totalClasses === 0 || s.percentage === null) return false;
+        return s.percentage < activeThresholdCutoff;
+      }
+
+      return true;
     });
-  }, [reportData.students, searchQuery, onlyDefaulters]);
+  }, [reportData.students, searchQuery, activeThresholdCutoff]);
 
   const sessions = reportData.sessions || [];
 
@@ -810,19 +832,99 @@ export default function ReportsClient({
                 </input>
               </div>
 
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={onlyDefaulters}
-                    onChange={(e) => setOnlyDefaulters(e.target.checked)}
-                    className="rounded border-slate-300 text-rose-600 focus:ring-rose-500"
-                  />
-                  <span className="text-rose-700 font-bold">Show &lt; 75% Defaulters Only</span>
-                  <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-rose-100 text-rose-800 font-bold">
-                    {reportData.defaultersCount}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Attendance:
+                </span>
+                <div className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("ALL")}
+                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "ALL"
+                        ? "bg-white text-slate-900 shadow-xs border border-slate-200 font-bold"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("75")}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "75"
+                        ? "bg-rose-600 text-white shadow-xs font-bold"
+                        : "text-rose-700 hover:bg-rose-50"
+                    }`}
+                  >
+                    &lt; 75%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("65")}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "65"
+                        ? "bg-rose-600 text-white shadow-xs font-bold"
+                        : "text-rose-700 hover:bg-rose-50"
+                    }`}
+                  >
+                    &lt; 65%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("60")}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "60"
+                        ? "bg-rose-600 text-white shadow-xs font-bold"
+                        : "text-rose-700 hover:bg-rose-50"
+                    }`}
+                  >
+                    &lt; 60%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("50")}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "50"
+                        ? "bg-rose-600 text-white shadow-xs font-bold"
+                        : "text-rose-700 hover:bg-rose-50"
+                    }`}
+                  >
+                    &lt; 50%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("CUSTOM")}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "CUSTOM"
+                        ? "bg-rose-600 text-white shadow-xs font-bold"
+                        : "text-rose-700 hover:bg-rose-50"
+                    }`}
+                  >
+                    Custom
+                  </button>
+                </div>
+
+                {thresholdMode === "CUSTOM" && (
+                  <div className="flex items-center gap-1 bg-rose-50 border border-rose-200 rounded-xl px-2 py-1">
+                    <span className="text-xs font-bold text-rose-700">&lt;</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={customThreshold}
+                      onChange={(e) => setCustomThreshold(Number(e.target.value))}
+                      className="w-12 px-1 py-0.5 text-xs font-bold bg-white border border-rose-300 rounded text-rose-900 focus:outline-none focus:ring-1 focus:ring-rose-500 text-center"
+                    />
+                    <span className="text-xs font-bold text-rose-700">%</span>
+                  </div>
+                )}
+
+                {thresholdMode !== "ALL" && (
+                  <span className="px-2 py-0.5 rounded-full text-[11px] bg-rose-100 text-rose-800 font-bold">
+                    {countMatchingThreshold} students
                   </span>
-                </label>
+                )}
               </div>
             </div>
           </div>
@@ -1154,19 +1256,99 @@ export default function ReportsClient({
                 />
               </div>
 
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={onlyDefaulters}
-                    onChange={(e) => setOnlyDefaulters(e.target.checked)}
-                    className="rounded border-slate-300 text-rose-600 focus:ring-rose-500"
-                  />
-                  <span className="text-rose-700 font-bold">Show &lt; 75% Defaulters Only</span>
-                  <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-rose-100 text-rose-800 font-bold">
-                    {reportData.defaultersCount}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Attendance:
+                </span>
+                <div className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("ALL")}
+                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "ALL"
+                        ? "bg-white text-slate-900 shadow-xs border border-slate-200 font-bold"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("75")}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "75"
+                        ? "bg-rose-600 text-white shadow-xs font-bold"
+                        : "text-rose-700 hover:bg-rose-50"
+                    }`}
+                  >
+                    &lt; 75%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("65")}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "65"
+                        ? "bg-rose-600 text-white shadow-xs font-bold"
+                        : "text-rose-700 hover:bg-rose-50"
+                    }`}
+                  >
+                    &lt; 65%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("60")}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "60"
+                        ? "bg-rose-600 text-white shadow-xs font-bold"
+                        : "text-rose-700 hover:bg-rose-50"
+                    }`}
+                  >
+                    &lt; 60%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("50")}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "50"
+                        ? "bg-rose-600 text-white shadow-xs font-bold"
+                        : "text-rose-700 hover:bg-rose-50"
+                    }`}
+                  >
+                    &lt; 50%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("CUSTOM")}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "CUSTOM"
+                        ? "bg-rose-600 text-white shadow-xs font-bold"
+                        : "text-rose-700 hover:bg-rose-50"
+                    }`}
+                  >
+                    Custom
+                  </button>
+                </div>
+
+                {thresholdMode === "CUSTOM" && (
+                  <div className="flex items-center gap-1 bg-rose-50 border border-rose-200 rounded-xl px-2 py-1">
+                    <span className="text-xs font-bold text-rose-700">&lt;</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={customThreshold}
+                      onChange={(e) => setCustomThreshold(Number(e.target.value))}
+                      className="w-12 px-1 py-0.5 text-xs font-bold bg-white border border-rose-300 rounded text-rose-900 focus:outline-none focus:ring-1 focus:ring-rose-500 text-center"
+                    />
+                    <span className="text-xs font-bold text-rose-700">%</span>
+                  </div>
+                )}
+
+                {thresholdMode !== "ALL" && (
+                  <span className="px-2 py-0.5 rounded-full text-[11px] bg-rose-100 text-rose-800 font-bold">
+                    {countMatchingThreshold} students
                   </span>
-                </label>
+                )}
               </div>
             </div>
           </div>

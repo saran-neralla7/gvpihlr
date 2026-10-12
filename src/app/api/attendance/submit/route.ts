@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { submitAttendanceSession } from "@/lib/attendanceActions";
+import { extractClientInfo } from "@/lib/audit";
 
 export async function POST(req: Request) {
   try {
+    const { ipAddress, userAgent } = extractClientInfo(req);
     const body = await req.json();
-    const result = await submitAttendanceSession(body);
+    const result = await submitAttendanceSession(body, { ipAddress, userAgent });
 
     if (!result.success) {
       return NextResponse.json(result, { status: 400 });

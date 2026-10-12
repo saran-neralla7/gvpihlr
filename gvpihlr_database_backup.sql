@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict vH6wdReOc2G2kcyKsgnDq6XLUlESY8pldbM1k1lj4h05wpZAOxOJQb13sxINJZH
+\restrict cKRAN9nDaHI2QrdNwYPVxead8lfQ6vsaVoS3kcWqoQ8pw5vMBApQEeF7rrZUleY
 
--- Dumped from database version 16.15
--- Dumped by pg_dump version 16.15
+-- Dumped from database version 16.14 (Homebrew)
+-- Dumped by pg_dump version 16.14 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -17,6 +17,190 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_schoolId_fkey";
+ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_roleId_fkey";
+ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_programId_fkey";
+ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_departmentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_sectionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_labBatchId_fkey";
+ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_facultyId_fkey";
+ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_assignmentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_academicYearId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Subject" DROP CONSTRAINT IF EXISTS "Subject_departmentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_subjectId_fkey";
+ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_regulationId_fkey";
+ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_programId_fkey";
+ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_academicYearId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Student" DROP CONSTRAINT IF EXISTS "Student_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_studentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_sectionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_programId_fkey";
+ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_academicYearId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Section" DROP CONSTRAINT IF EXISTS "Section_programId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Section" DROP CONSTRAINT IF EXISTS "Section_academicYearId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Program" DROP CONSTRAINT IF EXISTS "Program_schoolId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Program" DROP CONSTRAINT IF EXISTS "Program_regulationId_fkey";
+ALTER TABLE IF EXISTS ONLY public."LabBatch" DROP CONSTRAINT IF EXISTS "LabBatch_sectionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."LabBatchStudent" DROP CONSTRAINT IF EXISTS "LabBatchStudent_studentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."LabBatchStudent" DROP CONSTRAINT IF EXISTS "LabBatchStudent_labBatchId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Faculty" DROP CONSTRAINT IF EXISTS "Faculty_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Faculty" DROP CONSTRAINT IF EXISTS "Faculty_departmentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_subjectOfferingId_fkey";
+ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_sectionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_facultyId_fkey";
+ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_academicYearId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Department" DROP CONSTRAINT IF EXISTS "Department_schoolId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AuditLog" DROP CONSTRAINT IF EXISTS "AuditLog_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_sectionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_recordedById_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_labBatchId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_facultyId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_assignmentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_academicYearId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceRecord" DROP CONSTRAINT IF EXISTS "AttendanceRecord_studentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceRecord" DROP CONSTRAINT IF EXISTS "AttendanceRecord_sessionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceAuditLog" DROP CONSTRAINT IF EXISTS "AttendanceAuditLog_sessionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceAuditLog" DROP CONSTRAINT IF EXISTS "AttendanceAuditLog_changedById_fkey";
+DROP INDEX IF EXISTS public."User_username_key";
+DROP INDEX IF EXISTS public."User_email_key";
+DROP INDEX IF EXISTS public."UserRole_userId_roleId_schoolId_departmentId_programId_key";
+DROP INDEX IF EXISTS public."UserRole_userId_idx";
+DROP INDEX IF EXISTS public."UserRole_roleId_idx";
+DROP INDEX IF EXISTS public."TimetableEntry_sectionId_dayOfWeek_idx";
+DROP INDEX IF EXISTS public."TimetableEntry_facultyId_dayOfWeek_idx";
+DROP INDEX IF EXISTS public."Subject_departmentId_idx";
+DROP INDEX IF EXISTS public."Subject_code_key";
+DROP INDEX IF EXISTS public."Subject_code_idx";
+DROP INDEX IF EXISTS public."SubjectOffering_subjectId_idx";
+DROP INDEX IF EXISTS public."SubjectOffering_regulationId_idx";
+DROP INDEX IF EXISTS public."SubjectOffering_programId_year_semester_idx";
+DROP INDEX IF EXISTS public."SubjectOffering_academicYearId_programId_subjectId_year_sem_key";
+DROP INDEX IF EXISTS public."SubjectOffering_academicYearId_idx";
+DROP INDEX IF EXISTS public."Student_userId_key";
+DROP INDEX IF EXISTS public."Student_status_idx";
+DROP INDEX IF EXISTS public."Student_rollNumber_key";
+DROP INDEX IF EXISTS public."Student_rollNumber_idx";
+DROP INDEX IF EXISTS public."Student_registerNumber_key";
+DROP INDEX IF EXISTS public."StudentEnrollment_studentId_idx";
+DROP INDEX IF EXISTS public."StudentEnrollment_studentId_academicYearId_semester_key";
+DROP INDEX IF EXISTS public."StudentEnrollment_sectionId_idx";
+DROP INDEX IF EXISTS public."StudentEnrollment_programId_year_semester_idx";
+DROP INDEX IF EXISTS public."StudentEnrollment_academicYearId_idx";
+DROP INDEX IF EXISTS public."Section_year_semester_idx";
+DROP INDEX IF EXISTS public."Section_programId_idx";
+DROP INDEX IF EXISTS public."Section_academicYearId_programId_year_semester_name_key";
+DROP INDEX IF EXISTS public."Section_academicYearId_idx";
+DROP INDEX IF EXISTS public."School_code_key";
+DROP INDEX IF EXISTS public."School_code_idx";
+DROP INDEX IF EXISTS public."Role_name_key";
+DROP INDEX IF EXISTS public."Regulation_code_key";
+DROP INDEX IF EXISTS public."Regulation_code_idx";
+DROP INDEX IF EXISTS public."Program_schoolId_idx";
+DROP INDEX IF EXISTS public."Program_regulationId_idx";
+DROP INDEX IF EXISTS public."Program_code_key";
+DROP INDEX IF EXISTS public."Program_code_idx";
+DROP INDEX IF EXISTS public."LabBatch_sectionId_idx";
+DROP INDEX IF EXISTS public."LabBatch_sectionId_batchNumber_key";
+DROP INDEX IF EXISTS public."LabBatchStudent_studentId_idx";
+DROP INDEX IF EXISTS public."LabBatchStudent_labBatchId_studentId_key";
+DROP INDEX IF EXISTS public."LabBatchStudent_labBatchId_idx";
+DROP INDEX IF EXISTS public."Faculty_userId_key";
+DROP INDEX IF EXISTS public."Faculty_shortName_idx";
+DROP INDEX IF EXISTS public."Faculty_employeeId_key";
+DROP INDEX IF EXISTS public."Faculty_employeeId_idx";
+DROP INDEX IF EXISTS public."Faculty_departmentId_idx";
+DROP INDEX IF EXISTS public."FacultySubjectAssignment_subjectOfferingId_idx";
+DROP INDEX IF EXISTS public."FacultySubjectAssignment_sectionId_idx";
+DROP INDEX IF EXISTS public."FacultySubjectAssignment_facultyId_idx";
+DROP INDEX IF EXISTS public."FacultySubjectAssignment_academicYearId_idx";
+DROP INDEX IF EXISTS public."FacultySubjectAssignment_academicYearId_facultyId_subjectOf_key";
+DROP INDEX IF EXISTS public."Department_schoolId_idx";
+DROP INDEX IF EXISTS public."Department_code_key";
+DROP INDEX IF EXISTS public."Department_code_idx";
+DROP INDEX IF EXISTS public."AuditLog_userId_idx";
+DROP INDEX IF EXISTS public."AuditLog_timestamp_idx";
+DROP INDEX IF EXISTS public."AuditLog_resource_resourceId_idx";
+DROP INDEX IF EXISTS public."AuditLog_action_idx";
+DROP INDEX IF EXISTS public."AttendanceSession_sectionId_sessionDate_idx";
+DROP INDEX IF EXISTS public."AttendanceSession_facultyId_sessionDate_idx";
+DROP INDEX IF EXISTS public."AttendanceSession_assignmentId_idx";
+DROP INDEX IF EXISTS public."AttendanceSession_academicYearId_sectionId_assignmentId_ses_key";
+DROP INDEX IF EXISTS public."AttendanceSession_academicYearId_idx";
+DROP INDEX IF EXISTS public."AttendanceRecord_studentId_status_idx";
+DROP INDEX IF EXISTS public."AttendanceRecord_sessionId_studentId_key";
+DROP INDEX IF EXISTS public."AttendanceRecord_sessionId_idx";
+DROP INDEX IF EXISTS public."AttendanceAuditLog_studentId_idx";
+DROP INDEX IF EXISTS public."AttendanceAuditLog_sessionId_idx";
+DROP INDEX IF EXISTS public."AttendanceAuditLog_changedById_idx";
+DROP INDEX IF EXISTS public."AcademicYear_isCurrent_idx";
+DROP INDEX IF EXISTS public."AcademicYear_code_key";
+ALTER TABLE IF EXISTS ONLY public."User" DROP CONSTRAINT IF EXISTS "User_pkey";
+ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_pkey";
+ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_pkey";
+ALTER TABLE IF EXISTS ONLY public."Subject" DROP CONSTRAINT IF EXISTS "Subject_pkey";
+ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_pkey";
+ALTER TABLE IF EXISTS ONLY public."Student" DROP CONSTRAINT IF EXISTS "Student_pkey";
+ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_pkey";
+ALTER TABLE IF EXISTS ONLY public."Section" DROP CONSTRAINT IF EXISTS "Section_pkey";
+ALTER TABLE IF EXISTS ONLY public."School" DROP CONSTRAINT IF EXISTS "School_pkey";
+ALTER TABLE IF EXISTS ONLY public."Role" DROP CONSTRAINT IF EXISTS "Role_pkey";
+ALTER TABLE IF EXISTS ONLY public."Regulation" DROP CONSTRAINT IF EXISTS "Regulation_pkey";
+ALTER TABLE IF EXISTS ONLY public."Program" DROP CONSTRAINT IF EXISTS "Program_pkey";
+ALTER TABLE IF EXISTS ONLY public."LabBatch" DROP CONSTRAINT IF EXISTS "LabBatch_pkey";
+ALTER TABLE IF EXISTS ONLY public."LabBatchStudent" DROP CONSTRAINT IF EXISTS "LabBatchStudent_pkey";
+ALTER TABLE IF EXISTS ONLY public."Faculty" DROP CONSTRAINT IF EXISTS "Faculty_pkey";
+ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_pkey";
+ALTER TABLE IF EXISTS ONLY public."Department" DROP CONSTRAINT IF EXISTS "Department_pkey";
+ALTER TABLE IF EXISTS ONLY public."AuditLog" DROP CONSTRAINT IF EXISTS "AuditLog_pkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_pkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceRecord" DROP CONSTRAINT IF EXISTS "AttendanceRecord_pkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceAuditLog" DROP CONSTRAINT IF EXISTS "AttendanceAuditLog_pkey";
+ALTER TABLE IF EXISTS ONLY public."AcademicYear" DROP CONSTRAINT IF EXISTS "AcademicYear_pkey";
+DROP TABLE IF EXISTS public."UserRole";
+DROP TABLE IF EXISTS public."User";
+DROP TABLE IF EXISTS public."TimetableEntry";
+DROP TABLE IF EXISTS public."SubjectOffering";
+DROP TABLE IF EXISTS public."Subject";
+DROP TABLE IF EXISTS public."StudentEnrollment";
+DROP TABLE IF EXISTS public."Student";
+DROP TABLE IF EXISTS public."Section";
+DROP TABLE IF EXISTS public."School";
+DROP TABLE IF EXISTS public."Role";
+DROP TABLE IF EXISTS public."Regulation";
+DROP TABLE IF EXISTS public."Program";
+DROP TABLE IF EXISTS public."LabBatchStudent";
+DROP TABLE IF EXISTS public."LabBatch";
+DROP TABLE IF EXISTS public."FacultySubjectAssignment";
+DROP TABLE IF EXISTS public."Faculty";
+DROP TABLE IF EXISTS public."Department";
+DROP TABLE IF EXISTS public."AuditLog";
+DROP TABLE IF EXISTS public."AttendanceSession";
+DROP TABLE IF EXISTS public."AttendanceRecord";
+DROP TABLE IF EXISTS public."AttendanceAuditLog";
+DROP TABLE IF EXISTS public."AcademicYear";
+DROP TYPE IF EXISTS public."SubjectType";
+DROP TYPE IF EXISTS public."StudentStatus";
+DROP TYPE IF EXISTS public."SessionType";
+DROP TYPE IF EXISTS public."RoleType";
+DROP TYPE IF EXISTS public."AttendanceStatus";
+-- *not* dropping schema, since initdb creates it
+--
+-- Name: public; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+-- *not* creating schema, since initdb creates it
+
+
+ALTER SCHEMA public OWNER TO postgres;
+
+--
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: postgres
+--
+
+COMMENT ON SCHEMA public IS '';
+
 
 --
 -- Name: AttendanceStatus; Type: TYPE; Schema: public; Owner: postgres
@@ -85694,6 +85878,12 @@ cmv0pupq70003udx6d6smlrk7	cmv0lfkfm077a10e0jt1y7xf7	LOGIN	User	cmv0lfkfm077a10e0
 cmv0pusgg0005udx659z7alb3	cmv0lfkfm077a10e0jt1y7xf7	LOGOUT	User	cmv0lfkfm077a10e0jt1y7xf7	\N	\N	SUCCESS	null	2026-10-09 08:41:29.488
 cmv0pux1c0007udx6fviu260g	cmuzp7hsc000bbynpr08m4i25	LOGIN	User	cmuzp7hsc000bbynpr08m4i25	\N	\N	SUCCESS	{"roles": ["SUPER_ADMIN"]}	2026-10-09 08:41:35.424
 cmv0pv5pk0009udx6jkrlpumr	cmuzp7hsc000bbynpr08m4i25	LOGOUT	User	cmuzp7hsc000bbynpr08m4i25	\N	\N	SUCCESS	null	2026-10-09 08:41:46.665
+cmv5c16ol00012mixcggd4uxg	cmuzp7hsc000bbynpr08m4i25	FAILED_LOGIN	User	cmuzp7hsc000bbynpr08m4i25	\N	\N	FAILURE	{"locked": false, "failedAttempts": 1}	2026-10-12 14:13:24.117
+cmv5c2brj00032mix5yasqfr9	cmuzp7hsc000bbynpr08m4i25	LOGIN	User	cmuzp7hsc000bbynpr08m4i25	\N	\N	SUCCESS	{"roles": ["SUPER_ADMIN"]}	2026-10-12 14:14:17.36
+cmv5c2ngf00052mixy2g4xl11	cmuzu9oof003iydphgyvr3cii	LOGIN	User	cmuzu9oof003iydphgyvr3cii	\N	\N	SUCCESS	{"roles": ["FACULTY"]}	2026-10-12 14:14:32.512
+cmv5c2sd600072mixf60f5zds	\N	FAILED_LOGIN	User	26131A0501	\N	\N	FAILURE	{"reason": "User not found or inactive", "username": "26131A0501"}	2026-10-12 14:14:38.874
+cmv5c3r3r00092mixiqqigqwo	cmuzp7hsc000bbynpr08m4i25	LOGIN	User	cmuzp7hsc000bbynpr08m4i25	\N	\N	SUCCESS	{"roles": ["SUPER_ADMIN"]}	2026-10-12 14:15:23.895
+cmv5cxv7i000b2mixllr6fq87	cmv5cxakt000110wnsmb2rfxg	LOGIN	User	cmv5cxakt000110wnsmb2rfxg	\N	\N	SUCCESS	{"roles": ["OFFICE"]}	2026-10-12 14:38:48.895
 \.
 
 
@@ -90447,83 +90637,78 @@ COPY public."TimetableEntry" (id, "academicYearId", "assignmentId", "sectionId",
 --
 
 COPY public."User" (id, username, email, "passwordHash", "fullName", phone, "isActive", "mustChangePassword", "lastLoginAt", "failedAttempts", "lockedUntil", "createdAt", "updatedAt", "deletedAt") FROM stdin;
-cmuzu9oov004mydphjg2s99np	DM	dm@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. D Manasa	+91 9440112233	t	f	2026-10-08 18:00:33.114	0	\N	2026-10-08 17:57:16.736	2026-10-08 18:00:33.114	\N
-cmuzu9ooj003sydph9ysvw492	KVP	kvp@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. KV Padmavathi	+91 9440112233	t	f	2026-10-08 18:00:31.828	0	\N	2026-10-08 17:57:16.724	2026-10-08 18:00:31.829	\N
-cmuzu9ool003xydphdqvmbd0b	MRR	mrr@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. M Rama Rajeswari	+91 9440112233	t	f	2026-10-08 18:00:32.041	0	\N	2026-10-08 17:57:16.726	2026-10-08 18:00:32.042	\N
-cmuzu9ooo0042ydph2cf7s60u	PSR	psr@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. P Srinivas Rao	+91 9440112233	t	f	2026-10-08 18:00:32.255	0	\N	2026-10-08 17:57:16.728	2026-10-08 18:00:32.256	\N
-cmuzu9ooq0047ydphbogdnye1	RN	rn@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. Rani Nanda	+91 9440112233	t	f	2026-10-08 18:00:32.47	0	\N	2026-10-08 17:57:16.731	2026-10-08 18:00:32.47	\N
-cmuzu9oos004cydphwkuc88w2	SA	sa@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mr. S Ashok	+91 9440112233	t	f	2026-10-08 18:00:32.683	0	\N	2026-10-08 17:57:16.733	2026-10-08 18:00:32.684	\N
-cmuzu9oou004hydphvofh0ip3	BV	bv@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. B Vidya	+91 9440112233	t	f	2026-10-08 18:00:32.899	0	\N	2026-10-08 17:57:16.734	2026-10-08 18:00:32.9	\N
-cmuzu9opo0074ydphr5czmqqq	ISR	isr@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. I Srinivas Rao	+91 9440112233	t	f	2026-10-08 18:00:37.018	0	\N	2026-10-08 17:57:16.764	2026-10-08 18:00:37.018	\N
-cmuzu9ooz004wydph7tohke43	PM	pm@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mr. P Manikanta	+91 9440112233	t	f	2026-10-08 18:00:33.547	0	\N	2026-10-08 17:57:16.739	2026-10-08 18:00:33.547	\N
-cmuzu9op00051ydph57trnn42	VBR	vbr@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mr. V Bhaskar Rao	+91 9440112233	t	f	2026-10-08 18:00:33.763	0	\N	2026-10-08 17:57:16.741	2026-10-08 18:00:33.763	\N
-cmuzu9op20056ydph0wtyy3la	GS	gs@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mrs. G Sravani	+91 9440112233	t	f	2026-10-08 18:00:33.979	0	\N	2026-10-08 17:57:16.743	2026-10-08 18:00:33.979	\N
-cmuzu9op6005gydphddh9mtce	DC	dc@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. D Chandravathi	+91 9440112233	t	f	2026-10-08 18:00:34.411	0	\N	2026-10-08 17:57:16.746	2026-10-08 18:00:34.412	\N
-cmuzu9oof003iydphgyvr3cii	BSK	bsk@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. B Santosh Kumar	+91 9440112233	t	f	2026-10-08 18:00:31.391	0	\N	2026-10-08 17:57:16.72	2026-10-08 18:00:31.392	\N
-cmuzu9op9005qydpho4pjs8iq	ADP	adp@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mr. A Dhanunjaya Prasad	+91 9440112233	t	f	2026-10-08 18:00:34.842	0	\N	2026-10-08 17:57:16.749	2026-10-08 18:00:34.843	\N
-cmuzu9opb005vydpha49v7tmk	BBK	bbk@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mr. B Bala Krishna	+91 9440112233	t	f	2026-10-08 18:00:35.059	0	\N	2026-10-08 17:57:16.751	2026-10-08 18:00:35.059	\N
-cmuzu9opc0060ydphcbp9oo8l	DAK	dak@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mr. D Arun Kumar	+91 9440112233	t	f	2026-10-08 18:00:35.275	0	\N	2026-10-08 17:57:16.752	2026-10-08 18:00:35.276	\N
-cmuzu9opd0065ydphxdu1ouox	MA	ma@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mr. M Anil	+91 9440112233	t	f	2026-10-08 18:00:35.494	0	\N	2026-10-08 17:57:16.754	2026-10-08 18:00:35.495	\N
-cmuzu9opf006aydphzzilc6xg	DMVP	dmvp@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mrs. DMV Priya	+91 9440112233	t	f	2026-10-08 18:00:35.713	0	\N	2026-10-08 17:57:16.755	2026-10-08 18:00:35.713	\N
-cmuzu9opg006fydphssjkc4go	CA	ca@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Ms. C Aparna	+91 9440112233	t	f	2026-10-08 18:00:35.931	0	\N	2026-10-08 17:57:16.757	2026-10-08 18:00:35.931	\N
-cmuzu9opi006kydphjl44uiyy	GSL	gsl@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Ms. G Sathee Laxmi	+91 9440112233	t	f	2026-10-08 18:00:36.147	0	\N	2026-10-08 17:57:16.758	2026-10-08 18:00:36.147	\N
-cmuzu9opj006pydphp024wu8u	KS	ks@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Ms. K Swathi	+91 9440112233	t	f	2026-10-08 18:00:36.365	0	\N	2026-10-08 17:57:16.76	2026-10-08 18:00:36.366	\N
-cmuzu9opl006uydphxq8zd8up	SLA	sla@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Ms. S Laxmi Aparna	+91 9440112233	t	f	2026-10-08 18:00:36.582	0	\N	2026-10-08 17:57:16.761	2026-10-08 18:00:36.583	\N
-cmuzu9opn006zydphae7jr1mr	DBVJ	dbvj@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. DBV Jagannadham	+91 9440112233	t	f	2026-10-08 18:00:36.8	0	\N	2026-10-08 17:57:16.763	2026-10-08 18:00:36.801	\N
-cmuzu9opz008dydphf45zjzey	PKD	pkd@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mr. PK DAS	+91 9440112233	t	f	2026-10-08 18:00:38.979	0	\N	2026-10-08 17:57:16.776	2026-10-08 18:00:38.98	\N
-cmuzu9opp0079ydph48ejt3tu	MN	mn@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. M Neelima	+91 9440112233	t	f	2026-10-08 18:00:37.234	0	\N	2026-10-08 17:57:16.766	2026-10-08 18:00:37.235	\N
-cmuzu9opr007eydphr66l82pw	VA	va@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. V Adinarayana	+91 9440112233	t	f	2026-10-08 18:00:37.453	0	\N	2026-10-08 17:57:16.767	2026-10-08 18:00:37.453	\N
-cmuzu9ops007jydph2w4telgt	VS	vs@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mrs. V Sridevi	+91 9440112233	t	f	2026-10-08 18:00:37.67	0	\N	2026-10-08 17:57:16.768	2026-10-08 18:00:37.671	\N
-cmuzu9opu007tydph3tkyvaxq	KJR	kjr@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Ms. K Jhansi Rani	+91 9440112233	t	f	2026-10-08 18:00:38.105	0	\N	2026-10-08 17:57:16.771	2026-10-08 18:00:38.105	\N
-cmuzu9opw007yydphn9klb1vx	PRSS	prss@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Ms. PR Sri Satya	+91 9440112233	t	f	2026-10-08 18:00:38.324	0	\N	2026-10-08 17:57:16.772	2026-10-08 18:00:38.324	\N
-cmuzu9opx0083ydphujxl4qb4	ARS	ars@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. A Ravi Shankar	+91 9440112233	t	f	2026-10-08 18:00:38.542	0	\N	2026-10-08 17:57:16.773	2026-10-08 18:00:38.542	\N
-cmuzu9oq1008iydphx72end76	CHS	chs@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Ch Sowjanya	+91 9440112233	t	f	2026-10-08 18:00:39.199	0	\N	2026-10-08 17:57:16.777	2026-10-08 18:00:39.199	\N
-cmuzu9op4005bydphxwgxubzc	BHP	bhp@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. Bh Padma	+91 9440112233	t	f	2026-10-08 18:03:11.13	0	\N	2026-10-08 17:57:16.744	2026-10-08 18:03:11.13	\N
-cmuzu9oo4003dydph8jx0miue	SP	sp@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. S Padma	+91 9440112233	t	f	2026-10-08 18:00:31.18	0	\N	2026-10-08 17:57:16.709	2026-10-08 18:00:31.181	\N
-cmuzu9ooh003nydph6y8e5jp1	KVNL	kvnl@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. KV NagaLakshmi	+91 9440112233	t	f	2026-10-08 18:00:31.615	0	\N	2026-10-08 17:57:16.722	2026-10-08 18:00:31.615	\N
-cmuzu9oq60092ydphh6540ixl	JRR	jrr@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. J RajaRatnam	+91 9440112233	t	f	2026-10-08 18:00:40.079	0	\N	2026-10-08 17:57:16.783	2026-10-08 18:00:40.08	\N
-cmuzu9oqc009rydph4a3z44gt	CHVVDP	chvvdp@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mr. CH VVD Prasad	+91 9440112233	t	f	2026-10-08 18:00:41.171	0	\N	2026-10-08 17:57:16.788	2026-10-08 18:00:41.172	\N
-cmuzu9oqa009hydph4c12wqt6	PBSKR	pbskr@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mr. PBS Krishnamuraju	+91 9440112233	t	f	2026-10-08 18:00:40.732	0	\N	2026-10-08 17:57:16.786	2026-10-08 18:00:40.733	\N
-cmuzu9oqb009mydphxpmnxv51	MBS	mbs@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. M Bhanu Sridhar	+91 9440112233	t	f	2026-10-08 18:00:40.952	0	\N	2026-10-08 17:57:16.787	2026-10-08 18:00:40.953	\N
-cmuzu9oqm00aqydphkyxl6nml	KVSS	kvss@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. KVS Sarma	+91 9440112233	t	f	2026-10-08 18:00:42.719	0	\N	2026-10-08 17:57:16.799	2026-10-08 18:00:42.719	\N
-cmuzu9oqd009wydph37vthpub	SVM	svm@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mr. S Vinod Manikantha	+91 9440112233	t	f	2026-10-08 18:00:41.39	0	\N	2026-10-08 17:57:16.789	2026-10-08 18:00:41.391	\N
-cmuzu9oqe00a1ydphofwglgxa	ASL	asl@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. A Suseelatha	+91 9440112233	t	f	2026-10-08 18:00:41.611	0	\N	2026-10-08 17:57:16.791	2026-10-08 18:00:41.612	\N
-cmuzu9oqf00a6ydphz8r5sbiv	BB	bb@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. B Bharathi	+91 9440112233	t	f	2026-10-08 18:00:41.833	0	\N	2026-10-08 17:57:16.792	2026-10-08 18:00:41.834	\N
-cmuzu9oqh00abydphyrk6wo0i	CHAN	chan@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. Ch Appala Naidu	+91 9440112233	t	f	2026-10-08 18:00:42.055	0	\N	2026-10-08 17:57:16.793	2026-10-08 18:00:42.055	\N
-cmuzu9oqj00agydpho3hnmh32	CHVS	chvs@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. Ch V Sreedhar	+91 9440112233	t	f	2026-10-08 18:00:42.273	0	\N	2026-10-08 17:57:16.796	2026-10-08 18:00:42.274	\N
-cmuzu9oql00alydphrnz57sid	KLSP	klsp@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. K L Sai Prasad	+91 9440112233	t	f	2026-10-08 18:00:42.491	0	\N	2026-10-08 17:57:16.797	2026-10-08 18:00:42.492	\N
-cmuzu9oqy00buydphmu6in27s	YPR	ypr@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mr. Y Prasad Reddy	+91 9440112233	t	f	2026-10-08 18:00:44.474	0	\N	2026-10-08 17:57:16.81	2026-10-08 18:00:44.474	\N
-cmuzu9oqo00avydphnyap4rgv	NGB	ngb@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. N Giribabu	+91 9440112233	t	f	2026-10-08 18:00:42.94	0	\N	2026-10-08 17:57:16.8	2026-10-08 18:00:42.94	\N
-cmuzu9oqq00b5ydphkng76q2y	SSAS	ssas@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. SS Ayyappa Sastri	+91 9440112233	t	f	2026-10-08 18:00:43.378	0	\N	2026-10-08 17:57:16.803	2026-10-08 18:00:43.378	\N
-cmuzu9oqs00baydphep82obna	TPK	tpk@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. T Poornakantha	+91 9440112233	t	f	2026-10-08 18:00:43.597	0	\N	2026-10-08 17:57:16.804	2026-10-08 18:00:43.597	\N
-cmuzu9oqu00bfydphgpni5k4s	AS	as@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. Anand Solanki	+91 9440112233	t	f	2026-10-08 18:00:43.818	0	\N	2026-10-08 17:57:16.806	2026-10-08 18:00:43.818	\N
-cmuzu9oqv00bkydphx9krsdp7	BVSAK	bvsak@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. BVS Arun Kumar	+91 9440112233	t	f	2026-10-08 18:00:44.036	0	\N	2026-10-08 17:57:16.807	2026-10-08 18:00:44.037	\N
-cmuzu9oq4008sydphhvcxhf7x	CHA	cha@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. Ch Alekya	+91 9440112233	t	f	2026-10-08 18:00:39.643	0	\N	2026-10-08 17:57:16.78	2026-10-08 18:00:39.644	\N
-cmuzu9oqw00bpydph8durqqw8	MBK	mbk@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. M Bhaskar Kumar	+91 9440112233	t	f	2026-10-08 18:00:44.256	0	\N	2026-10-08 17:57:16.809	2026-10-08 18:00:44.256	\N
-cmuzu9or800d3ydph0v6t83c5	NSSVRR	nssvrr@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. NSSV Raja Rao	+91 9440112233	t	f	2026-10-08 18:00:46.451	0	\N	2026-10-08 17:57:16.821	2026-10-08 18:00:46.452	\N
-cmuzu9oqz00bzydph4zpmmvbe	KMK	kmk@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Ms. K Manikyakanthi	+91 9440112233	t	f	2026-10-08 18:00:44.694	0	\N	2026-10-08 17:57:16.811	2026-10-08 18:00:44.695	\N
-cmuzu9or000c4ydphqv593sn2	PKM	pkm@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Ms. P KiranMayi	+91 9440112233	t	f	2026-10-08 18:00:44.913	0	\N	2026-10-08 17:57:16.812	2026-10-08 18:00:44.914	\N
-cmuzu9or100c9ydphnmpwh80l	TAJ	taj@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Ms. Taj	+91 9440112233	t	f	2026-10-08 18:00:45.133	0	\N	2026-10-08 17:57:16.814	2026-10-08 18:00:45.133	\N
-cmuzu9or200ceydphygnpfuwb	BN	bn@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. B Nagarjun	+91 9440112233	t	f	2026-10-08 18:00:45.353	0	\N	2026-10-08 17:57:16.815	2026-10-08 18:00:45.354	\N
-cmuzu9or400cjydphst18nqf0	BRB	brb@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. B Rajesh Babu	+91 9440112233	t	f	2026-10-08 18:00:45.574	0	\N	2026-10-08 17:57:16.816	2026-10-08 18:00:45.575	\N
-cmuzu9or500coydphf8sxkt85	CHR	chr@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. Ch Rajesh	+91 9440112233	t	f	2026-10-08 18:00:45.795	0	\N	2026-10-08 17:57:16.817	2026-10-08 18:00:45.796	\N
-cmuzu9or600ctydph7010w0q9	CHSL	chsl@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. Ch S Lakshmi	+91 9440112233	t	f	2026-10-08 18:00:46.013	0	\N	2026-10-08 17:57:16.818	2026-10-08 18:00:46.014	\N
-cmuzu9or700cyydph5yd0ba42	DSK	dsk@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. D Santhosh Kumar	+91 9440112233	t	f	2026-10-08 18:00:46.232	0	\N	2026-10-08 17:57:16.819	2026-10-08 18:00:46.233	\N
-cmuzu9or900d8ydphreapmzgd	PVR	pvr@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. PV Rajeswari	+91 9440112233	t	f	2026-10-08 18:00:46.67	0	\N	2026-10-08 17:57:16.822	2026-10-08 18:00:46.671	\N
-cmuzu9ora00ddydphvr1vi0wp	RP	rp@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. R Praveena	+91 9440112233	t	f	2026-10-08 18:00:46.89	0	\N	2026-10-08 17:57:16.823	2026-10-08 18:00:46.89	\N
-cmuzu9orc00diydphpybxtk7h	VSJ	vsj@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr.V Siva Jahnavy	+91 9440112233	t	f	2026-10-08 18:00:47.111	0	\N	2026-10-08 17:57:16.824	2026-10-08 18:00:47.111	\N
-cmuzu9ord00dnydphdwln95zi	KAR	kar@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mr. K AyyaRaju	+91 9440112233	t	f	2026-10-08 18:00:47.331	0	\N	2026-10-08 17:57:16.825	2026-10-08 18:00:47.331	\N
-cmuzu9oq70097ydphk9ko7f09	NVL	nvl@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. N Vijaya Lakshmi	+91 9440112233	t	f	2026-10-08 18:00:40.298	0	\N	2026-10-08 17:57:16.784	2026-10-08 18:00:40.299	\N
-cmuzu9oq5008xydph5s3lk30w	IRS	irs@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. I Rajasekhar	+91 9440112233	t	f	2026-10-08 18:00:39.862	0	\N	2026-10-08 17:57:16.781	2026-10-08 18:00:39.863	\N
-cmuzu9oox004rydph03f490gx	GSK	gsk@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. G Santosh Kumar	+91 9440112233	t	f	2026-10-08 18:00:33.331	0	\N	2026-10-08 17:57:16.737	2026-10-08 18:00:33.331	\N
-cmuzu9opt007oydphtvdybf62	BDS	bds@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Ms. B Divya Sati	+91 9440112233	t	f	2026-10-08 18:00:37.888	0	\N	2026-10-08 17:57:16.77	2026-10-08 18:00:37.888	\N
-cmuzu9opy0088ydphf2ak7hvm	MVPL	mvpl@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. MV Pankaj Lahari	+91 9440112233	t	f	2026-10-08 18:00:38.761	0	\N	2026-10-08 17:57:16.775	2026-10-08 18:00:38.762	\N
-cmuzu9ore00dsydph0i05x8t6	NVSK	nvsk@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mr. NV Siva Krishna	+91 9440112233	t	f	2026-10-09 07:38:11.25	0	\N	2026-10-08 17:57:16.826	2026-10-09 07:38:11.251	\N
-cmuzu9oq2008nydphukhr80tr	BMF	bmf@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. BM Florence	+91 9440112233	t	f	2026-10-08 18:00:39.416	0	\N	2026-10-08 17:57:16.778	2026-10-08 18:00:39.416	\N
-cmuzu9oq8009cydph5icd3mme	VVLUR	vvlur@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. VVL Usha Ramani	+91 9440112233	t	f	2026-10-08 18:00:40.515	0	\N	2026-10-08 17:57:16.785	2026-10-08 18:00:40.516	\N
-cmuzu9oqp00b0ydphx5t2pbfg	SAK	sak@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. S Ashok Kumar	+91 9440112233	t	f	2026-10-08 18:00:43.159	0	\N	2026-10-08 17:57:16.802	2026-10-08 18:00:43.159	\N
-cmuzu9orf00dxydphmg1iayhn	PSSA	pssa@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mr. PSS Appalacharyulu	+91 9440112233	t	f	2026-10-08 18:00:47.768	0	\N	2026-10-08 17:57:16.827	2026-10-08 18:00:47.768	\N
-cmuzu9org00e2ydphu05asr0i	VVVSN	vvvsn@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Mr. VVV Satyanarayana	+91 9440112233	t	f	2026-10-08 18:00:47.987	0	\N	2026-10-08 17:57:16.828	2026-10-08 18:00:47.988	\N
+cmuzu9oo4003dydph8jx0miue	SP	sp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. S Padma	+91 9440112233	t	f	2026-10-08 18:00:31.18	0	\N	2026-10-08 17:57:16.709	2026-10-12 14:52:18.433	\N
+cmuzu9ooh003nydph6y8e5jp1	KVNL	kvnl@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. KV NagaLakshmi	+91 9440112233	t	f	2026-10-08 18:00:31.615	0	\N	2026-10-08 17:57:16.722	2026-10-12 14:52:18.438	\N
+cmuzu9ooj003sydph9ysvw492	KVP	kvp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. KV Padmavathi	+91 9440112233	t	f	2026-10-08 18:00:31.828	0	\N	2026-10-08 17:57:16.724	2026-10-12 14:52:18.438	\N
+cmuzu9ool003xydphdqvmbd0b	MRR	mrr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. M Rama Rajeswari	+91 9440112233	t	f	2026-10-08 18:00:32.041	0	\N	2026-10-08 17:57:16.726	2026-10-12 14:52:18.439	\N
+cmuzu9ooo0042ydph2cf7s60u	PSR	psr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. P Srinivas Rao	+91 9440112233	t	f	2026-10-08 18:00:32.255	0	\N	2026-10-08 17:57:16.728	2026-10-12 14:52:18.439	\N
+cmuzu9ooq0047ydphbogdnye1	RN	rn@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Rani Nanda	+91 9440112233	t	f	2026-10-08 18:00:32.47	0	\N	2026-10-08 17:57:16.731	2026-10-12 14:52:18.44	\N
+cmuzu9oos004cydphwkuc88w2	SA	sa@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. S Ashok	+91 9440112233	t	f	2026-10-08 18:00:32.683	0	\N	2026-10-08 17:57:16.733	2026-10-12 14:52:18.44	\N
+cmuzu9oou004hydphvofh0ip3	BV	bv@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. B Vidya	+91 9440112233	t	f	2026-10-08 18:00:32.899	0	\N	2026-10-08 17:57:16.734	2026-10-12 14:52:18.441	\N
+cmuzu9oov004mydphjg2s99np	DM	dm@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. D Manasa	+91 9440112233	t	f	2026-10-08 18:00:33.114	0	\N	2026-10-08 17:57:16.736	2026-10-12 14:52:18.441	\N
+cmuzu9ooz004wydph7tohke43	PM	pm@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. P Manikanta	+91 9440112233	t	f	2026-10-08 18:00:33.547	0	\N	2026-10-08 17:57:16.739	2026-10-12 14:52:18.442	\N
+cmuzu9op00051ydph57trnn42	VBR	vbr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. V Bhaskar Rao	+91 9440112233	t	f	2026-10-08 18:00:33.763	0	\N	2026-10-08 17:57:16.741	2026-10-12 14:52:18.443	\N
+cmuzu9op20056ydph0wtyy3la	GS	gs@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mrs. G Sravani	+91 9440112233	t	f	2026-10-08 18:00:33.979	0	\N	2026-10-08 17:57:16.743	2026-10-12 14:52:18.443	\N
+cmuzu9op4005bydphxwgxubzc	BHP	bhp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Bh Padma	+91 9440112233	t	f	2026-10-08 18:03:11.13	0	\N	2026-10-08 17:57:16.744	2026-10-12 14:52:18.443	\N
+cmuzu9op6005gydphddh9mtce	DC	dc@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. D Chandravathi	+91 9440112233	t	f	2026-10-08 18:00:34.411	0	\N	2026-10-08 17:57:16.746	2026-10-12 14:52:18.444	\N
+cmuzu9op9005qydpho4pjs8iq	ADP	adp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. A Dhanunjaya Prasad	+91 9440112233	t	f	2026-10-08 18:00:34.842	0	\N	2026-10-08 17:57:16.749	2026-10-12 14:52:18.446	\N
+cmuzu9opb005vydpha49v7tmk	BBK	bbk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. B Bala Krishna	+91 9440112233	t	f	2026-10-08 18:00:35.059	0	\N	2026-10-08 17:57:16.751	2026-10-12 14:52:18.447	\N
+cmuzu9opc0060ydphcbp9oo8l	DAK	dak@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. D Arun Kumar	+91 9440112233	t	f	2026-10-08 18:00:35.275	0	\N	2026-10-08 17:57:16.752	2026-10-12 14:52:18.447	\N
+cmuzu9opd0065ydphxdu1ouox	MA	ma@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. M Anil	+91 9440112233	t	f	2026-10-08 18:00:35.494	0	\N	2026-10-08 17:57:16.754	2026-10-12 14:52:18.447	\N
+cmuzu9opf006aydphzzilc6xg	DMVP	dmvp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mrs. DMV Priya	+91 9440112233	t	f	2026-10-08 18:00:35.713	0	\N	2026-10-08 17:57:16.755	2026-10-12 14:52:18.448	\N
+cmuzu9opg006fydphssjkc4go	CA	ca@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. C Aparna	+91 9440112233	t	f	2026-10-08 18:00:35.931	0	\N	2026-10-08 17:57:16.757	2026-10-12 14:52:18.448	\N
+cmuzu9opi006kydphjl44uiyy	GSL	gsl@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. G Sathee Laxmi	+91 9440112233	t	f	2026-10-08 18:00:36.147	0	\N	2026-10-08 17:57:16.758	2026-10-12 14:52:18.448	\N
+cmuzu9opj006pydphp024wu8u	KS	ks@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. K Swathi	+91 9440112233	t	f	2026-10-08 18:00:36.365	0	\N	2026-10-08 17:57:16.76	2026-10-12 14:52:18.449	\N
+cmuzu9opl006uydphxq8zd8up	SLA	sla@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. S Laxmi Aparna	+91 9440112233	t	f	2026-10-08 18:00:36.582	0	\N	2026-10-08 17:57:16.761	2026-10-12 14:52:18.449	\N
+cmuzu9opn006zydphae7jr1mr	DBVJ	dbvj@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. DBV Jagannadham	+91 9440112233	t	f	2026-10-08 18:00:36.8	0	\N	2026-10-08 17:57:16.763	2026-10-12 14:52:18.449	\N
+cmuzu9opo0074ydphr5czmqqq	ISR	isr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. I Srinivas Rao	+91 9440112233	t	f	2026-10-08 18:00:37.018	0	\N	2026-10-08 17:57:16.764	2026-10-12 14:52:18.449	\N
+cmuzu9opp0079ydph48ejt3tu	MN	mn@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. M Neelima	+91 9440112233	t	f	2026-10-08 18:00:37.234	0	\N	2026-10-08 17:57:16.766	2026-10-12 14:52:18.45	\N
+cmuzu9opr007eydphr66l82pw	VA	va@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. V Adinarayana	+91 9440112233	t	f	2026-10-08 18:00:37.453	0	\N	2026-10-08 17:57:16.767	2026-10-12 14:52:18.45	\N
+cmuzu9ops007jydph2w4telgt	VS	vs@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mrs. V Sridevi	+91 9440112233	t	f	2026-10-08 18:00:37.67	0	\N	2026-10-08 17:57:16.768	2026-10-12 14:52:18.45	\N
+cmuzu9opu007tydph3tkyvaxq	KJR	kjr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. K Jhansi Rani	+91 9440112233	t	f	2026-10-08 18:00:38.105	0	\N	2026-10-08 17:57:16.771	2026-10-12 14:52:18.451	\N
+cmuzu9opw007yydphn9klb1vx	PRSS	prss@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. PR Sri Satya	+91 9440112233	t	f	2026-10-08 18:00:38.324	0	\N	2026-10-08 17:57:16.772	2026-10-12 14:52:18.451	\N
+cmuzu9opx0083ydphujxl4qb4	ARS	ars@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. A Ravi Shankar	+91 9440112233	t	f	2026-10-08 18:00:38.542	0	\N	2026-10-08 17:57:16.773	2026-10-12 14:52:18.451	\N
+cmuzu9opz008dydphf45zjzey	PKD	pkd@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. PK DAS	+91 9440112233	t	f	2026-10-08 18:00:38.979	0	\N	2026-10-08 17:57:16.776	2026-10-12 14:52:18.452	\N
+cmuzu9oq1008iydphx72end76	CHS	chs@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ch Sowjanya	+91 9440112233	t	f	2026-10-08 18:00:39.199	0	\N	2026-10-08 17:57:16.777	2026-10-12 14:52:18.452	\N
+cmuzu9oq60092ydphh6540ixl	JRR	jrr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. J RajaRatnam	+91 9440112233	t	f	2026-10-08 18:00:40.079	0	\N	2026-10-08 17:57:16.783	2026-10-12 14:52:18.453	\N
+cmuzu9oqa009hydph4c12wqt6	PBSKR	pbskr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. PBS Krishnamuraju	+91 9440112233	t	f	2026-10-08 18:00:40.732	0	\N	2026-10-08 17:57:16.786	2026-10-12 14:52:18.454	\N
+cmuzu9oqc009rydph4a3z44gt	CHVVDP	chvvdp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. CH VVD Prasad	+91 9440112233	t	f	2026-10-08 18:00:41.171	0	\N	2026-10-08 17:57:16.788	2026-10-12 14:52:18.454	\N
+cmuzu9opt007oydphtvdybf62	BDS	bds@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. B Divya Sati	+91 9440112233	t	f	2026-10-08 18:00:37.888	0	\N	2026-10-08 17:57:16.77	2026-10-12 14:52:18.45	\N
+cmuzu9opy0088ydphf2ak7hvm	MVPL	mvpl@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. MV Pankaj Lahari	+91 9440112233	t	f	2026-10-08 18:00:38.761	0	\N	2026-10-08 17:57:16.775	2026-10-12 14:52:18.451	\N
+cmuzu9oq2008nydphukhr80tr	BMF	bmf@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. BM Florence	+91 9440112233	t	f	2026-10-08 18:00:39.416	0	\N	2026-10-08 17:57:16.778	2026-10-12 14:52:18.452	\N
+cmuzu9oq4008sydphhvcxhf7x	CHA	cha@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Ch Alekya	+91 9440112233	t	f	2026-10-08 18:00:39.643	0	\N	2026-10-08 17:57:16.78	2026-10-12 14:52:18.453	\N
+cmuzu9oq5008xydph5s3lk30w	IRS	irs@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. I Rajasekhar	+91 9440112233	t	f	2026-10-08 18:00:39.862	0	\N	2026-10-08 17:57:16.781	2026-10-12 14:52:18.453	\N
+cmuzu9oq70097ydphk9ko7f09	NVL	nvl@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. N Vijaya Lakshmi	+91 9440112233	t	f	2026-10-08 18:00:40.298	0	\N	2026-10-08 17:57:16.784	2026-10-12 14:52:18.453	\N
+cmuzu9oq8009cydph5icd3mme	VVLUR	vvlur@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. VVL Usha Ramani	+91 9440112233	t	f	2026-10-08 18:00:40.515	0	\N	2026-10-08 17:57:16.785	2026-10-12 14:52:18.454	\N
+cmuzu9oqb009mydphxpmnxv51	MBS	mbs@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. M Bhanu Sridhar	+91 9440112233	t	f	2026-10-08 18:00:40.952	0	\N	2026-10-08 17:57:16.787	2026-10-12 14:52:18.454	\N
+cmuzu9oqd009wydph37vthpub	SVM	svm@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. S Vinod Manikantha	+91 9440112233	t	f	2026-10-08 18:00:41.39	0	\N	2026-10-08 17:57:16.789	2026-10-12 14:52:18.455	\N
+cmuzu9oqe00a1ydphofwglgxa	ASL	asl@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. A Suseelatha	+91 9440112233	t	f	2026-10-08 18:00:41.611	0	\N	2026-10-08 17:57:16.791	2026-10-12 14:52:18.455	\N
+cmuzu9oqf00a6ydphz8r5sbiv	BB	bb@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. B Bharathi	+91 9440112233	t	f	2026-10-08 18:00:41.833	0	\N	2026-10-08 17:57:16.792	2026-10-12 14:52:18.455	\N
+cmuzu9oqh00abydphyrk6wo0i	CHAN	chan@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Ch Appala Naidu	+91 9440112233	t	f	2026-10-08 18:00:42.055	0	\N	2026-10-08 17:57:16.793	2026-10-12 14:52:18.455	\N
+cmuzu9oqj00agydpho3hnmh32	CHVS	chvs@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Ch V Sreedhar	+91 9440112233	t	f	2026-10-08 18:00:42.273	0	\N	2026-10-08 17:57:16.796	2026-10-12 14:52:18.455	\N
+cmuzu9oql00alydphrnz57sid	KLSP	klsp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. K L Sai Prasad	+91 9440112233	t	f	2026-10-08 18:00:42.491	0	\N	2026-10-08 17:57:16.797	2026-10-12 14:52:18.456	\N
+cmuzu9oqm00aqydphkyxl6nml	KVSS	kvss@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. KVS Sarma	+91 9440112233	t	f	2026-10-08 18:00:42.719	0	\N	2026-10-08 17:57:16.799	2026-10-12 14:52:18.456	\N
+cmuzu9oqo00avydphnyap4rgv	NGB	ngb@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. N Giribabu	+91 9440112233	t	f	2026-10-08 18:00:42.94	0	\N	2026-10-08 17:57:16.8	2026-10-12 14:52:18.456	\N
+cmuzu9oqq00b5ydphkng76q2y	SSAS	ssas@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. SS Ayyappa Sastri	+91 9440112233	t	f	2026-10-08 18:00:43.378	0	\N	2026-10-08 17:57:16.803	2026-10-12 14:52:18.457	\N
+cmuzu9oqs00baydphep82obna	TPK	tpk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. T Poornakantha	+91 9440112233	t	f	2026-10-08 18:00:43.597	0	\N	2026-10-08 17:57:16.804	2026-10-12 14:52:18.457	\N
+cmuzu9oqu00bfydphgpni5k4s	AS	as@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Anand Solanki	+91 9440112233	t	f	2026-10-08 18:00:43.818	0	\N	2026-10-08 17:57:16.806	2026-10-12 14:52:18.457	\N
+cmuzu9oqv00bkydphx9krsdp7	BVSAK	bvsak@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. BVS Arun Kumar	+91 9440112233	t	f	2026-10-08 18:00:44.036	0	\N	2026-10-08 17:57:16.807	2026-10-12 14:52:18.458	\N
+cmuzu9oqw00bpydph8durqqw8	MBK	mbk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. M Bhaskar Kumar	+91 9440112233	t	f	2026-10-08 18:00:44.256	0	\N	2026-10-08 17:57:16.809	2026-10-12 14:52:18.458	\N
+cmuzu9oqy00buydphmu6in27s	YPR	ypr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. Y Prasad Reddy	+91 9440112233	t	f	2026-10-08 18:00:44.474	0	\N	2026-10-08 17:57:16.81	2026-10-12 14:52:18.458	\N
+cmuzu9oqz00bzydph4zpmmvbe	KMK	kmk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. K Manikyakanthi	+91 9440112233	t	f	2026-10-08 18:00:44.694	0	\N	2026-10-08 17:57:16.811	2026-10-12 14:52:18.458	\N
+cmuzu9or000c4ydphqv593sn2	PKM	pkm@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. P KiranMayi	+91 9440112233	t	f	2026-10-08 18:00:44.913	0	\N	2026-10-08 17:57:16.812	2026-10-12 14:52:18.458	\N
+cmuzu9or100c9ydphnmpwh80l	TAJ	taj@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. Taj	+91 9440112233	t	f	2026-10-08 18:00:45.133	0	\N	2026-10-08 17:57:16.814	2026-10-12 14:52:18.459	\N
+cmuzu9or200ceydphygnpfuwb	BN	bn@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. B Nagarjun	+91 9440112233	t	f	2026-10-08 18:00:45.353	0	\N	2026-10-08 17:57:16.815	2026-10-12 14:52:18.461	\N
+cmuzu9or400cjydphst18nqf0	BRB	brb@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. B Rajesh Babu	+91 9440112233	t	f	2026-10-08 18:00:45.574	0	\N	2026-10-08 17:57:16.816	2026-10-12 14:52:18.462	\N
+cmuzu9or500coydphf8sxkt85	CHR	chr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Ch Rajesh	+91 9440112233	t	f	2026-10-08 18:00:45.795	0	\N	2026-10-08 17:57:16.817	2026-10-12 14:52:18.462	\N
+cmuzu9or600ctydph7010w0q9	CHSL	chsl@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Ch S Lakshmi	+91 9440112233	t	f	2026-10-08 18:00:46.013	0	\N	2026-10-08 17:57:16.818	2026-10-12 14:52:18.462	\N
+cmuzu9or700cyydph5yd0ba42	DSK	dsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. D Santhosh Kumar	+91 9440112233	t	f	2026-10-08 18:00:46.232	0	\N	2026-10-08 17:57:16.819	2026-10-12 14:52:18.463	\N
+cmuzu9or800d3ydph0v6t83c5	NSSVRR	nssvrr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. NSSV Raja Rao	+91 9440112233	t	f	2026-10-08 18:00:46.451	0	\N	2026-10-08 17:57:16.821	2026-10-12 14:52:18.463	\N
+cmuzu9or900d8ydphreapmzgd	PVR	pvr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. PV Rajeswari	+91 9440112233	t	f	2026-10-08 18:00:46.67	0	\N	2026-10-08 17:57:16.822	2026-10-12 14:52:18.463	\N
+cmuzu9ora00ddydphvr1vi0wp	RP	rp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. R Praveena	+91 9440112233	t	f	2026-10-08 18:00:46.89	0	\N	2026-10-08 17:57:16.823	2026-10-12 14:52:18.464	\N
+cmuzu9orc00diydphpybxtk7h	VSJ	vsj@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr.V Siva Jahnavy	+91 9440112233	t	f	2026-10-08 18:00:47.111	0	\N	2026-10-08 17:57:16.824	2026-10-12 14:52:18.464	\N
+cmuzu9ord00dnydphdwln95zi	KAR	kar@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. K AyyaRaju	+91 9440112233	t	f	2026-10-08 18:00:47.331	0	\N	2026-10-08 17:57:16.825	2026-10-12 14:52:18.464	\N
+cmuzu9ore00dsydph0i05x8t6	NVSK	nvsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. NV Siva Krishna	+91 9440112233	t	f	2026-10-09 07:38:11.25	0	\N	2026-10-08 17:57:16.826	2026-10-12 14:52:18.465	\N
 cmv0jr1al002nmzmy4qn3dp3q	26UECHE0022	26ueche0022@student.gvpihlr.edu.in	$2a$10$Cpo3QST8B/sWtw7.kCcFOe1PavvaVyxHL6LhAbnVjZVs5jWO29reW	LANKA STEPHEN	7893721745	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.898	\N
 cmv0jr1af002gmzmyutljclbh	26UECHE0021	26ueche0021@student.gvpihlr.edu.in	$2a$10$6kJKtjpPg.8HdFGsh2VQfOFiYwZjwrT2PaAI8UTJ.luvtaRejPS6q	NOONELA SARATH CHANDRA	9298759573	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N
 cmv0jr1ah002imzmy871ufi1r	26UECHE0023	26ueche0023@student.gvpihlr.edu.in	$2a$10$mQmecLoN1kAaco//4ceNkeSZitXz.H6eUCc14QdI/A687iN7w/56u	BONUGU DINESH	7382473690	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N
@@ -90532,10 +90717,8 @@ cmv0jr1ae002fmzmydvmpw0l6	26UECHE0006	26ueche0006@student.gvpihlr.edu.in	$2a$10$
 cmv0jr1ag002hmzmy8acxzo92	26UECHE0004	26ueche0004@student.gvpihlr.edu.in	$2a$10$B.R538KSb5dob4QWlungZOfyZmuXNseIM80s9CEyiILYmPdiOPNOO	BATTULA TEJASWINI	9949553232	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.897	\N
 cmv0jr1ai002kmzmybqxjcl9g	26UECHE0025	26ueche0025@student.gvpihlr.edu.in	$2a$10$ckJKvAj7f..QMRp.DdFwPut4hP2dFVOs6D7gnjqJleNDfgdsyz5aG	GIDUTURI CHAITANYA KUMAR	8465094281	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.898	\N
 cmv0jr1aj002lmzmy70pr7ifw	26UECHE0013	26ueche0013@student.gvpihlr.edu.in	$2a$10$3huzHPHKuaQbTl2dv2Xy6.vs8K0eF.tZlKR7Gw8ItWc4wa3uQUeBm	R CHARISHMA	9052334886	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.898	\N
-cmuzu9op7005lydphc9foztkf	KR	kr@gvpihlr.edu.in	$2a$12$nJ4aeMrqoVX7mm2I2yD0seTHMhUsmCnz0vHL.E2mV/mSo3Y5jDKaW	Dr. K Rohini	+91 9440112233	t	f	2026-10-09 05:10:51.011	1	\N	2026-10-08 17:57:16.748	2026-10-09 05:22:33.134	\N
 cmv0jr19z002emzmyd5zpihkg	26UECHE0002	26ueche0002@student.gvpihlr.edu.in	$2a$10$czYM05f0LgmAE5X7ZP4mUO4x/Ab0kGN2Hyo/ts1urWdnNZMf3kdg6	ANAPARTI HEMA AMRUTHASRI	7780375160	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N
 cmv0jr1ak002mmzmyml7sr464	26UECHE0010	26ueche0010@student.gvpihlr.edu.in	$2a$10$KCwdWLdfiIKKUbd5rlFCm.z0vUoH925aK5wxNZ9sGc3UVr.TtRSjW	MADICHARLA SRI CHARAN	9866569376	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.897	\N
-cmuzp7hsc000bbynpr08m4i25	admin	admin@gvpihlr.edu.in	$2a$12$olLcQ23IA0/wz/9ao901q.un91tdowzuc1DUEvtNvPsUZ2sGYuR5q	GVPIHLR Super Administrator	+91 9876543210	t	f	2026-10-09 08:41:35.409	0	\N	2026-10-08 15:35:36.396	2026-10-09 08:41:35.41	\N
 cmv0jr1b3003zmzmyx06ovo5d	26UECHE0005	26ueche0005@student.gvpihlr.edu.in	$2a$10$wN8Z.YhNC5bu8fs/p7HnauYjjWqNKPjQX2JJOaL.rsIcMX6fH4Sce	GARE BHUVANA SREE PANNA	9160885161	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N
 cmv0jr1ap002tmzmy2j8ovwkd	26UECHE0018	26ueche0018@student.gvpihlr.edu.in	$2a$10$7ZYr4.rxj7sJfRQYR9TudeOw8UmczroD7w.12/HP42VwimAQYmoee	MEDAPALLI THANUSH KUMAR	8074285898	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N
 cmv0jr1b9004dmzmys413oyv8	26UECHE0012	26ueche0012@student.gvpihlr.edu.in	$2a$10$IG37aJMrDnjY/N/PM5D2jeLT/3YJxZY6vRysvmAt.r89zLLrKjL1e	OMMI GREESHMA	9849601979	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.897	\N
@@ -90557,6 +90740,10 @@ cmv0jr1ds00ldmzmyh6aqaxvm	26UECSE0003	26uecse0003@student.gvpihlr.edu.in	$2a$10$
 cmv0jr1dt00ljmzmy9bl2wx7e	26UECSE0007	26uecse0007@student.gvpihlr.edu.in	$2a$10$3YcXmgu3J5weXTQcAFEA.uMpn0aWmZkm6e1yUCU2Eikdpjhaq/xc2	ROUTHU SASANK	9063892997	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N
 cmv0jr1eb00rimzmyeh8jb5we	26UECSE0019	26uecse0019@student.gvpihlr.edu.in	$2a$10$PwflZMvBe7/7/2hhGq0fCulVwcddFdtBktKm1eUpV1wRIo03CiLwy	CHEEKATI NAVITHA	9704217074	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
 cmv0jr1ed00rvmzmyua7dwhac	26UECSE0037	26uecse0037@student.gvpihlr.edu.in	$2a$10$l5Sjj1rEkAi75vy4/hyyVOwmwmhWvrCrkj6SFHt4aQd6ITbgiA.0K	GOGINENI SRI GANA SRAVANI	6300796589	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
+cmuzu9op7005lydphc9foztkf	KR	kr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. K Rohini	+91 9440112233	t	f	2026-10-09 05:10:51.011	1	\N	2026-10-08 17:57:16.748	2026-10-12 14:52:18.444	\N
+cmuzu9oqp00b0ydphx5t2pbfg	SAK	sak@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. S Ashok Kumar	+91 9440112233	t	f	2026-10-08 18:00:43.159	0	\N	2026-10-08 17:57:16.802	2026-10-12 14:52:18.456	\N
+cmuzu9orf00dxydphmg1iayhn	PSSA	pssa@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. PSS Appalacharyulu	+91 9440112233	t	f	2026-10-08 18:00:47.768	0	\N	2026-10-08 17:57:16.827	2026-10-12 14:52:18.465	\N
+cmuzu9org00e2ydphu05asr0i	VVVSN	vvvsn@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. VVV Satyanarayana	+91 9440112233	t	f	2026-10-08 18:00:47.987	0	\N	2026-10-08 17:57:16.828	2026-10-12 14:52:18.465	\N
 cmv0jr1et00xomzmyko4eicb7	26UECSE0045	26uecse0045@student.gvpihlr.edu.in	$2a$10$lRThSmXiMJKXOvbf/SrQYOJZY4mvN8DXNacYhAFGRjs4BYiA7Dn1C	INDUKURI SAI AMRUTHA	9866364696	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N
 cmv0jr1eu00y1mzmyq5suuqzy	26UECSE0059	26uecse0059@student.gvpihlr.edu.in	$2a$10$hxxYAms9ORVPFdAFcW/BKeUhao9JmrqprhqUFCrcoWB95nNdZATYy	KARTHIKA HARSHINI	9490637937	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N
 cmv0jr1fh0141mzmyklk8zbmm	26UECSE0076	26uecse0076@student.gvpihlr.edu.in	$2a$10$hJeIJnSP5vF6TkD5bv2KAepBVHkUIa5T.2suMptuviivAXXCcSU.u	MAHADASYAM RITHVIKESH	9000040957	t	f	\N	0	\N	2026-10-09 05:50:36.798	2026-10-09 06:37:40.13	\N
@@ -91691,6 +91878,10 @@ cmv0lfkf6070y10e0coksc98s	26UEMEC0132	26uemec0132@student.gvpihlr.edu.in	$2a$10$
 cmv0lfkfl076z10e0rve3p6ob	26UEMRB0012	26uemrb0012@student.gvpihlr.edu.in	$2a$10$085YdfwpMJuz5HqDcRT/KOimGpqEWvyXl17GVDCrZUaP/YZ44KsW2	PILLA MAHALAKSHMI	9951955780	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N
 cmv0lfkgc07cz10e0tzt4nmyq	26UEMRB0027	26uemrb0027@student.gvpihlr.edu.in	$2a$10$OfU3tn9MDv88kMp3TSmQauMe8.FVGWtxqLCNETBZlc5v.KOKJgGQK	MORRI HASINI	8106174393	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N
 cmv0jr1am002pmzmyhq3k4q28	26UECHE0001	26ueche0001@student.gvpihlr.edu.in	$2a$10$HZMHHs5f2Zp0J2Ce0aM8FOjzTBDfg6R6cKGzdtKRsz0d3zm3o4CYO	ADIRAJU SRI NAGA PRADYUMNA	8019888678	t	f	2026-10-09 08:01:28.041	0	\N	2026-10-09 05:50:36.599	2026-10-09 08:01:28.042	\N
+cmuzp7hsc000bbynpr08m4i25	admin	admin@gvpihlr.edu.in	$2a$12$olLcQ23IA0/wz/9ao901q.un91tdowzuc1DUEvtNvPsUZ2sGYuR5q	GVPIHLR Super Administrator	+91 9876543210	t	f	2026-10-12 14:15:23.893	0	\N	2026-10-08 15:35:36.396	2026-10-12 14:15:23.894	\N
+cmv5cxakt000110wnsmb2rfxg	office	office@gvpihlr.edu.in	$2a$12$eHRDQeKY5VRYfvRvea56qe.3rUAtZNlnupZqsbbT635dtHW221Z1C	GVPIHLR Central Academic Office	+91 891 2739507	t	f	2026-10-12 14:38:48.891	0	\N	2026-10-12 14:38:22.157	2026-10-12 14:38:48.892	\N
+cmuzu9oof003iydphgyvr3cii	BSK	bsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. B Santosh Kumar	+91 9440112233	t	f	2026-10-12 14:14:32.509	0	\N	2026-10-08 17:57:16.72	2026-10-12 14:52:18.437	\N
+cmuzu9oox004rydph03f490gx	GSK	gsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. G Santosh Kumar	+91 9440112233	t	f	2026-10-08 18:00:33.331	0	\N	2026-10-08 17:57:16.737	2026-10-12 14:52:18.442	\N
 \.
 
 
@@ -92943,6 +93134,7 @@ cmv0lfked06pq10e097co63n6	cmv0lfkea06oh10e0u0spp1bv	cmuzp7hn90005bynp42pbkgxh	\N
 cmv0lfkf8071810e0amqfu59b	cmv0lfkf5070f10e02dl3oadh	cmuzp7hn90005bynp42pbkgxh	\N	\N	cmuzuc7j5001p80kt7y4xhoxa	2026-10-09 06:37:40.772
 cmv0lfkge07dg10e0la8pxtpa	cmv0lfkgc07d010e0uug9oy7h	cmuzp7hn90005bynp42pbkgxh	\N	\N	cmuzuc7j5001r80ktgbhr8k92	2026-10-09 06:37:40.815
 cmv0lfkgf07e210e0gbtddmrm	cmv0lfkgd07d910e0u3wd3ztc	cmuzp7hn90005bynp42pbkgxh	\N	\N	cmuzuc7j5001r80ktgbhr8k92	2026-10-09 06:37:40.815
+cmv5cxmpg0003k3hx3f2a13ss	cmv5cxakt000110wnsmb2rfxg	cmuzp7hnd000abynpvwgf06k3	\N	\N	\N	2026-10-12 14:38:37.876
 \.
 
 
@@ -93994,8 +94186,15 @@ ALTER TABLE ONLY public."UserRole"
 
 
 --
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
+--
+
+REVOKE USAGE ON SCHEMA public FROM PUBLIC;
+
+
+--
 -- PostgreSQL database dump complete
 --
 
-\unrestrict vH6wdReOc2G2kcyKsgnDq6XLUlESY8pldbM1k1lj4h05wpZAOxOJQb13sxINJZH
+\unrestrict cKRAN9nDaHI2QrdNwYPVxead8lfQ6vsaVoS3kcWqoQ8pw5vMBApQEeF7rrZUleY
 

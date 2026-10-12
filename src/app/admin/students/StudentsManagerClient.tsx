@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import {
   GraduationCap,
   Plus,
@@ -20,6 +21,7 @@ import {
   ChevronRight,
   AlertTriangle,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
 import CustomModal from "@/components/ui/CustomModal";
 
@@ -28,6 +30,7 @@ interface StudentsManagerProps {
   departments: any[];
   programs: any[];
   sections: any[];
+  canDelete?: boolean;
 }
 
 export default function StudentsManagerClient({
@@ -35,6 +38,7 @@ export default function StudentsManagerClient({
   departments,
   programs,
   sections,
+  canDelete = true,
 }: StudentsManagerProps) {
   const [students, setStudents] = useState<any[]>(initialStudents);
   const [activeTab, setActiveTab] = useState<"ACTIVE" | "LEFT" | "ALUMNI" | "DETAINED">("ACTIVE");
@@ -676,22 +680,23 @@ export default function StudentsManagerClient({
 
                       {/* Roll Number (Clickable blue) */}
                       <td className="py-3 px-4">
-                        <button
-                          onClick={() => {
-                            setActiveStudent(s);
-                            setIsViewOpen(true);
-                          }}
-                          className="font-bold text-blue-600 hover:text-blue-800 hover:underline tracking-wide font-mono text-left"
+                        <Link
+                          href={`/admin/students/${s.id}`}
+                          className="font-bold text-blue-600 hover:text-blue-800 hover:underline tracking-wide font-mono text-left inline-flex items-center gap-1"
                         >
-                          {s.rollNumber}
-                        </button>
+                          <span>{s.rollNumber}</span>
+                          <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                        </Link>
                       </td>
 
                       {/* Name (Uppercase bold dark slate) */}
                       <td className="py-3 px-4">
-                        <span className="font-bold text-slate-800 uppercase tracking-tight">
+                        <Link
+                          href={`/admin/students/${s.id}`}
+                          className="font-bold text-slate-800 hover:text-blue-600 uppercase tracking-tight block"
+                        >
                           {s.user?.fullName}
-                        </span>
+                        </Link>
                       </td>
 
                       {/* Class */}
@@ -699,7 +704,7 @@ export default function StudentsManagerClient({
                         <span className="text-slate-600 font-semibold">{classDisplay}</span>
                       </td>
 
-                      {/* Actions matching Screenshot 3: Edit, View, Assign, Delete */}
+                      {/* Actions: Edit, View Profile, Section, Delete */}
                       <td className="py-3 px-4 text-right">
                         <div className="inline-flex items-center gap-2 text-slate-400">
                           {/* Edit */}
@@ -724,41 +729,40 @@ export default function StudentsManagerClient({
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
 
-                          {/* View */}
-                          <button
-                            onClick={() => {
-                              setActiveStudent(s);
-                              setIsViewOpen(true);
-                            }}
-                            className="p-1 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
-                            title="View Full Student Details"
+                          {/* Dedicated View Page */}
+                          <Link
+                            href={`/admin/students/${s.id}`}
+                            className="p-1 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition text-slate-400"
+                            title="Open Dedicated Student Profile Page"
                           >
                             <User className="w-3.5 h-3.5" />
-                          </button>
+                          </Link>
 
-                          {/* Layers / Batch Assignment */}
+                          {/* Quick Info Modal */}
                           <button
                             onClick={() => {
                               setActiveStudent(s);
                               setIsViewOpen(true);
                             }}
                             className="p-1 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition"
-                            title="Academic Program & Section"
+                            title="Quick Info Modal"
                           >
                             <Layers className="w-3.5 h-3.5" />
                           </button>
 
-                          {/* Delete */}
-                          <button
-                            onClick={() => {
-                              setActiveStudent(s);
-                              setIsDeleteOpen(true);
-                            }}
-                            className="p-1 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                            title="Delete Student Record"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {/* Delete (Hidden for Office role) */}
+                          {canDelete && (
+                            <button
+                              onClick={() => {
+                                setActiveStudent(s);
+                                setIsDeleteOpen(true);
+                              }}
+                              className="p-1 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                              title="Delete Student Record"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

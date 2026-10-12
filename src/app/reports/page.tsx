@@ -18,7 +18,9 @@ export default async function ReportsPage() {
     redirect("/student");
   }
 
-  const isSuperAdmin = session.roles.includes("SUPER_ADMIN");
+  const isSuperAdmin =
+    session.roles.includes("SUPER_ADMIN") ||
+    session.roles.includes("OFFICE");
 
   // Load active academic year
   const currentAY = await prisma.academicYear.findFirst({

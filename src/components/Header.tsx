@@ -20,6 +20,7 @@ import {
   ArrowLeft,
   Home,
   Users,
+  Calendar,
 } from "lucide-react";
 
 interface HeaderProps {
@@ -49,14 +50,21 @@ export default function Header({ user }: HeaderProps) {
   };
 
   const isSuperAdmin = user?.roles.includes("SUPER_ADMIN");
-  const isFacultyUser = user?.roles.includes("FACULTY") && !isSuperAdmin;
+  const isOfficeUser = user?.roles.includes("OFFICE") && !isSuperAdmin;
+  const isFacultyUser =
+    user?.roles.includes("FACULTY") && !isSuperAdmin && !isOfficeUser;
   const isStudentUser =
-    user?.roles.includes("STUDENT") && !isSuperAdmin && !user?.roles.includes("FACULTY");
+    user?.roles.includes("STUDENT") &&
+    !isSuperAdmin &&
+    !user?.roles.includes("FACULTY") &&
+    !isOfficeUser;
 
   // Determine user pill display text
   let userPillText = user?.username || "Guest";
   if (isSuperAdmin) {
     userPillText = "admin";
+  } else if (isOfficeUser) {
+    userPillText = "office";
   } else if (isFacultyUser) {
     // If faculty, display initials/short name like GKC or KR
     const initials = user?.fullName
@@ -281,6 +289,22 @@ export default function Header({ user }: HeaderProps) {
                   <span>Master Data Governance</span>
                 </Link>
                 <Link
+                  href="/admin/timetable"
+                  onClick={closeMobile}
+                  className="w-full flex items-center gap-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100"
+                >
+                  <Calendar className="w-4 h-4 text-amber-600" />
+                  <span>Timetable Manager</span>
+                </Link>
+                <Link
+                  href="/admin/subjects"
+                  onClick={closeMobile}
+                  className="w-full flex items-center gap-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100"
+                >
+                  <BookOpen className="w-4 h-4 text-indigo-600" />
+                  <span>Curriculum &amp; Subjects</span>
+                </Link>
+                <Link
                   href="/reports"
                   onClick={closeMobile}
                   className="w-full flex items-center gap-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100"
@@ -295,6 +319,67 @@ export default function Header({ user }: HeaderProps) {
                 >
                   <Shield className="w-4 h-4 text-[#8B1528]" />
                   <span>Audit Logs</span>
+                </Link>
+              </>
+            )}
+
+            {isOfficeUser && (
+              <>
+                <Link
+                  href="/dashboard"
+                  onClick={closeMobile}
+                  className="w-full flex items-center gap-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100"
+                >
+                  <LayoutDashboard className="w-4 h-4 text-blue-600" />
+                  <span>Office Dashboard</span>
+                </Link>
+                <Link
+                  href="/reports"
+                  onClick={closeMobile}
+                  className="w-full flex items-center gap-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100"
+                >
+                  <BarChart3 className="w-4 h-4 text-purple-600" />
+                  <span>Attendance Reports</span>
+                </Link>
+                <Link
+                  href="/admin/students"
+                  onClick={closeMobile}
+                  className="w-full flex items-center gap-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100"
+                >
+                  <GraduationCap className="w-4 h-4 text-blue-600" />
+                  <span>Manage Students</span>
+                </Link>
+                <Link
+                  href="/admin/faculty"
+                  onClick={closeMobile}
+                  className="w-full flex items-center gap-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100"
+                >
+                  <Users className="w-4 h-4 text-purple-600" />
+                  <span>Manage Faculty</span>
+                </Link>
+                <Link
+                  href="/admin/timetable"
+                  onClick={closeMobile}
+                  className="w-full flex items-center gap-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100"
+                >
+                  <Calendar className="w-4 h-4 text-amber-600" />
+                  <span>Timetable Schedule</span>
+                </Link>
+                <Link
+                  href="/admin/subjects"
+                  onClick={closeMobile}
+                  className="w-full flex items-center gap-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100"
+                >
+                  <BookOpen className="w-4 h-4 text-indigo-600" />
+                  <span>Curriculum &amp; Subjects</span>
+                </Link>
+                <Link
+                  href="/admin/master"
+                  onClick={closeMobile}
+                  className="w-full flex items-center gap-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100"
+                >
+                  <Database className="w-4 h-4 text-[#0B2545]" />
+                  <span>Master Data Records</span>
                 </Link>
               </>
             )}

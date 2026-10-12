@@ -29,19 +29,29 @@ export default async function DashboardPage() {
   }
 
   const isSuperAdmin = session.roles.includes("SUPER_ADMIN");
-  const isFacultyUser = session.roles.includes("FACULTY") && !isSuperAdmin;
+  const isOfficeUser = session.roles.includes("OFFICE");
+  const isFacultyUser = session.roles.includes("FACULTY") && !isSuperAdmin && !isOfficeUser;
 
   // =========================================================================
-  // VIEW A: SUPER ADMIN DASHBOARD (Only Active Modules In Use)
+  // VIEW A: SUPER ADMIN & OFFICE DASHBOARD
   // =========================================================================
-  if (isSuperAdmin) {
-    const adminCards = [
+  if (isSuperAdmin || isOfficeUser) {
+    const allAdminCards = [
+      {
+        title: "Reports",
+        description: "Daily consolidated and subject-wise attendance registers & exports.",
+        badgeColor: "bg-teal-600",
+        icon: FileText,
+        link: "/reports",
+        officeAllowed: true,
+      },
       {
         title: "Students",
         description: "Manage student profiles, enrollments, and attendance.",
         badgeColor: "bg-blue-600",
         icon: GraduationCap,
         link: "/admin/students",
+        officeAllowed: true,
       },
       {
         title: "Faculty",
@@ -49,42 +59,23 @@ export default async function DashboardPage() {
         badgeColor: "bg-indigo-600",
         icon: Users,
         link: "/admin/faculty",
-      },
-      {
-        title: "Mark Attendance",
-        description: "Mark student attendance (Academic).",
-        badgeColor: "bg-red-600",
-        icon: CheckSquare,
-        link: "/attendance",
-      },
-      {
-        title: "Reports",
-        description: "Daily consolidated and subject-wise attendance registers & exports.",
-        badgeColor: "bg-teal-600",
-        icon: FileText,
-        link: "/reports",
+        officeAllowed: true,
       },
       {
         title: "Time Tables",
-        description: "Manage class schedules, periods, and academic calendar.",
+        description: "Master section schedules, period timings, and lab batch allocations.",
         badgeColor: "bg-purple-600",
         icon: Calendar,
-        link: "/admin/master?tab=sections",
-        hasModuleLink: true,
+        link: "/admin/timetable",
+        officeAllowed: true,
       },
       {
         title: "Subjects",
-        description: "Manage course catalog, electives, and curriculum.",
+        description: "Manage curriculum course catalog, theory and lab subjects under R1.",
         badgeColor: "bg-pink-600",
         icon: Bookmark,
-        link: "/admin/master?tab=subjects",
-      },
-      {
-        title: "User Management",
-        description: "Manage faculty and student system user accounts, credentials, and roles.",
-        badgeColor: "bg-purple-700",
-        icon: Users,
-        link: "/admin/users",
+        link: "/admin/subjects",
+        officeAllowed: true,
       },
       {
         title: "Master Governance",
@@ -92,6 +83,23 @@ export default async function DashboardPage() {
         badgeColor: "bg-[#0B2545]",
         icon: Database,
         link: "/admin/master",
+        officeAllowed: true,
+      },
+      {
+        title: "Mark Attendance",
+        description: "Mark student attendance (Academic).",
+        badgeColor: "bg-red-600",
+        icon: CheckSquare,
+        link: "/attendance",
+        officeAllowed: false,
+      },
+      {
+        title: "User Management",
+        description: "Manage faculty and student system user accounts, credentials, and roles.",
+        badgeColor: "bg-purple-700",
+        icon: Users,
+        link: "/admin/users",
+        officeAllowed: false,
       },
       {
         title: "System Audit Logs",
@@ -99,8 +107,13 @@ export default async function DashboardPage() {
         badgeColor: "bg-slate-700",
         icon: Shield,
         link: "/admin/audit-logs",
+        officeAllowed: false,
       },
     ];
+
+    const adminCards = isSuperAdmin
+      ? allAdminCards
+      : allAdminCards.filter((c) => c.officeAllowed);
 
     return (
       <div className="space-y-6">
@@ -143,11 +156,9 @@ export default async function DashboardPage() {
                   </p>
                 </div>
 
-                {c.hasModuleLink && (
-                  <div className="mt-4 pt-2 text-xs font-bold text-blue-600 group-hover:underline">
-                    Open Module →
-                  </div>
-                )}
+                <div className="mt-4 pt-2 text-xs font-bold text-blue-600 group-hover:underline">
+                  Open Module →
+                </div>
               </Link>
             );
           })}

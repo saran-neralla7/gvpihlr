@@ -131,7 +131,10 @@ export async function getClassRoster(sectionId: string, labBatchId?: string | nu
 /**
  * Submit an attendance session and its student records in an atomic transaction.
  */
-export async function submitAttendanceSession(input: unknown) {
+export async function submitAttendanceSession(
+  input: unknown,
+  clientInfo?: { ipAddress?: string; userAgent?: string }
+) {
   const session = await getCurrentSession();
   if (!session) return { success: false, error: "Authentication required" };
 
@@ -222,10 +225,14 @@ export async function submitAttendanceSession(input: unknown) {
     await recordAuditLog({
       userId: session.userId,
       action: "ATTENDANCE_SESSION_SUBMIT",
+      description: `Conducted Period ${data.periodNumber} attendance on ${data.sessionDate} (${result.section?.displayName || "Section"}) [${presentCount} Present, ${absentCount} Absent]`,
       resource: "AttendanceSession",
       resourceId: result.id,
+      ipAddress: clientInfo?.ipAddress,
+      userAgent: clientInfo?.userAgent,
       details: {
         sectionId: data.sectionId,
+        sectionName: result.section?.displayName,
         period: data.periodNumber,
         date: data.sessionDate,
         total: totalStudents,

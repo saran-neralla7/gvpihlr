@@ -22,103 +22,107 @@ import {
 
 export default async function AdminHubPage() {
   const session = await getCurrentSession();
-  if (!session || !isSuperAdmin(session)) {
+  const isSuperAdminUser = session?.roles.includes("SUPER_ADMIN");
+  const isOfficeUser = session?.roles.includes("OFFICE");
+
+  if (!session || (!isSuperAdminUser && !isOfficeUser)) {
     redirect("/dashboard");
   }
 
-  const adminCards = [
+  const allAdminCards = [
     {
-      title: "Academic Years",
-      description: "Manage academic years, terms, and active university sessions.",
+      title: "Attendance Reports",
+      description: "Generate section registers, multi-level defaulters (<75%, <60%), and export PDF & Excel.",
+      icon: BarChart3,
+      iconColor: "text-blue-600 bg-blue-50",
+      link: "/reports",
+      officeAllowed: true,
+    },
+    {
+      title: "Manage Students",
+      description: "Dedicated student directory, search, category filters, and student profile inspection.",
+      icon: GraduationCap,
+      iconColor: "text-blue-600 bg-blue-50",
+      link: "/admin/students",
+      officeAllowed: true,
+    },
+    {
+      title: "Manage Faculty",
+      description: "Dedicated faculty profiles, designations, department filter, and assigned subjects.",
+      icon: Users,
+      iconColor: "text-purple-600 bg-purple-50",
+      link: "/admin/faculty",
+      officeAllowed: true,
+    },
+    {
+      title: "Class Timetables",
+      description: "Master weekly schedules, lecture periods, and laboratory practical allocations.",
+      icon: Clock,
+      iconColor: "text-amber-600 bg-amber-50",
+      link: "/admin/timetable",
+      officeAllowed: true,
+    },
+    {
+      title: "Subject Catalog",
+      description: "Curriculum course codes, short names, theory and lab subjects, and credits under R1.",
+      icon: BookOpen,
+      iconColor: "text-cyan-600 bg-cyan-50",
+      link: "/admin/subjects",
+      officeAllowed: true,
+    },
+    {
+      title: "Academic Years & Sections",
+      description: "Manage university terms, class sections, capacity, and semester offerings.",
       icon: Calendar,
       iconColor: "text-emerald-600 bg-emerald-50",
       link: "/admin/master?tab=sections",
+      officeAllowed: true,
     },
     {
-      title: "Schools",
-      description: "Manage university schools (SCSE, SENG, SSCI) and deaneries.",
+      title: "Schools & Departments",
+      description: "Manage university schools (SCSE, SENG, SSCI) and teaching departments.",
       icon: Building2,
       iconColor: "text-indigo-600 bg-indigo-50",
-      link: "/admin/master?tab=schools",
-    },
-    {
-      title: "Departments",
-      description: "Manage academic and common service teaching departments.",
-      icon: Building2,
-      iconColor: "text-blue-600 bg-blue-50",
       link: "/admin/master?tab=departments",
+      officeAllowed: true,
     },
     {
       title: "Degree Programs",
       description: "Manage undergraduate and postgraduate degree programs.",
-      icon: BookOpen,
+      icon: Award,
       iconColor: "text-purple-600 bg-purple-50",
       link: "/admin/master?tab=programs",
-    },
-    {
-      title: "Sections",
-      description: "Manage class sections, student capacity, and semester offerings.",
-      icon: Layers,
-      iconColor: "text-rose-600 bg-rose-50",
-      link: "/admin/master?tab=sections",
-    },
-    {
-      title: "Lab Batches",
-      description: "Manage practical and laboratory batches per section.",
-      icon: Layers,
-      iconColor: "text-fuchsia-600 bg-fuchsia-50",
-      link: "/admin/master?tab=sections",
-    },
-    {
-      title: "Curriculum Subjects",
-      description: "Manage theory and laboratory subjects, credits, and syllabus.",
-      icon: BookOpen,
-      iconColor: "text-cyan-600 bg-cyan-50",
-      link: "/admin/master?tab=subjects",
-    },
-    {
-      title: "User Management",
-      description: "Manage faculty and student accounts, view user lists, and edit or add users.",
-      icon: Users,
-      iconColor: "text-purple-600 bg-purple-50",
-      link: "/admin/users",
-    },
-    {
-      title: "Manage Students",
-      description: "Dedicated student directory, filters, import/export, and profile records.",
-      icon: GraduationCap,
-      iconColor: "text-blue-600 bg-blue-50",
-      link: "/admin/students",
-    },
-    {
-      title: "Manage Faculty",
-      description: "Dedicated faculty profiles, designations, department filter, and codes.",
-      icon: Users,
-      iconColor: "text-purple-600 bg-purple-50",
-      link: "/admin/faculty",
+      officeAllowed: true,
     },
     {
       title: "Mark Attendance",
-      description: "Super Admin university oversight to mark or review live sessions.",
+      description: "Institutional university oversight to conduct or review live sessions.",
       icon: CheckSquare,
       iconColor: "text-emerald-600 bg-emerald-50",
       link: "/attendance",
+      officeAllowed: false,
     },
     {
-      title: "Attendance Reports",
-      description: "Generate section registers, < 75% defaulters, PDF & Excel export.",
-      icon: BarChart3,
-      iconColor: "text-blue-600 bg-blue-50",
-      link: "/reports",
+      title: "User Management",
+      description: "Manage faculty and student accounts, reset passwords, and system user roles.",
+      icon: Users,
+      iconColor: "text-purple-600 bg-purple-50",
+      link: "/admin/users",
+      officeAllowed: false,
     },
     {
       title: "System Audit Logs",
-      description: "Inspect immutable security logs and attendance edit history.",
+      description: "Real-time tamper-resistant activity logs, IP address, device, and timestamp tracking.",
       icon: Shield,
       iconColor: "text-slate-700 bg-slate-100",
       link: "/admin/audit-logs",
+      officeAllowed: isSuperAdminUser,
     },
   ];
+
+  const adminCards = isSuperAdminUser
+    ? allAdminCards
+    : allAdminCards.filter((c) => c.officeAllowed);
 
   return (
     <div className="space-y-6">

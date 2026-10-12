@@ -28,11 +28,28 @@ import SubjectWiseReportTable, {
 } from "./SubjectWiseReportTable";
 import MonthlyAttendanceView from "./MonthlyAttendanceView";
 
+interface SchoolOption {
+  id: string;
+  name: string;
+  code?: string;
+}
+
+interface ProgramOption {
+  id: string;
+  name: string;
+  code?: string;
+  schoolId?: string;
+}
+
 interface SectionOption {
   id: string;
   name: string;
   displayName?: string | null;
+  programId?: string;
   programName: string;
+  programCode?: string;
+  schoolId?: string;
+  schoolName?: string;
   year: number;
   semester: number;
 }
@@ -77,11 +94,15 @@ const COLLEGE_SUBTITLE = "(Deemed to be University under Section 3 of the UGC Ac
 export default function ReportsClient({
   sections,
   subjects,
+  schools = [],
+  programs = [],
   initialSectionId,
   initialReport,
 }: {
   sections: SectionOption[];
   subjects: SubjectOption[];
+  schools?: SchoolOption[];
+  programs?: ProgramOption[];
   initialSectionId: string;
   initialReport: {
     sectionName: string;
@@ -104,6 +125,20 @@ export default function ReportsClient({
     "subject_wise" | "monthly" | "consolidated" | "matrix" | "defaulters"
   >("subject_wise");
 
+  // Academic Hierarchy States: School -> Program -> Year -> Semester -> Section
+  const initialSectionObj = sections.find((s) => s.id === initialSectionId) || sections[0];
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string>(
+    initialSectionObj?.schoolId || ""
+  );
+  const [selectedProgramId, setSelectedProgramId] = useState<string>(
+    initialSectionObj?.programId || ""
+  );
+  const [selectedYear, setSelectedYear] = useState<number>(
+    initialSectionObj?.year || initialReport.year || 1
+  );
+  const [selectedSemester, setSelectedSemester] = useState<number>(
+    initialSectionObj?.semester || initialReport.semester || 1
+  );
   const [selectedSectionId, setSelectedSectionId] = useState(initialSectionId);
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
   const [availableSubjects, setAvailableSubjects] = useState<SubjectOption[]>(
@@ -119,6 +154,50 @@ export default function ReportsClient({
   const [customThreshold, setCustomThreshold] = useState<number>(60);
   const [isLoading, setIsLoading] = useState(false);
 
+  // 1. Available Schools (all schools or derived from sections)
+  const availableSchools = useMemo(() => {
+    if (schools && schools.length > 0) return schools;
+    const sMap = new Map<string, string>();
+    sections.forEach((sec) => {
+      if (sec.schoolId && sec.schoolName) {
+        sMap.set(sec.schoolId, sec.schoolName);
+      }
+    });
+    return Array.from(sMap.entries()).map(([id, name]) => ({ id, name, code: "" }));
+  }, [schools, sections]);
+
+  // 2. Available Programs (cascaded by selected school)
+  const availablePrograms = useMemo(() => {
+    let progs = programs || [];
+    if (progs.length === 0) {
+      const pMap = new Map<string, { id: string; name: string; schoolId: string }>();
+      sections.forEach((sec) => {
+        if (sec.programId) {
+          pMap.set(sec.programId, {
+            id: sec.programId,
+            name: sec.programName,
+            schoolId: sec.schoolId || "",
+          });
+        }
+      });
+      progs = Array.from(pMap.values()).map((p) => ({ ...p, code: "" }));
+    }
+    if (selectedSchoolId) {
+      return progs.filter((p) => p.schoolId === selectedSchoolId);
+    }
+    return progs;
+  }, [programs, sections, selectedSchoolId]);
+
+  // 3. Available Sections (filtered by selected school, program, year, semester)
+  const availableSections = useMemo(() => {
+    return sections.filter((sec) => {
+      if (selectedSchoolId && sec.schoolId && sec.schoolId !== selectedSchoolId) return false;
+      if (selectedProgramId && sec.programId && sec.programId !== selectedProgramId) return false;
+      if (selectedYear && sec.year !== selectedYear) return false;
+      if (selectedSemester && sec.semester !== selectedSemester) return false;
+      return true;
+    });
+  }, [sections, selectedSchoolId, selectedProgramId, selectedYear, selectedSemester]);
   // Active attendance percentage cutoff
   const activeThresholdCutoff = useMemo(() => {
     if (thresholdMode === "ALL") return null;
@@ -172,8 +251,102 @@ export default function ReportsClient({
     }
   };
 
+  // 1. School Cascade Handler
+  const handleSchoolChange = (newSchoolId: string) => {
+    setSelectedSchoolId(newSchoolId);
+    // Find programs matching newSchoolId
+    const matchingProgs = (programs || []).filter((p) => !newSchoolId || p.schoolId === newSchoolId);
+    const nextProgId = matchingProgs.length > 0 ? matchingProgs[0].id : "";
+    setSelectedProgramId(nextProgId);
+
+    // Find sections matching
+    const matchingSecs = sections.filter((s) => {
+      if (newSchoolId && s.schoolId && s.schoolId !== newSchoolId) return false;
+      if (nextProgId && s.programId && s.programId !== nextProgId) return false;
+      return true;
+    });
+
+    if (matchingSecs.length > 0) {
+      const nextSec = matchingSecs[0];
+      setSelectedYear(nextSec.year || 1);
+      setSelectedSemester(nextSec.semester || 1);
+      setSelectedSectionId(nextSec.id);
+      setSelectedSubjectId("");
+      fetchReport(nextSec.id, "", startDate, endDate);
+    }
+  };
+
+  // 2. Program Cascade Handler
+  const handleProgramChange = (newProgId: string) => {
+    setSelectedProgramId(newProgId);
+    const progObj = (programs || []).find((p) => p.id === newProgId);
+    if (progObj && progObj.schoolId && !selectedSchoolId) {
+      setSelectedSchoolId(progObj.schoolId);
+    }
+
+    const matchingSecs = sections.filter((s) => {
+      if (newProgId && s.programId && s.programId !== newProgId) return false;
+      return true;
+    });
+
+    if (matchingSecs.length > 0) {
+      const nextSec = matchingSecs[0];
+      setSelectedYear(nextSec.year || 1);
+      setSelectedSemester(nextSec.semester || 1);
+      setSelectedSectionId(nextSec.id);
+      setSelectedSubjectId("");
+      fetchReport(nextSec.id, "", startDate, endDate);
+    }
+  };
+
+  // 3. Year Cascade Handler
+  const handleYearChange = (newYear: number) => {
+    setSelectedYear(newYear);
+    const matchingSecs = sections.filter((s) => {
+      if (selectedSchoolId && s.schoolId && s.schoolId !== selectedSchoolId) return false;
+      if (selectedProgramId && s.programId && s.programId !== selectedProgramId) return false;
+      if (newYear && s.year !== newYear) return false;
+      return true;
+    });
+
+    if (matchingSecs.length > 0) {
+      const nextSec = matchingSecs[0];
+      setSelectedSemester(nextSec.semester || 1);
+      setSelectedSectionId(nextSec.id);
+      setSelectedSubjectId("");
+      fetchReport(nextSec.id, "", startDate, endDate);
+    }
+  };
+
+  // 4. Semester Cascade Handler
+  const handleSemesterChange = (newSem: number) => {
+    setSelectedSemester(newSem);
+    const matchingSecs = sections.filter((s) => {
+      if (selectedSchoolId && s.schoolId && s.schoolId !== selectedSchoolId) return false;
+      if (selectedProgramId && s.programId && s.programId !== selectedProgramId) return false;
+      if (selectedYear && s.year !== selectedYear) return false;
+      if (newSem && s.semester !== newSem) return false;
+      return true;
+    });
+
+    if (matchingSecs.length > 0) {
+      const nextSec = matchingSecs[0];
+      setSelectedSectionId(nextSec.id);
+      setSelectedSubjectId("");
+      fetchReport(nextSec.id, "", startDate, endDate);
+    }
+  };
+
+  // 5. Section Direct Handler
   const handleSectionChange = (newSecId: string) => {
     setSelectedSectionId(newSecId);
+    const secObj = sections.find((s) => s.id === newSecId);
+    if (secObj) {
+      if (secObj.schoolId) setSelectedSchoolId(secObj.schoolId);
+      if (secObj.programId) setSelectedProgramId(secObj.programId);
+      if (secObj.year) setSelectedYear(secObj.year);
+      if (secObj.semester) setSelectedSemester(secObj.semester);
+    }
     // Reset subject filter to all on section change to prevent mismatched subject 0-sessions
     setSelectedSubjectId("");
     fetchReport(newSecId, "", startDate, endDate);
@@ -787,6 +960,128 @@ export default function ReportsClient({
               </span>
             )}
           </button>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          UNIVERSAL ACADEMIC SELECTOR (School -> Program -> Year -> Semester -> Section)
+          Visible across all report tabs, hidden in print
+          ========================================================================= */}
+      <div className="bg-white border border-slate-200/90 rounded-3xl p-5 shadow-xs space-y-4 no-print">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse" />
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">
+              Academic Program &amp; Section Hierarchy
+            </h3>
+            {isLoading && (
+              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full animate-pulse">
+                Loading Data...
+              </span>
+            )}
+          </div>
+          <div className="text-[11px] font-semibold text-slate-500">
+            Active: <span className="font-bold text-blue-900">{reportData.programName}</span> • Year {reportData.year || 1} Sem {reportData.semester || 1} • <span className="font-bold text-slate-900">Sec {reportData.sectionName}</span>
+          </div>
+        </div>
+
+        {/* 5-Dropdown Hierarchy */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {/* 1. School */}
+          <div>
+            <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+              1. School
+            </label>
+            <select
+              value={selectedSchoolId}
+              onChange={(e) => handleSchoolChange(e.target.value)}
+              className="w-full text-xs font-semibold bg-slate-50/80 border border-slate-200/90 rounded-xl px-3 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 truncate"
+            >
+              <option value="">All Schools</option>
+              {availableSchools.map((sc) => (
+                <option key={sc.id} value={sc.id}>
+                  {sc.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 2. Program */}
+          <div>
+            <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+              2. Program
+            </label>
+            <select
+              value={selectedProgramId}
+              onChange={(e) => handleProgramChange(e.target.value)}
+              className="w-full text-xs font-semibold bg-slate-50/80 border border-slate-200/90 rounded-xl px-3 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 truncate"
+            >
+              <option value="">All Programs</option>
+              {availablePrograms.map((pr) => (
+                <option key={pr.id} value={pr.id}>
+                  {pr.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 3. Year */}
+          <div>
+            <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+              3. Year
+            </label>
+            <select
+              value={selectedYear}
+              onChange={(e) => handleYearChange(Number(e.target.value))}
+              className="w-full text-xs font-semibold bg-slate-50/80 border border-slate-200/90 rounded-xl px-3 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {[1, 2, 3, 4].map((y) => (
+                <option key={y} value={y}>
+                  Year {y}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 4. Semester */}
+          <div>
+            <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+              4. Semester
+            </label>
+            <select
+              value={selectedSemester}
+              onChange={(e) => handleSemesterChange(Number(e.target.value))}
+              className="w-full text-xs font-semibold bg-slate-50/80 border border-slate-200/90 rounded-xl px-3 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((sm) => (
+                <option key={sm} value={sm}>
+                  Semester {sm}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 5. Section */}
+          <div>
+            <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+              5. Section *
+            </label>
+            <select
+              value={selectedSectionId}
+              onChange={(e) => handleSectionChange(e.target.value)}
+              className="w-full text-xs font-bold bg-blue-50/70 border border-blue-200 rounded-xl px-3 py-2.5 text-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {availableSections.length > 0 ? (
+                availableSections.map((sec) => (
+                  <option key={sec.id} value={sec.id}>
+                    Sec {sec.name} ({sec.programName})
+                  </option>
+                ))
+              ) : (
+                <option value="">No sections match filters</option>
+              )}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -1489,6 +1784,29 @@ export default function ReportsClient({
                 <strong className="text-rose-600">{reportData.defaultersCount}</strong>
               </div>
             </div>
+
+            {/* Official Signature Footnote for Printed Register (Strict Single Row in Print) */}
+            <table className="w-full border-none mt-10 print-signatures-table print-only">
+              <tbody>
+                <tr>
+                  <td className="w-1/3 text-center border-none px-4">
+                    <div className="border-t border-slate-600 pt-2 text-xs font-bold text-slate-800">
+                      Class Coordinator / Mentor
+                    </div>
+                  </td>
+                  <td className="w-1/3 text-center border-none px-4">
+                    <div className="border-t border-slate-600 pt-2 text-xs font-bold text-slate-800">
+                      Head of Department (HOD)
+                    </div>
+                  </td>
+                  <td className="w-1/3 text-center border-none px-4">
+                    <div className="border-t border-slate-600 pt-2 text-xs font-bold text-slate-800">
+                      Dean of Academic Affairs
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -1972,6 +2290,29 @@ export default function ReportsClient({
                 <strong className="text-rose-600">{reportData.defaultersCount}</strong>
               </div>
             </div>
+
+            {/* Official Signature Footnote for Printed Register (Strict Single Row in Print) */}
+            <table className="w-full border-none mt-10 print-signatures-table print-only">
+              <tbody>
+                <tr>
+                  <td className="w-1/3 text-center border-none px-4">
+                    <div className="border-t border-slate-600 pt-2 text-xs font-bold text-slate-800">
+                      Class Coordinator / Mentor
+                    </div>
+                  </td>
+                  <td className="w-1/3 text-center border-none px-4">
+                    <div className="border-t border-slate-600 pt-2 text-xs font-bold text-slate-800">
+                      Head of Department (HOD)
+                    </div>
+                  </td>
+                  <td className="w-1/3 text-center border-none px-4">
+                    <div className="border-t border-slate-600 pt-2 text-xs font-bold text-slate-800">
+                      Dean of Academic Affairs
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -2168,6 +2509,29 @@ export default function ReportsClient({
                 </tbody>
               </table>
             </div>
+
+            {/* Official Signature Footnote for Printed Register (Strict Single Row in Print) */}
+            <table className="w-full border-none mt-10 print-signatures-table print-only">
+              <tbody>
+                <tr>
+                  <td className="w-1/3 text-center border-none px-4">
+                    <div className="border-t border-slate-600 pt-2 text-xs font-bold text-slate-800">
+                      Class Coordinator / Mentor
+                    </div>
+                  </td>
+                  <td className="w-1/3 text-center border-none px-4">
+                    <div className="border-t border-slate-600 pt-2 text-xs font-bold text-slate-800">
+                      Head of Department (HOD)
+                    </div>
+                  </td>
+                  <td className="w-1/3 text-center border-none px-4">
+                    <div className="border-t border-slate-600 pt-2 text-xs font-bold text-slate-800">
+                      Dean of Academic Affairs
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       )}

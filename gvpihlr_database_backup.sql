@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict eDO9DXtyTOXaIbMHMeKExG6rKdL66PwjoOkA7r5FerHiAg4mxchRjGs7jvworvX
+\restrict Cup6QYiuAPkpovF49lbrknfWVVhgIBbSuaMHebUCYsJDdUptfb9k4asPrLV1xAe
 
 -- Dumped from database version 16.14 (Homebrew)
 -- Dumped by pg_dump version 16.14 (Homebrew)
@@ -18,17 +18,190 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_schoolId_fkey";
+ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_roleId_fkey";
+ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_programId_fkey";
+ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_departmentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_sectionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_labBatchId_fkey";
+ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_facultyId_fkey";
+ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_assignmentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_academicYearId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Subject" DROP CONSTRAINT IF EXISTS "Subject_departmentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_subjectId_fkey";
+ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_regulationId_fkey";
+ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_programId_fkey";
+ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_academicYearId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Student" DROP CONSTRAINT IF EXISTS "Student_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_studentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_sectionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_programId_fkey";
+ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_academicYearId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Section" DROP CONSTRAINT IF EXISTS "Section_programId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Section" DROP CONSTRAINT IF EXISTS "Section_academicYearId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Program" DROP CONSTRAINT IF EXISTS "Program_schoolId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Program" DROP CONSTRAINT IF EXISTS "Program_regulationId_fkey";
+ALTER TABLE IF EXISTS ONLY public."LabBatch" DROP CONSTRAINT IF EXISTS "LabBatch_sectionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."LabBatchStudent" DROP CONSTRAINT IF EXISTS "LabBatchStudent_studentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."LabBatchStudent" DROP CONSTRAINT IF EXISTS "LabBatchStudent_labBatchId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Faculty" DROP CONSTRAINT IF EXISTS "Faculty_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Faculty" DROP CONSTRAINT IF EXISTS "Faculty_departmentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_subjectOfferingId_fkey";
+ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_sectionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_facultyId_fkey";
+ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_academicYearId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Department" DROP CONSTRAINT IF EXISTS "Department_schoolId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AuditLog" DROP CONSTRAINT IF EXISTS "AuditLog_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_sectionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_recordedById_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_labBatchId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_facultyId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_assignmentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_academicYearId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceRecord" DROP CONSTRAINT IF EXISTS "AttendanceRecord_studentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceRecord" DROP CONSTRAINT IF EXISTS "AttendanceRecord_sessionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceAuditLog" DROP CONSTRAINT IF EXISTS "AttendanceAuditLog_sessionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceAuditLog" DROP CONSTRAINT IF EXISTS "AttendanceAuditLog_changedById_fkey";
+DROP INDEX IF EXISTS public."User_username_key";
+DROP INDEX IF EXISTS public."User_email_key";
+DROP INDEX IF EXISTS public."UserRole_userId_roleId_schoolId_departmentId_programId_key";
+DROP INDEX IF EXISTS public."UserRole_userId_idx";
+DROP INDEX IF EXISTS public."UserRole_roleId_idx";
+DROP INDEX IF EXISTS public."TimetableEntry_sectionId_dayOfWeek_idx";
+DROP INDEX IF EXISTS public."TimetableEntry_facultyId_dayOfWeek_idx";
+DROP INDEX IF EXISTS public."Subject_departmentId_idx";
+DROP INDEX IF EXISTS public."Subject_code_key";
+DROP INDEX IF EXISTS public."Subject_code_idx";
+DROP INDEX IF EXISTS public."SubjectOffering_subjectId_idx";
+DROP INDEX IF EXISTS public."SubjectOffering_regulationId_idx";
+DROP INDEX IF EXISTS public."SubjectOffering_programId_year_semester_idx";
+DROP INDEX IF EXISTS public."SubjectOffering_academicYearId_programId_subjectId_year_sem_key";
+DROP INDEX IF EXISTS public."SubjectOffering_academicYearId_idx";
+DROP INDEX IF EXISTS public."Student_userId_key";
+DROP INDEX IF EXISTS public."Student_status_idx";
+DROP INDEX IF EXISTS public."Student_rollNumber_key";
+DROP INDEX IF EXISTS public."Student_rollNumber_idx";
+DROP INDEX IF EXISTS public."Student_registerNumber_key";
+DROP INDEX IF EXISTS public."StudentEnrollment_studentId_idx";
+DROP INDEX IF EXISTS public."StudentEnrollment_studentId_academicYearId_semester_key";
+DROP INDEX IF EXISTS public."StudentEnrollment_sectionId_idx";
+DROP INDEX IF EXISTS public."StudentEnrollment_programId_year_semester_idx";
+DROP INDEX IF EXISTS public."StudentEnrollment_academicYearId_idx";
+DROP INDEX IF EXISTS public."Section_year_semester_idx";
+DROP INDEX IF EXISTS public."Section_programId_idx";
+DROP INDEX IF EXISTS public."Section_academicYearId_programId_year_semester_name_key";
+DROP INDEX IF EXISTS public."Section_academicYearId_idx";
+DROP INDEX IF EXISTS public."School_code_key";
+DROP INDEX IF EXISTS public."School_code_idx";
+DROP INDEX IF EXISTS public."Role_name_key";
+DROP INDEX IF EXISTS public."Regulation_code_key";
+DROP INDEX IF EXISTS public."Regulation_code_idx";
+DROP INDEX IF EXISTS public."Program_schoolId_idx";
+DROP INDEX IF EXISTS public."Program_regulationId_idx";
+DROP INDEX IF EXISTS public."Program_code_key";
+DROP INDEX IF EXISTS public."Program_code_idx";
+DROP INDEX IF EXISTS public."LabBatch_sectionId_idx";
+DROP INDEX IF EXISTS public."LabBatch_sectionId_batchNumber_key";
+DROP INDEX IF EXISTS public."LabBatchStudent_studentId_idx";
+DROP INDEX IF EXISTS public."LabBatchStudent_labBatchId_studentId_key";
+DROP INDEX IF EXISTS public."LabBatchStudent_labBatchId_idx";
+DROP INDEX IF EXISTS public."Faculty_userId_key";
+DROP INDEX IF EXISTS public."Faculty_shortName_idx";
+DROP INDEX IF EXISTS public."Faculty_employeeId_key";
+DROP INDEX IF EXISTS public."Faculty_employeeId_idx";
+DROP INDEX IF EXISTS public."Faculty_departmentId_idx";
+DROP INDEX IF EXISTS public."FacultySubjectAssignment_subjectOfferingId_idx";
+DROP INDEX IF EXISTS public."FacultySubjectAssignment_sectionId_idx";
+DROP INDEX IF EXISTS public."FacultySubjectAssignment_facultyId_idx";
+DROP INDEX IF EXISTS public."FacultySubjectAssignment_academicYearId_idx";
+DROP INDEX IF EXISTS public."FacultySubjectAssignment_academicYearId_facultyId_subjectOf_key";
+DROP INDEX IF EXISTS public."Department_schoolId_idx";
+DROP INDEX IF EXISTS public."Department_code_key";
+DROP INDEX IF EXISTS public."Department_code_idx";
+DROP INDEX IF EXISTS public."AuditLog_userId_idx";
+DROP INDEX IF EXISTS public."AuditLog_timestamp_idx";
+DROP INDEX IF EXISTS public."AuditLog_resource_resourceId_idx";
+DROP INDEX IF EXISTS public."AuditLog_action_idx";
+DROP INDEX IF EXISTS public."AttendanceSession_sectionId_sessionDate_idx";
+DROP INDEX IF EXISTS public."AttendanceSession_facultyId_sessionDate_idx";
+DROP INDEX IF EXISTS public."AttendanceSession_assignmentId_idx";
+DROP INDEX IF EXISTS public."AttendanceSession_academicYearId_sectionId_assignmentId_ses_key";
+DROP INDEX IF EXISTS public."AttendanceSession_academicYearId_idx";
+DROP INDEX IF EXISTS public."AttendanceRecord_studentId_status_idx";
+DROP INDEX IF EXISTS public."AttendanceRecord_sessionId_studentId_key";
+DROP INDEX IF EXISTS public."AttendanceRecord_sessionId_idx";
+DROP INDEX IF EXISTS public."AttendanceAuditLog_studentId_idx";
+DROP INDEX IF EXISTS public."AttendanceAuditLog_sessionId_idx";
+DROP INDEX IF EXISTS public."AttendanceAuditLog_changedById_idx";
+DROP INDEX IF EXISTS public."AcademicYear_isCurrent_idx";
+DROP INDEX IF EXISTS public."AcademicYear_code_key";
+ALTER TABLE IF EXISTS ONLY public."User" DROP CONSTRAINT IF EXISTS "User_pkey";
+ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_pkey";
+ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_pkey";
+ALTER TABLE IF EXISTS ONLY public."Subject" DROP CONSTRAINT IF EXISTS "Subject_pkey";
+ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_pkey";
+ALTER TABLE IF EXISTS ONLY public."Student" DROP CONSTRAINT IF EXISTS "Student_pkey";
+ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_pkey";
+ALTER TABLE IF EXISTS ONLY public."Section" DROP CONSTRAINT IF EXISTS "Section_pkey";
+ALTER TABLE IF EXISTS ONLY public."School" DROP CONSTRAINT IF EXISTS "School_pkey";
+ALTER TABLE IF EXISTS ONLY public."Role" DROP CONSTRAINT IF EXISTS "Role_pkey";
+ALTER TABLE IF EXISTS ONLY public."Regulation" DROP CONSTRAINT IF EXISTS "Regulation_pkey";
+ALTER TABLE IF EXISTS ONLY public."Program" DROP CONSTRAINT IF EXISTS "Program_pkey";
+ALTER TABLE IF EXISTS ONLY public."LabBatch" DROP CONSTRAINT IF EXISTS "LabBatch_pkey";
+ALTER TABLE IF EXISTS ONLY public."LabBatchStudent" DROP CONSTRAINT IF EXISTS "LabBatchStudent_pkey";
+ALTER TABLE IF EXISTS ONLY public."Faculty" DROP CONSTRAINT IF EXISTS "Faculty_pkey";
+ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_pkey";
+ALTER TABLE IF EXISTS ONLY public."Department" DROP CONSTRAINT IF EXISTS "Department_pkey";
+ALTER TABLE IF EXISTS ONLY public."AuditLog" DROP CONSTRAINT IF EXISTS "AuditLog_pkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_pkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceRecord" DROP CONSTRAINT IF EXISTS "AttendanceRecord_pkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceAuditLog" DROP CONSTRAINT IF EXISTS "AttendanceAuditLog_pkey";
+ALTER TABLE IF EXISTS ONLY public."AcademicYear" DROP CONSTRAINT IF EXISTS "AcademicYear_pkey";
+DROP TABLE IF EXISTS public."UserRole";
+DROP TABLE IF EXISTS public."User";
+DROP TABLE IF EXISTS public."TimetableEntry";
+DROP TABLE IF EXISTS public."SubjectOffering";
+DROP TABLE IF EXISTS public."Subject";
+DROP TABLE IF EXISTS public."StudentEnrollment";
+DROP TABLE IF EXISTS public."Student";
+DROP TABLE IF EXISTS public."Section";
+DROP TABLE IF EXISTS public."School";
+DROP TABLE IF EXISTS public."Role";
+DROP TABLE IF EXISTS public."Regulation";
+DROP TABLE IF EXISTS public."Program";
+DROP TABLE IF EXISTS public."LabBatchStudent";
+DROP TABLE IF EXISTS public."LabBatch";
+DROP TABLE IF EXISTS public."FacultySubjectAssignment";
+DROP TABLE IF EXISTS public."Faculty";
+DROP TABLE IF EXISTS public."Department";
+DROP TABLE IF EXISTS public."AuditLog";
+DROP TABLE IF EXISTS public."AttendanceSession";
+DROP TABLE IF EXISTS public."AttendanceRecord";
+DROP TABLE IF EXISTS public."AttendanceAuditLog";
+DROP TABLE IF EXISTS public."AcademicYear";
+DROP TYPE IF EXISTS public."SubjectType";
+DROP TYPE IF EXISTS public."StudentStatus";
+DROP TYPE IF EXISTS public."SessionType";
+DROP TYPE IF EXISTS public."RoleType";
+DROP TYPE IF EXISTS public."AttendanceStatus";
+-- *not* dropping schema, since initdb creates it
 --
--- Name: public; Type: SCHEMA; Schema: -; Owner: postgres
+-- Name: public; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA public;
+-- *not* creating schema, since initdb creates it
 
-
-ALTER SCHEMA public OWNER TO postgres;
 
 --
--- Name: AttendanceStatus; Type: TYPE; Schema: public; Owner: postgres
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON SCHEMA public IS '';
+
+
+--
+-- Name: AttendanceStatus; Type: TYPE; Schema: public; Owner: -
 --
 
 CREATE TYPE public."AttendanceStatus" AS ENUM (
@@ -40,10 +213,8 @@ CREATE TYPE public."AttendanceStatus" AS ENUM (
 );
 
 
-ALTER TYPE public."AttendanceStatus" OWNER TO postgres;
-
 --
--- Name: RoleType; Type: TYPE; Schema: public; Owner: postgres
+-- Name: RoleType; Type: TYPE; Schema: public; Owner: -
 --
 
 CREATE TYPE public."RoleType" AS ENUM (
@@ -61,10 +232,8 @@ CREATE TYPE public."RoleType" AS ENUM (
 );
 
 
-ALTER TYPE public."RoleType" OWNER TO postgres;
-
 --
--- Name: SessionType; Type: TYPE; Schema: public; Owner: postgres
+-- Name: SessionType; Type: TYPE; Schema: public; Owner: -
 --
 
 CREATE TYPE public."SessionType" AS ENUM (
@@ -76,10 +245,8 @@ CREATE TYPE public."SessionType" AS ENUM (
 );
 
 
-ALTER TYPE public."SessionType" OWNER TO postgres;
-
 --
--- Name: StudentStatus; Type: TYPE; Schema: public; Owner: postgres
+-- Name: StudentStatus; Type: TYPE; Schema: public; Owner: -
 --
 
 CREATE TYPE public."StudentStatus" AS ENUM (
@@ -91,10 +258,8 @@ CREATE TYPE public."StudentStatus" AS ENUM (
 );
 
 
-ALTER TYPE public."StudentStatus" OWNER TO postgres;
-
 --
--- Name: SubjectType; Type: TYPE; Schema: public; Owner: postgres
+-- Name: SubjectType; Type: TYPE; Schema: public; Owner: -
 --
 
 CREATE TYPE public."SubjectType" AS ENUM (
@@ -109,14 +274,12 @@ CREATE TYPE public."SubjectType" AS ENUM (
 );
 
 
-ALTER TYPE public."SubjectType" OWNER TO postgres;
-
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
 --
--- Name: AcademicYear; Type: TABLE; Schema: public; Owner: postgres
+-- Name: AcademicYear; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."AcademicYear" (
@@ -132,10 +295,8 @@ CREATE TABLE public."AcademicYear" (
 );
 
 
-ALTER TABLE public."AcademicYear" OWNER TO postgres;
-
 --
--- Name: AttendanceAuditLog; Type: TABLE; Schema: public; Owner: postgres
+-- Name: AttendanceAuditLog; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."AttendanceAuditLog" (
@@ -152,10 +313,8 @@ CREATE TABLE public."AttendanceAuditLog" (
 );
 
 
-ALTER TABLE public."AttendanceAuditLog" OWNER TO postgres;
-
 --
--- Name: AttendanceRecord; Type: TABLE; Schema: public; Owner: postgres
+-- Name: AttendanceRecord; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."AttendanceRecord" (
@@ -169,10 +328,8 @@ CREATE TABLE public."AttendanceRecord" (
 );
 
 
-ALTER TABLE public."AttendanceRecord" OWNER TO postgres;
-
 --
--- Name: AttendanceSession; Type: TABLE; Schema: public; Owner: postgres
+-- Name: AttendanceSession; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."AttendanceSession" (
@@ -196,10 +353,8 @@ CREATE TABLE public."AttendanceSession" (
 );
 
 
-ALTER TABLE public."AttendanceSession" OWNER TO postgres;
-
 --
--- Name: AuditLog; Type: TABLE; Schema: public; Owner: postgres
+-- Name: AuditLog; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."AuditLog" (
@@ -216,10 +371,8 @@ CREATE TABLE public."AuditLog" (
 );
 
 
-ALTER TABLE public."AuditLog" OWNER TO postgres;
-
 --
--- Name: Department; Type: TABLE; Schema: public; Owner: postgres
+-- Name: Department; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."Department" (
@@ -236,10 +389,8 @@ CREATE TABLE public."Department" (
 );
 
 
-ALTER TABLE public."Department" OWNER TO postgres;
-
 --
--- Name: Faculty; Type: TABLE; Schema: public; Owner: postgres
+-- Name: Faculty; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."Faculty" (
@@ -258,10 +409,8 @@ CREATE TABLE public."Faculty" (
 );
 
 
-ALTER TABLE public."Faculty" OWNER TO postgres;
-
 --
--- Name: FacultySubjectAssignment; Type: TABLE; Schema: public; Owner: postgres
+-- Name: FacultySubjectAssignment; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."FacultySubjectAssignment" (
@@ -277,10 +426,8 @@ CREATE TABLE public."FacultySubjectAssignment" (
 );
 
 
-ALTER TABLE public."FacultySubjectAssignment" OWNER TO postgres;
-
 --
--- Name: LabBatch; Type: TABLE; Schema: public; Owner: postgres
+-- Name: LabBatch; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."LabBatch" (
@@ -296,10 +443,8 @@ CREATE TABLE public."LabBatch" (
 );
 
 
-ALTER TABLE public."LabBatch" OWNER TO postgres;
-
 --
--- Name: LabBatchStudent; Type: TABLE; Schema: public; Owner: postgres
+-- Name: LabBatchStudent; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."LabBatchStudent" (
@@ -310,10 +455,8 @@ CREATE TABLE public."LabBatchStudent" (
 );
 
 
-ALTER TABLE public."LabBatchStudent" OWNER TO postgres;
-
 --
--- Name: Program; Type: TABLE; Schema: public; Owner: postgres
+-- Name: Program; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."Program" (
@@ -332,10 +475,8 @@ CREATE TABLE public."Program" (
 );
 
 
-ALTER TABLE public."Program" OWNER TO postgres;
-
 --
--- Name: Regulation; Type: TABLE; Schema: public; Owner: postgres
+-- Name: Regulation; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."Regulation" (
@@ -351,10 +492,8 @@ CREATE TABLE public."Regulation" (
 );
 
 
-ALTER TABLE public."Regulation" OWNER TO postgres;
-
 --
--- Name: Role; Type: TABLE; Schema: public; Owner: postgres
+-- Name: Role; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."Role" (
@@ -364,10 +503,8 @@ CREATE TABLE public."Role" (
 );
 
 
-ALTER TABLE public."Role" OWNER TO postgres;
-
 --
--- Name: School; Type: TABLE; Schema: public; Owner: postgres
+-- Name: School; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."School" (
@@ -383,10 +520,8 @@ CREATE TABLE public."School" (
 );
 
 
-ALTER TABLE public."School" OWNER TO postgres;
-
 --
--- Name: Section; Type: TABLE; Schema: public; Owner: postgres
+-- Name: Section; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."Section" (
@@ -405,10 +540,8 @@ CREATE TABLE public."Section" (
 );
 
 
-ALTER TABLE public."Section" OWNER TO postgres;
-
 --
--- Name: Student; Type: TABLE; Schema: public; Owner: postgres
+-- Name: Student; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."Student" (
@@ -440,10 +573,8 @@ CREATE TABLE public."Student" (
 );
 
 
-ALTER TABLE public."Student" OWNER TO postgres;
-
 --
--- Name: StudentEnrollment; Type: TABLE; Schema: public; Owner: postgres
+-- Name: StudentEnrollment; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."StudentEnrollment" (
@@ -460,10 +591,8 @@ CREATE TABLE public."StudentEnrollment" (
 );
 
 
-ALTER TABLE public."StudentEnrollment" OWNER TO postgres;
-
 --
--- Name: Subject; Type: TABLE; Schema: public; Owner: postgres
+-- Name: Subject; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."Subject" (
@@ -483,10 +612,8 @@ CREATE TABLE public."Subject" (
 );
 
 
-ALTER TABLE public."Subject" OWNER TO postgres;
-
 --
--- Name: SubjectOffering; Type: TABLE; Schema: public; Owner: postgres
+-- Name: SubjectOffering; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."SubjectOffering" (
@@ -504,10 +631,8 @@ CREATE TABLE public."SubjectOffering" (
 );
 
 
-ALTER TABLE public."SubjectOffering" OWNER TO postgres;
-
 --
--- Name: TimetableEntry; Type: TABLE; Schema: public; Owner: postgres
+-- Name: TimetableEntry; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."TimetableEntry" (
@@ -525,10 +650,8 @@ CREATE TABLE public."TimetableEntry" (
 );
 
 
-ALTER TABLE public."TimetableEntry" OWNER TO postgres;
-
 --
--- Name: User; Type: TABLE; Schema: public; Owner: postgres
+-- Name: User; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."User" (
@@ -549,10 +672,8 @@ CREATE TABLE public."User" (
 );
 
 
-ALTER TABLE public."User" OWNER TO postgres;
-
 --
--- Name: UserRole; Type: TABLE; Schema: public; Owner: postgres
+-- Name: UserRole; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."UserRole" (
@@ -566,10 +687,8 @@ CREATE TABLE public."UserRole" (
 );
 
 
-ALTER TABLE public."UserRole" OWNER TO postgres;
-
 --
--- Data for Name: AcademicYear; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: AcademicYear; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."AcademicYear" (id, code, "startDate", "endDate", "isCurrent", "isActive", "createdAt", "updatedAt", "deletedAt") FROM stdin;
@@ -579,7 +698,7 @@ cmuzp7hsm000ebynpfs5ze3wj	2026-27	2026-06-01 00:00:00	2027-05-31 00:00:00	t	t	20
 
 
 --
--- Data for Name: AttendanceAuditLog; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: AttendanceAuditLog; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."AttendanceAuditLog" (id, "sessionId", "studentId", "changedById", "oldStatus", "newStatus", reason, "ipAddress", "userAgent", "timestamp") FROM stdin;
@@ -587,7 +706,7 @@ COPY public."AttendanceAuditLog" (id, "sessionId", "studentId", "changedById", "
 
 
 --
--- Data for Name: AttendanceRecord; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: AttendanceRecord; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."AttendanceRecord" (id, "sessionId", "studentId", status, remarks, "createdAt", "updatedAt") FROM stdin;
@@ -84475,7 +84594,7 @@ cmv0py1w21vvzae2egclq8jbp	cmv0py1w11vueae2ed42bjo1x	cmv0lfkcp062410e0p33hbyvy	PR
 
 
 --
--- Data for Name: AttendanceSession; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: AttendanceSession; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."AttendanceSession" (id, "academicYearId", "assignmentId", "sectionId", "facultyId", "labBatchId", "sessionDate", "periodNumber", "sessionType", "topicCovered", "totalStudents", "presentCount", "absentCount", "recordedById", "submittedAt", "isLocked", "updatedAt") FROM stdin;
@@ -85491,7 +85610,7 @@ cmv0py1w11vueae2ed42bjo1x	cmuzp7hsm000ebynpfs5ze3wj	cmv0mput601a3gu0b70lpnwdr	cm
 
 
 --
--- Data for Name: AuditLog; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: AuditLog; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."AuditLog" (id, "userId", action, resource, "resourceId", "ipAddress", "userAgent", status, details, "timestamp") FROM stdin;
@@ -85719,7 +85838,7 @@ cmv5dwjke000n2mix4ij5ra7m	cmuzp7hsc000bbynpr08m4i25	LOGIN	User	cmuzp7hsc000bbynp
 
 
 --
--- Data for Name: Department; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: Department; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."Department" (id, "schoolId", code, name, "isTeachingOnly", "hodId", "isActive", "createdAt", "updatedAt", "deletedAt") FROM stdin;
@@ -85740,7 +85859,7 @@ cmuzu9ogt000tydphzkxjiy1r	\N	ENG	Department of English	t	\N	t	2026-10-08 17:57:1
 
 
 --
--- Data for Name: Faculty; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: Faculty; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."Faculty" (id, "userId", "employeeId", "shortName", designation, qualification, "departmentId", "joiningDate", "isActive", "createdAt", "updatedAt", "deletedAt") FROM stdin;
@@ -85826,7 +85945,7 @@ cmuzu9oq60091ydphj2suogg8	cmuzu9oq5008xydph5s3lk30w	GVPIHLR-IRS	IRS	Assistant Pr
 
 
 --
--- Data for Name: FacultySubjectAssignment; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: FacultySubjectAssignment; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."FacultySubjectAssignment" (id, "academicYearId", "facultyId", "subjectOfferingId", "sectionId", "isPrimary", "isActive", "assignedAt", "updatedAt") FROM stdin;
@@ -86338,7 +86457,7 @@ cmv0mpux201lzgu0bpchjw4yp	cmuzp7hsm000ebynpfs5ze3wj	cmuzu9op5005fydphd5sve6c9	cm
 
 
 --
--- Data for Name: LabBatch; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: LabBatch; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."LabBatch" (id, "sectionId", "batchNumber", name, capacity, "isActive", "createdAt", "updatedAt", "deletedAt") FROM stdin;
@@ -86374,7 +86493,7 @@ cmv0jpmg7002dmzmy3937ylji	cmv0jpmg60029mzmy20g7hxvl	2	Batch 2	\N	t	2026-10-09 05
 
 
 --
--- Data for Name: LabBatchStudent; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: LabBatchStudent; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."LabBatchStudent" (id, "labBatchId", "studentId", "createdAt") FROM stdin;
@@ -87547,7 +87666,7 @@ cmv0lfkgk07gi10e089qd3aqc	cmv0jpmg7002dmzmy3937ylji	cmv0lfkgg07eu10e0oyewne02	20
 
 
 --
--- Data for Name: Program; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: Program; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."Program" (id, "schoolId", code, name, "degreeType", "durationYears", "totalSemesters", "isActive", "createdAt", "updatedAt", "deletedAt", "regulationId") FROM stdin;
@@ -87598,7 +87717,7 @@ cmuzuc7jk003b80ktbyrz72ls	cmuzu9ogi0007ydphw5isz2ha	MA-ASTROLOGY	Astrology	PG	2	
 
 
 --
--- Data for Name: Regulation; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: Regulation; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."Regulation" (id, code, name, description, "academicYearStart", "isActive", "createdAt", "updatedAt", "deletedAt") FROM stdin;
@@ -87607,7 +87726,7 @@ cmuztcm1y00079z3dlq5k2hdd	R1	Regulation R1	University Curriculum Regulation R1 (
 
 
 --
--- Data for Name: Role; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: Role; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."Role" (id, name, description) FROM stdin;
@@ -87626,7 +87745,7 @@ cmuzp7hnd000abynpvwgf06k3	OFFICE	OFFICE institutional authority
 
 
 --
--- Data for Name: School; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: School; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."School" (id, code, name, description, "deanId", "isActive", "createdAt", "updatedAt", "deletedAt") FROM stdin;
@@ -87640,7 +87759,7 @@ cmuzu9ogi0007ydphw5isz2ha	SAH	School of Arts and Humanities	Civil Service Studie
 
 
 --
--- Data for Name: Section; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: Section; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."Section" (id, "academicYearId", "programId", year, semester, name, "displayName", capacity, "isActive", "createdAt", "updatedAt", "deletedAt") FROM stdin;
@@ -87662,7 +87781,7 @@ cmv0jpmg60029mzmy20g7hxvl	cmuzp7hsm000ebynpfs5ze3wj	cmuzuc7j5001r80ktgbhr8k92	1	
 
 
 --
--- Data for Name: Student; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: Student; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."Student" (id, "userId", "rollNumber", "registerNumber", "parentName", "parentPhone", "parentEmail", "dateOfBirth", gender, "bloodGroup", status, "admissionYear", "createdAt", "updatedAt", "deletedAt", "casteCategory", "eapcetRank", ews, "interPercentage", "jeePercentile", "jeeRank", region, "specialCategory", state, "tcVerified") FROM stdin;
@@ -88835,7 +88954,7 @@ cmv0lfkgg07eq10e0t93v78gl	cmv0lfkgc07d810e0s8dsucy5	26UEMRB0035	581464063728	Lin
 
 
 --
--- Data for Name: StudentEnrollment; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: StudentEnrollment; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."StudentEnrollment" (id, "studentId", "academicYearId", "programId", year, semester, "sectionId", "rollNoInSection", "isCurrent", "enrolledAt") FROM stdin;
@@ -90008,7 +90127,7 @@ cmv0lfkff074a10e00oa4f3y5	cmv0lfkfb072w10e0gmx6w5n2	cmuzp7hsm000ebynpfs5ze3wj	cm
 
 
 --
--- Data for Name: Subject; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: Subject; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."Subject" (id, code, name, "shortName", credits, type, "departmentId", syllabus, description, "isActive", "createdAt", "updatedAt", "deletedAt") FROM stdin;
@@ -90052,7 +90171,7 @@ cmv0mpue4001zgu0bsx08nlfu	26DS101L	Foundations of Data Science / CSP Lab	FDS / C
 
 
 --
--- Data for Name: SubjectOffering; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: SubjectOffering; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."SubjectOffering" (id, "academicYearId", "subjectId", "programId", "regulationId", year, semester, "isElective", "isActive", "createdAt", "updatedAt") FROM stdin;
@@ -90456,7 +90575,7 @@ cmv0mpux101lxgu0babqascv8	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpue4001zgu0bsx08nlfu	cm
 
 
 --
--- Data for Name: TimetableEntry; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: TimetableEntry; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."TimetableEntry" (id, "academicYearId", "assignmentId", "sectionId", "facultyId", "labBatchId", "dayOfWeek", "startTime", "endTime", "roomNumber", "isActive") FROM stdin;
@@ -90464,7 +90583,7 @@ COPY public."TimetableEntry" (id, "academicYearId", "assignmentId", "sectionId",
 
 
 --
--- Data for Name: User; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: User; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."User" (id, username, email, "passwordHash", "fullName", phone, "isActive", "mustChangePassword", "lastLoginAt", "failedAttempts", "lockedUntil", "createdAt", "updatedAt", "deletedAt") FROM stdin;
@@ -91717,7 +91836,7 @@ cmuzp7hsc000bbynpr08m4i25	admin	admin@gvpihlr.edu.in	$2a$12$olLcQ23IA0/wz/9ao901
 
 
 --
--- Data for Name: UserRole; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: UserRole; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public."UserRole" (id, "userId", "roleId", "schoolId", "departmentId", "programId", "createdAt") FROM stdin;
@@ -92970,7 +93089,7 @@ cmv5cxmpg0003k3hx3f2a13ss	cmv5cxakt000110wnsmb2rfxg	cmuzp7hnd000abynpvwgf06k3	\N
 
 
 --
--- Name: AcademicYear AcademicYear_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: AcademicYear AcademicYear_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AcademicYear"
@@ -92978,7 +93097,7 @@ ALTER TABLE ONLY public."AcademicYear"
 
 
 --
--- Name: AttendanceAuditLog AttendanceAuditLog_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: AttendanceAuditLog AttendanceAuditLog_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AttendanceAuditLog"
@@ -92986,7 +93105,7 @@ ALTER TABLE ONLY public."AttendanceAuditLog"
 
 
 --
--- Name: AttendanceRecord AttendanceRecord_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: AttendanceRecord AttendanceRecord_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AttendanceRecord"
@@ -92994,7 +93113,7 @@ ALTER TABLE ONLY public."AttendanceRecord"
 
 
 --
--- Name: AttendanceSession AttendanceSession_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: AttendanceSession AttendanceSession_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AttendanceSession"
@@ -93002,7 +93121,7 @@ ALTER TABLE ONLY public."AttendanceSession"
 
 
 --
--- Name: AuditLog AuditLog_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: AuditLog AuditLog_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AuditLog"
@@ -93010,7 +93129,7 @@ ALTER TABLE ONLY public."AuditLog"
 
 
 --
--- Name: Department Department_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: Department Department_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Department"
@@ -93018,7 +93137,7 @@ ALTER TABLE ONLY public."Department"
 
 
 --
--- Name: FacultySubjectAssignment FacultySubjectAssignment_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: FacultySubjectAssignment FacultySubjectAssignment_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."FacultySubjectAssignment"
@@ -93026,7 +93145,7 @@ ALTER TABLE ONLY public."FacultySubjectAssignment"
 
 
 --
--- Name: Faculty Faculty_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: Faculty Faculty_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Faculty"
@@ -93034,7 +93153,7 @@ ALTER TABLE ONLY public."Faculty"
 
 
 --
--- Name: LabBatchStudent LabBatchStudent_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: LabBatchStudent LabBatchStudent_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."LabBatchStudent"
@@ -93042,7 +93161,7 @@ ALTER TABLE ONLY public."LabBatchStudent"
 
 
 --
--- Name: LabBatch LabBatch_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: LabBatch LabBatch_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."LabBatch"
@@ -93050,7 +93169,7 @@ ALTER TABLE ONLY public."LabBatch"
 
 
 --
--- Name: Program Program_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: Program Program_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Program"
@@ -93058,7 +93177,7 @@ ALTER TABLE ONLY public."Program"
 
 
 --
--- Name: Regulation Regulation_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: Regulation Regulation_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Regulation"
@@ -93066,7 +93185,7 @@ ALTER TABLE ONLY public."Regulation"
 
 
 --
--- Name: Role Role_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: Role Role_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Role"
@@ -93074,7 +93193,7 @@ ALTER TABLE ONLY public."Role"
 
 
 --
--- Name: School School_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: School School_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."School"
@@ -93082,7 +93201,7 @@ ALTER TABLE ONLY public."School"
 
 
 --
--- Name: Section Section_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: Section Section_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Section"
@@ -93090,7 +93209,7 @@ ALTER TABLE ONLY public."Section"
 
 
 --
--- Name: StudentEnrollment StudentEnrollment_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: StudentEnrollment StudentEnrollment_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."StudentEnrollment"
@@ -93098,7 +93217,7 @@ ALTER TABLE ONLY public."StudentEnrollment"
 
 
 --
--- Name: Student Student_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: Student Student_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Student"
@@ -93106,7 +93225,7 @@ ALTER TABLE ONLY public."Student"
 
 
 --
--- Name: SubjectOffering SubjectOffering_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: SubjectOffering SubjectOffering_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."SubjectOffering"
@@ -93114,7 +93233,7 @@ ALTER TABLE ONLY public."SubjectOffering"
 
 
 --
--- Name: Subject Subject_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: Subject Subject_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Subject"
@@ -93122,7 +93241,7 @@ ALTER TABLE ONLY public."Subject"
 
 
 --
--- Name: TimetableEntry TimetableEntry_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: TimetableEntry TimetableEntry_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."TimetableEntry"
@@ -93130,7 +93249,7 @@ ALTER TABLE ONLY public."TimetableEntry"
 
 
 --
--- Name: UserRole UserRole_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: UserRole UserRole_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."UserRole"
@@ -93138,7 +93257,7 @@ ALTER TABLE ONLY public."UserRole"
 
 
 --
--- Name: User User_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: User User_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."User"
@@ -93146,518 +93265,518 @@ ALTER TABLE ONLY public."User"
 
 
 --
--- Name: AcademicYear_code_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: AcademicYear_code_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "AcademicYear_code_key" ON public."AcademicYear" USING btree (code);
 
 
 --
--- Name: AcademicYear_isCurrent_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: AcademicYear_isCurrent_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "AcademicYear_isCurrent_idx" ON public."AcademicYear" USING btree ("isCurrent");
 
 
 --
--- Name: AttendanceAuditLog_changedById_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: AttendanceAuditLog_changedById_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "AttendanceAuditLog_changedById_idx" ON public."AttendanceAuditLog" USING btree ("changedById");
 
 
 --
--- Name: AttendanceAuditLog_sessionId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: AttendanceAuditLog_sessionId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "AttendanceAuditLog_sessionId_idx" ON public."AttendanceAuditLog" USING btree ("sessionId");
 
 
 --
--- Name: AttendanceAuditLog_studentId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: AttendanceAuditLog_studentId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "AttendanceAuditLog_studentId_idx" ON public."AttendanceAuditLog" USING btree ("studentId");
 
 
 --
--- Name: AttendanceRecord_sessionId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: AttendanceRecord_sessionId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "AttendanceRecord_sessionId_idx" ON public."AttendanceRecord" USING btree ("sessionId");
 
 
 --
--- Name: AttendanceRecord_sessionId_studentId_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: AttendanceRecord_sessionId_studentId_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "AttendanceRecord_sessionId_studentId_key" ON public."AttendanceRecord" USING btree ("sessionId", "studentId");
 
 
 --
--- Name: AttendanceRecord_studentId_status_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: AttendanceRecord_studentId_status_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "AttendanceRecord_studentId_status_idx" ON public."AttendanceRecord" USING btree ("studentId", status);
 
 
 --
--- Name: AttendanceSession_academicYearId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: AttendanceSession_academicYearId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "AttendanceSession_academicYearId_idx" ON public."AttendanceSession" USING btree ("academicYearId");
 
 
 --
--- Name: AttendanceSession_academicYearId_sectionId_assignmentId_ses_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: AttendanceSession_academicYearId_sectionId_assignmentId_ses_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "AttendanceSession_academicYearId_sectionId_assignmentId_ses_key" ON public."AttendanceSession" USING btree ("academicYearId", "sectionId", "assignmentId", "sessionDate", "periodNumber", "labBatchId");
 
 
 --
--- Name: AttendanceSession_assignmentId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: AttendanceSession_assignmentId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "AttendanceSession_assignmentId_idx" ON public."AttendanceSession" USING btree ("assignmentId");
 
 
 --
--- Name: AttendanceSession_facultyId_sessionDate_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: AttendanceSession_facultyId_sessionDate_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "AttendanceSession_facultyId_sessionDate_idx" ON public."AttendanceSession" USING btree ("facultyId", "sessionDate");
 
 
 --
--- Name: AttendanceSession_sectionId_sessionDate_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: AttendanceSession_sectionId_sessionDate_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "AttendanceSession_sectionId_sessionDate_idx" ON public."AttendanceSession" USING btree ("sectionId", "sessionDate");
 
 
 --
--- Name: AuditLog_action_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: AuditLog_action_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "AuditLog_action_idx" ON public."AuditLog" USING btree (action);
 
 
 --
--- Name: AuditLog_resource_resourceId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: AuditLog_resource_resourceId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "AuditLog_resource_resourceId_idx" ON public."AuditLog" USING btree (resource, "resourceId");
 
 
 --
--- Name: AuditLog_timestamp_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: AuditLog_timestamp_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "AuditLog_timestamp_idx" ON public."AuditLog" USING btree ("timestamp");
 
 
 --
--- Name: AuditLog_userId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: AuditLog_userId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "AuditLog_userId_idx" ON public."AuditLog" USING btree ("userId");
 
 
 --
--- Name: Department_code_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Department_code_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "Department_code_idx" ON public."Department" USING btree (code);
 
 
 --
--- Name: Department_code_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Department_code_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "Department_code_key" ON public."Department" USING btree (code);
 
 
 --
--- Name: Department_schoolId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Department_schoolId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "Department_schoolId_idx" ON public."Department" USING btree ("schoolId");
 
 
 --
--- Name: FacultySubjectAssignment_academicYearId_facultyId_subjectOf_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: FacultySubjectAssignment_academicYearId_facultyId_subjectOf_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "FacultySubjectAssignment_academicYearId_facultyId_subjectOf_key" ON public."FacultySubjectAssignment" USING btree ("academicYearId", "facultyId", "subjectOfferingId", "sectionId");
 
 
 --
--- Name: FacultySubjectAssignment_academicYearId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: FacultySubjectAssignment_academicYearId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "FacultySubjectAssignment_academicYearId_idx" ON public."FacultySubjectAssignment" USING btree ("academicYearId");
 
 
 --
--- Name: FacultySubjectAssignment_facultyId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: FacultySubjectAssignment_facultyId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "FacultySubjectAssignment_facultyId_idx" ON public."FacultySubjectAssignment" USING btree ("facultyId");
 
 
 --
--- Name: FacultySubjectAssignment_sectionId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: FacultySubjectAssignment_sectionId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "FacultySubjectAssignment_sectionId_idx" ON public."FacultySubjectAssignment" USING btree ("sectionId");
 
 
 --
--- Name: FacultySubjectAssignment_subjectOfferingId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: FacultySubjectAssignment_subjectOfferingId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "FacultySubjectAssignment_subjectOfferingId_idx" ON public."FacultySubjectAssignment" USING btree ("subjectOfferingId");
 
 
 --
--- Name: Faculty_departmentId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Faculty_departmentId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "Faculty_departmentId_idx" ON public."Faculty" USING btree ("departmentId");
 
 
 --
--- Name: Faculty_employeeId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Faculty_employeeId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "Faculty_employeeId_idx" ON public."Faculty" USING btree ("employeeId");
 
 
 --
--- Name: Faculty_employeeId_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Faculty_employeeId_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "Faculty_employeeId_key" ON public."Faculty" USING btree ("employeeId");
 
 
 --
--- Name: Faculty_shortName_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Faculty_shortName_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "Faculty_shortName_idx" ON public."Faculty" USING btree ("shortName");
 
 
 --
--- Name: Faculty_userId_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Faculty_userId_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "Faculty_userId_key" ON public."Faculty" USING btree ("userId");
 
 
 --
--- Name: LabBatchStudent_labBatchId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: LabBatchStudent_labBatchId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "LabBatchStudent_labBatchId_idx" ON public."LabBatchStudent" USING btree ("labBatchId");
 
 
 --
--- Name: LabBatchStudent_labBatchId_studentId_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: LabBatchStudent_labBatchId_studentId_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "LabBatchStudent_labBatchId_studentId_key" ON public."LabBatchStudent" USING btree ("labBatchId", "studentId");
 
 
 --
--- Name: LabBatchStudent_studentId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: LabBatchStudent_studentId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "LabBatchStudent_studentId_idx" ON public."LabBatchStudent" USING btree ("studentId");
 
 
 --
--- Name: LabBatch_sectionId_batchNumber_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: LabBatch_sectionId_batchNumber_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "LabBatch_sectionId_batchNumber_key" ON public."LabBatch" USING btree ("sectionId", "batchNumber");
 
 
 --
--- Name: LabBatch_sectionId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: LabBatch_sectionId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "LabBatch_sectionId_idx" ON public."LabBatch" USING btree ("sectionId");
 
 
 --
--- Name: Program_code_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Program_code_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "Program_code_idx" ON public."Program" USING btree (code);
 
 
 --
--- Name: Program_code_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Program_code_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "Program_code_key" ON public."Program" USING btree (code);
 
 
 --
--- Name: Program_regulationId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Program_regulationId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "Program_regulationId_idx" ON public."Program" USING btree ("regulationId");
 
 
 --
--- Name: Program_schoolId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Program_schoolId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "Program_schoolId_idx" ON public."Program" USING btree ("schoolId");
 
 
 --
--- Name: Regulation_code_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Regulation_code_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "Regulation_code_idx" ON public."Regulation" USING btree (code);
 
 
 --
--- Name: Regulation_code_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Regulation_code_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "Regulation_code_key" ON public."Regulation" USING btree (code);
 
 
 --
--- Name: Role_name_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Role_name_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "Role_name_key" ON public."Role" USING btree (name);
 
 
 --
--- Name: School_code_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: School_code_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "School_code_idx" ON public."School" USING btree (code);
 
 
 --
--- Name: School_code_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: School_code_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "School_code_key" ON public."School" USING btree (code);
 
 
 --
--- Name: Section_academicYearId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Section_academicYearId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "Section_academicYearId_idx" ON public."Section" USING btree ("academicYearId");
 
 
 --
--- Name: Section_academicYearId_programId_year_semester_name_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Section_academicYearId_programId_year_semester_name_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "Section_academicYearId_programId_year_semester_name_key" ON public."Section" USING btree ("academicYearId", "programId", year, semester, name);
 
 
 --
--- Name: Section_programId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Section_programId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "Section_programId_idx" ON public."Section" USING btree ("programId");
 
 
 --
--- Name: Section_year_semester_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Section_year_semester_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "Section_year_semester_idx" ON public."Section" USING btree (year, semester);
 
 
 --
--- Name: StudentEnrollment_academicYearId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: StudentEnrollment_academicYearId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "StudentEnrollment_academicYearId_idx" ON public."StudentEnrollment" USING btree ("academicYearId");
 
 
 --
--- Name: StudentEnrollment_programId_year_semester_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: StudentEnrollment_programId_year_semester_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "StudentEnrollment_programId_year_semester_idx" ON public."StudentEnrollment" USING btree ("programId", year, semester);
 
 
 --
--- Name: StudentEnrollment_sectionId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: StudentEnrollment_sectionId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "StudentEnrollment_sectionId_idx" ON public."StudentEnrollment" USING btree ("sectionId");
 
 
 --
--- Name: StudentEnrollment_studentId_academicYearId_semester_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: StudentEnrollment_studentId_academicYearId_semester_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "StudentEnrollment_studentId_academicYearId_semester_key" ON public."StudentEnrollment" USING btree ("studentId", "academicYearId", semester);
 
 
 --
--- Name: StudentEnrollment_studentId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: StudentEnrollment_studentId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "StudentEnrollment_studentId_idx" ON public."StudentEnrollment" USING btree ("studentId");
 
 
 --
--- Name: Student_registerNumber_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Student_registerNumber_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "Student_registerNumber_key" ON public."Student" USING btree ("registerNumber");
 
 
 --
--- Name: Student_rollNumber_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Student_rollNumber_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "Student_rollNumber_idx" ON public."Student" USING btree ("rollNumber");
 
 
 --
--- Name: Student_rollNumber_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Student_rollNumber_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "Student_rollNumber_key" ON public."Student" USING btree ("rollNumber");
 
 
 --
--- Name: Student_status_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Student_status_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "Student_status_idx" ON public."Student" USING btree (status);
 
 
 --
--- Name: Student_userId_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Student_userId_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "Student_userId_key" ON public."Student" USING btree ("userId");
 
 
 --
--- Name: SubjectOffering_academicYearId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: SubjectOffering_academicYearId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "SubjectOffering_academicYearId_idx" ON public."SubjectOffering" USING btree ("academicYearId");
 
 
 --
--- Name: SubjectOffering_academicYearId_programId_subjectId_year_sem_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: SubjectOffering_academicYearId_programId_subjectId_year_sem_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "SubjectOffering_academicYearId_programId_subjectId_year_sem_key" ON public."SubjectOffering" USING btree ("academicYearId", "programId", "subjectId", year, semester);
 
 
 --
--- Name: SubjectOffering_programId_year_semester_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: SubjectOffering_programId_year_semester_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "SubjectOffering_programId_year_semester_idx" ON public."SubjectOffering" USING btree ("programId", year, semester);
 
 
 --
--- Name: SubjectOffering_regulationId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: SubjectOffering_regulationId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "SubjectOffering_regulationId_idx" ON public."SubjectOffering" USING btree ("regulationId");
 
 
 --
--- Name: SubjectOffering_subjectId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: SubjectOffering_subjectId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "SubjectOffering_subjectId_idx" ON public."SubjectOffering" USING btree ("subjectId");
 
 
 --
--- Name: Subject_code_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Subject_code_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "Subject_code_idx" ON public."Subject" USING btree (code);
 
 
 --
--- Name: Subject_code_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Subject_code_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "Subject_code_key" ON public."Subject" USING btree (code);
 
 
 --
--- Name: Subject_departmentId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: Subject_departmentId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "Subject_departmentId_idx" ON public."Subject" USING btree ("departmentId");
 
 
 --
--- Name: TimetableEntry_facultyId_dayOfWeek_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: TimetableEntry_facultyId_dayOfWeek_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "TimetableEntry_facultyId_dayOfWeek_idx" ON public."TimetableEntry" USING btree ("facultyId", "dayOfWeek");
 
 
 --
--- Name: TimetableEntry_sectionId_dayOfWeek_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: TimetableEntry_sectionId_dayOfWeek_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "TimetableEntry_sectionId_dayOfWeek_idx" ON public."TimetableEntry" USING btree ("sectionId", "dayOfWeek");
 
 
 --
--- Name: UserRole_roleId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: UserRole_roleId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "UserRole_roleId_idx" ON public."UserRole" USING btree ("roleId");
 
 
 --
--- Name: UserRole_userId_idx; Type: INDEX; Schema: public; Owner: postgres
+-- Name: UserRole_userId_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "UserRole_userId_idx" ON public."UserRole" USING btree ("userId");
 
 
 --
--- Name: UserRole_userId_roleId_schoolId_departmentId_programId_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: UserRole_userId_roleId_schoolId_departmentId_programId_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "UserRole_userId_roleId_schoolId_departmentId_programId_key" ON public."UserRole" USING btree ("userId", "roleId", "schoolId", "departmentId", "programId");
 
 
 --
--- Name: User_email_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: User_email_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "User_email_key" ON public."User" USING btree (email);
 
 
 --
--- Name: User_username_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: User_username_key; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "User_username_key" ON public."User" USING btree (username);
 
 
 --
--- Name: AttendanceAuditLog AttendanceAuditLog_changedById_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: AttendanceAuditLog AttendanceAuditLog_changedById_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AttendanceAuditLog"
@@ -93665,7 +93784,7 @@ ALTER TABLE ONLY public."AttendanceAuditLog"
 
 
 --
--- Name: AttendanceAuditLog AttendanceAuditLog_sessionId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: AttendanceAuditLog AttendanceAuditLog_sessionId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AttendanceAuditLog"
@@ -93673,7 +93792,7 @@ ALTER TABLE ONLY public."AttendanceAuditLog"
 
 
 --
--- Name: AttendanceRecord AttendanceRecord_sessionId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: AttendanceRecord AttendanceRecord_sessionId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AttendanceRecord"
@@ -93681,7 +93800,7 @@ ALTER TABLE ONLY public."AttendanceRecord"
 
 
 --
--- Name: AttendanceRecord AttendanceRecord_studentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: AttendanceRecord AttendanceRecord_studentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AttendanceRecord"
@@ -93689,7 +93808,7 @@ ALTER TABLE ONLY public."AttendanceRecord"
 
 
 --
--- Name: AttendanceSession AttendanceSession_academicYearId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: AttendanceSession AttendanceSession_academicYearId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AttendanceSession"
@@ -93697,7 +93816,7 @@ ALTER TABLE ONLY public."AttendanceSession"
 
 
 --
--- Name: AttendanceSession AttendanceSession_assignmentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: AttendanceSession AttendanceSession_assignmentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AttendanceSession"
@@ -93705,7 +93824,7 @@ ALTER TABLE ONLY public."AttendanceSession"
 
 
 --
--- Name: AttendanceSession AttendanceSession_facultyId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: AttendanceSession AttendanceSession_facultyId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AttendanceSession"
@@ -93713,7 +93832,7 @@ ALTER TABLE ONLY public."AttendanceSession"
 
 
 --
--- Name: AttendanceSession AttendanceSession_labBatchId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: AttendanceSession AttendanceSession_labBatchId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AttendanceSession"
@@ -93721,7 +93840,7 @@ ALTER TABLE ONLY public."AttendanceSession"
 
 
 --
--- Name: AttendanceSession AttendanceSession_recordedById_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: AttendanceSession AttendanceSession_recordedById_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AttendanceSession"
@@ -93729,7 +93848,7 @@ ALTER TABLE ONLY public."AttendanceSession"
 
 
 --
--- Name: AttendanceSession AttendanceSession_sectionId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: AttendanceSession AttendanceSession_sectionId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AttendanceSession"
@@ -93737,7 +93856,7 @@ ALTER TABLE ONLY public."AttendanceSession"
 
 
 --
--- Name: AuditLog AuditLog_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: AuditLog AuditLog_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AuditLog"
@@ -93745,7 +93864,7 @@ ALTER TABLE ONLY public."AuditLog"
 
 
 --
--- Name: Department Department_schoolId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: Department Department_schoolId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Department"
@@ -93753,7 +93872,7 @@ ALTER TABLE ONLY public."Department"
 
 
 --
--- Name: FacultySubjectAssignment FacultySubjectAssignment_academicYearId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: FacultySubjectAssignment FacultySubjectAssignment_academicYearId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."FacultySubjectAssignment"
@@ -93761,7 +93880,7 @@ ALTER TABLE ONLY public."FacultySubjectAssignment"
 
 
 --
--- Name: FacultySubjectAssignment FacultySubjectAssignment_facultyId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: FacultySubjectAssignment FacultySubjectAssignment_facultyId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."FacultySubjectAssignment"
@@ -93769,7 +93888,7 @@ ALTER TABLE ONLY public."FacultySubjectAssignment"
 
 
 --
--- Name: FacultySubjectAssignment FacultySubjectAssignment_sectionId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: FacultySubjectAssignment FacultySubjectAssignment_sectionId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."FacultySubjectAssignment"
@@ -93777,7 +93896,7 @@ ALTER TABLE ONLY public."FacultySubjectAssignment"
 
 
 --
--- Name: FacultySubjectAssignment FacultySubjectAssignment_subjectOfferingId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: FacultySubjectAssignment FacultySubjectAssignment_subjectOfferingId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."FacultySubjectAssignment"
@@ -93785,7 +93904,7 @@ ALTER TABLE ONLY public."FacultySubjectAssignment"
 
 
 --
--- Name: Faculty Faculty_departmentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: Faculty Faculty_departmentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Faculty"
@@ -93793,7 +93912,7 @@ ALTER TABLE ONLY public."Faculty"
 
 
 --
--- Name: Faculty Faculty_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: Faculty Faculty_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Faculty"
@@ -93801,7 +93920,7 @@ ALTER TABLE ONLY public."Faculty"
 
 
 --
--- Name: LabBatchStudent LabBatchStudent_labBatchId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: LabBatchStudent LabBatchStudent_labBatchId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."LabBatchStudent"
@@ -93809,7 +93928,7 @@ ALTER TABLE ONLY public."LabBatchStudent"
 
 
 --
--- Name: LabBatchStudent LabBatchStudent_studentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: LabBatchStudent LabBatchStudent_studentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."LabBatchStudent"
@@ -93817,7 +93936,7 @@ ALTER TABLE ONLY public."LabBatchStudent"
 
 
 --
--- Name: LabBatch LabBatch_sectionId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: LabBatch LabBatch_sectionId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."LabBatch"
@@ -93825,7 +93944,7 @@ ALTER TABLE ONLY public."LabBatch"
 
 
 --
--- Name: Program Program_regulationId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: Program Program_regulationId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Program"
@@ -93833,7 +93952,7 @@ ALTER TABLE ONLY public."Program"
 
 
 --
--- Name: Program Program_schoolId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: Program Program_schoolId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Program"
@@ -93841,7 +93960,7 @@ ALTER TABLE ONLY public."Program"
 
 
 --
--- Name: Section Section_academicYearId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: Section Section_academicYearId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Section"
@@ -93849,7 +93968,7 @@ ALTER TABLE ONLY public."Section"
 
 
 --
--- Name: Section Section_programId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: Section Section_programId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Section"
@@ -93857,7 +93976,7 @@ ALTER TABLE ONLY public."Section"
 
 
 --
--- Name: StudentEnrollment StudentEnrollment_academicYearId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: StudentEnrollment StudentEnrollment_academicYearId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."StudentEnrollment"
@@ -93865,7 +93984,7 @@ ALTER TABLE ONLY public."StudentEnrollment"
 
 
 --
--- Name: StudentEnrollment StudentEnrollment_programId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: StudentEnrollment StudentEnrollment_programId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."StudentEnrollment"
@@ -93873,7 +93992,7 @@ ALTER TABLE ONLY public."StudentEnrollment"
 
 
 --
--- Name: StudentEnrollment StudentEnrollment_sectionId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: StudentEnrollment StudentEnrollment_sectionId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."StudentEnrollment"
@@ -93881,7 +94000,7 @@ ALTER TABLE ONLY public."StudentEnrollment"
 
 
 --
--- Name: StudentEnrollment StudentEnrollment_studentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: StudentEnrollment StudentEnrollment_studentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."StudentEnrollment"
@@ -93889,7 +94008,7 @@ ALTER TABLE ONLY public."StudentEnrollment"
 
 
 --
--- Name: Student Student_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: Student Student_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Student"
@@ -93897,7 +94016,7 @@ ALTER TABLE ONLY public."Student"
 
 
 --
--- Name: SubjectOffering SubjectOffering_academicYearId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: SubjectOffering SubjectOffering_academicYearId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."SubjectOffering"
@@ -93905,7 +94024,7 @@ ALTER TABLE ONLY public."SubjectOffering"
 
 
 --
--- Name: SubjectOffering SubjectOffering_programId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: SubjectOffering SubjectOffering_programId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."SubjectOffering"
@@ -93913,7 +94032,7 @@ ALTER TABLE ONLY public."SubjectOffering"
 
 
 --
--- Name: SubjectOffering SubjectOffering_regulationId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: SubjectOffering SubjectOffering_regulationId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."SubjectOffering"
@@ -93921,7 +94040,7 @@ ALTER TABLE ONLY public."SubjectOffering"
 
 
 --
--- Name: SubjectOffering SubjectOffering_subjectId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: SubjectOffering SubjectOffering_subjectId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."SubjectOffering"
@@ -93929,7 +94048,7 @@ ALTER TABLE ONLY public."SubjectOffering"
 
 
 --
--- Name: Subject Subject_departmentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: Subject Subject_departmentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Subject"
@@ -93937,7 +94056,7 @@ ALTER TABLE ONLY public."Subject"
 
 
 --
--- Name: TimetableEntry TimetableEntry_academicYearId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: TimetableEntry TimetableEntry_academicYearId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."TimetableEntry"
@@ -93945,7 +94064,7 @@ ALTER TABLE ONLY public."TimetableEntry"
 
 
 --
--- Name: TimetableEntry TimetableEntry_assignmentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: TimetableEntry TimetableEntry_assignmentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."TimetableEntry"
@@ -93953,7 +94072,7 @@ ALTER TABLE ONLY public."TimetableEntry"
 
 
 --
--- Name: TimetableEntry TimetableEntry_facultyId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: TimetableEntry TimetableEntry_facultyId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."TimetableEntry"
@@ -93961,7 +94080,7 @@ ALTER TABLE ONLY public."TimetableEntry"
 
 
 --
--- Name: TimetableEntry TimetableEntry_labBatchId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: TimetableEntry TimetableEntry_labBatchId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."TimetableEntry"
@@ -93969,7 +94088,7 @@ ALTER TABLE ONLY public."TimetableEntry"
 
 
 --
--- Name: TimetableEntry TimetableEntry_sectionId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: TimetableEntry TimetableEntry_sectionId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."TimetableEntry"
@@ -93977,7 +94096,7 @@ ALTER TABLE ONLY public."TimetableEntry"
 
 
 --
--- Name: UserRole UserRole_departmentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: UserRole UserRole_departmentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."UserRole"
@@ -93985,7 +94104,7 @@ ALTER TABLE ONLY public."UserRole"
 
 
 --
--- Name: UserRole UserRole_programId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: UserRole UserRole_programId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."UserRole"
@@ -93993,7 +94112,7 @@ ALTER TABLE ONLY public."UserRole"
 
 
 --
--- Name: UserRole UserRole_roleId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: UserRole UserRole_roleId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."UserRole"
@@ -94001,7 +94120,7 @@ ALTER TABLE ONLY public."UserRole"
 
 
 --
--- Name: UserRole UserRole_schoolId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: UserRole UserRole_schoolId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."UserRole"
@@ -94009,7 +94128,7 @@ ALTER TABLE ONLY public."UserRole"
 
 
 --
--- Name: UserRole UserRole_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: UserRole UserRole_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."UserRole"
@@ -94017,15 +94136,8 @@ ALTER TABLE ONLY public."UserRole"
 
 
 --
--- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
---
-
-REVOKE USAGE ON SCHEMA public FROM PUBLIC;
-
-
---
 -- PostgreSQL database dump complete
 --
 
-\unrestrict eDO9DXtyTOXaIbMHMeKExG6rKdL66PwjoOkA7r5FerHiAg4mxchRjGs7jvworvX
+\unrestrict Cup6QYiuAPkpovF49lbrknfWVVhgIBbSuaMHebUCYsJDdUptfb9k4asPrLV1xAe
 

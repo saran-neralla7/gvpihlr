@@ -15,7 +15,7 @@ export default async function AdminStudentsPage() {
     redirect("/dashboard");
   }
 
-  const [students, departments, programs, sections] = await Promise.all([
+  const [students, departments, programs, sections, schools] = await Promise.all([
     prisma.student.findMany({
       include: {
         user: true,
@@ -35,13 +35,19 @@ export default async function AdminStudentsPage() {
       orderBy: { name: "asc" },
     }),
     prisma.program.findMany({
+      include: { school: true },
       orderBy: { name: "asc" },
     }),
     prisma.section.findMany({
       include: {
-        program: true,
+        program: {
+          include: { school: true },
+        },
       },
       orderBy: [{ program: { code: "asc" } }, { name: "asc" }],
+    }),
+    prisma.school.findMany({
+      orderBy: { name: "asc" },
     }),
   ]);
 
@@ -51,6 +57,7 @@ export default async function AdminStudentsPage() {
       departments={departments}
       programs={programs}
       sections={sections}
+      schools={schools}
       canDelete={isSuperAdminUser}
     />
   );

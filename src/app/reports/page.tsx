@@ -27,20 +27,33 @@ export default async function ReportsPage() {
     where: { isCurrent: true, isActive: true },
   });
 
-  // Load all active sections (Accessible by Super Admin, Office, and Faculty)
-  const sections = await prisma.section.findMany({
-    where: {
-      academicYearId: currentAY?.id,
-      isActive: true,
-    },
-    include: {
-      program: true,
-    },
-    orderBy: [
-      { program: { name: "asc" } },
-      { name: "asc" },
-    ],
-  });
+  // Load all active sections with program and school
+  const [sections, schools, programs] = await Promise.all([
+    prisma.section.findMany({
+      where: {
+        academicYearId: currentAY?.id,
+        isActive: true,
+      },
+      include: {
+        program: {
+          include: {
+            school: true,
+          },
+        },
+      },
+      orderBy: [
+        { program: { name: "asc" } },
+        { name: "asc" },
+      ],
+    }),
+    prisma.school.findMany({
+      orderBy: { name: "asc" },
+    }),
+    prisma.program.findMany({
+      include: { school: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   const subjects = await prisma.subject.findMany({
     where: { isActive: true },
@@ -89,7 +102,11 @@ export default async function ReportsPage() {
     id: s.id,
     name: s.name,
     displayName: s.displayName,
+    programId: s.programId,
     programName: s.program.name,
+    programCode: s.program.code,
+    schoolId: s.program.schoolId,
+    schoolName: s.program.school?.name || "",
     year: s.year,
     semester: s.semester,
   }));
@@ -105,6 +122,8 @@ export default async function ReportsPage() {
     <ReportsClient
       sections={sectionsFormatted}
       subjects={subjectsFormatted}
+      schools={schools}
+      programs={programs}
       initialSectionId={defaultSection?.id || ""}
       initialReport={initialReport}
     />

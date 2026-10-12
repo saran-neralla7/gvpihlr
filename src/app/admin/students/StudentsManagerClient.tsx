@@ -30,6 +30,7 @@ interface StudentsManagerProps {
   departments: any[];
   programs: any[];
   sections: any[];
+  schools?: any[];
   canDelete?: boolean;
 }
 
@@ -38,17 +39,27 @@ export default function StudentsManagerClient({
   departments,
   programs,
   sections,
+  schools = [],
   canDelete = true,
 }: StudentsManagerProps) {
   const [students, setStudents] = useState<any[]>(initialStudents);
   const [activeTab, setActiveTab] = useState<"ACTIVE" | "LEFT" | "ALUMNI" | "DETAINED">("ACTIVE");
 
-  // Filter States
+  // Filter States: School -> Program -> Year -> Semester -> Section
+  const [selectedSchool, setSelectedSchool] = useState("");
   const [selectedDeptOrProg, setSelectedDeptOrProg] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedSem, setSelectedSem] = useState("");
   const [selectedSection, setSelectedSection] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Available Programs filtered by selected school
+  const availablePrograms = useMemo(() => {
+    if (!selectedSchool) return programs;
+    return programs.filter(
+      (p) => p.schoolId === selectedSchool || p.school?.id === selectedSchool
+    );
+  }, [programs, selectedSchool]);
 
   // Checkbox selection state
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
@@ -85,6 +96,12 @@ export default function StudentsManagerClient({
   const filteredStudents = useMemo(() => {
     return filteredByTab.filter((s) => {
       const enrollment = s.enrollments?.[0];
+
+      // School Filter
+      if (selectedSchool) {
+        const schoolId = enrollment?.program?.schoolId || enrollment?.program?.school?.id;
+        if (schoolId !== selectedSchool) return false;
+      }
 
       // Department/Program Filter
       if (selectedDeptOrProg) {
@@ -130,7 +147,7 @@ export default function StudentsManagerClient({
 
       return true;
     });
-  }, [filteredByTab, selectedDeptOrProg, selectedYear, selectedSem, selectedSection, searchQuery]);
+  }, [filteredByTab, selectedSchool, selectedDeptOrProg, selectedYear, selectedSem, selectedSection, searchQuery]);
 
   // Paginated students
   const totalPages = Math.ceil(filteredStudents.length / pageSize) || 1;
@@ -165,6 +182,7 @@ export default function StudentsManagerClient({
   };
 
   const handleClearFilters = () => {
+    setSelectedSchool("");
     setSelectedDeptOrProg("");
     setSelectedYear("");
     setSelectedSem("");
@@ -527,9 +545,27 @@ export default function StudentsManagerClient({
 
       {/* Filter Controls Card matching Screenshot 3 */}
       <div className="bg-white border border-slate-200/90 rounded-3xl p-5 shadow-xs space-y-4">
-        {/* 4 Dropdowns Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Department / Program Dropdown */}
+        {/* 5 Dropdowns Hierarchy: School -> Program -> Year -> Semester -> Section */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {/* 1. School Dropdown */}
+          <select
+            value={selectedSchool}
+            onChange={(e) => {
+              setSelectedSchool(e.target.value);
+              setSelectedDeptOrProg(""); // reset program
+              setCurrentPage(1);
+            }}
+            className="w-full text-xs font-semibold bg-slate-50/80 border border-slate-200/90 rounded-xl px-3.5 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">All Schools</option>
+            {schools.map((s: any) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+
+          {/* 2. Program Dropdown (cascaded by School) */}
           <select
             value={selectedDeptOrProg}
             onChange={(e) => {
@@ -538,15 +574,15 @@ export default function StudentsManagerClient({
             }}
             className="w-full text-xs font-semibold bg-slate-50/80 border border-slate-200/90 rounded-xl px-3.5 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">All Departments</option>
-            {programs.map((p) => (
+            <option value="">All Programs</option>
+            {availablePrograms.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>
             ))}
           </select>
 
-          {/* Year Dropdown */}
+          {/* 3. Year Dropdown */}
           <select
             value={selectedYear}
             onChange={(e) => {
@@ -562,7 +598,7 @@ export default function StudentsManagerClient({
             <option value="4">Year 4</option>
           </select>
 
-          {/* Semester Dropdown */}
+          {/* 4. Semester Dropdown */}
           <select
             value={selectedSem}
             onChange={(e) => {
@@ -582,7 +618,7 @@ export default function StudentsManagerClient({
             <option value="8">Semester 8</option>
           </select>
 
-          {/* Section Dropdown */}
+          {/* 5. Section Dropdown */}
           <select
             value={selectedSection}
             onChange={(e) => {

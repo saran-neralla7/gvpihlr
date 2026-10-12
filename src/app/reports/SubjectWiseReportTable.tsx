@@ -334,12 +334,28 @@ export default function SubjectWiseReportTable({
           </table>
         </div>
 
-        {/* Official Signature Footnote for Printed Register */}
-        <div className="pt-8 grid grid-cols-3 gap-8 text-center text-xs font-bold text-slate-700 print-only">
-          <div className="border-t border-slate-400 pt-2">Faculty In-Charge</div>
-          <div className="border-t border-slate-400 pt-2">Head of Department (HOD)</div>
-          <div className="border-t border-slate-400 pt-2">Dean / Director Academic</div>
-        </div>
+        {/* Official Signature Footnote for Printed Register (Strict Single Row in Print) */}
+        <table className="w-full border-none mt-10 print-signatures-table print-only">
+          <tbody>
+            <tr>
+              <td className="w-1/3 text-center border-none px-4">
+                <div className="border-t border-slate-600 pt-2 text-xs font-bold text-slate-800">
+                  Class In-Charge / Mentor
+                </div>
+              </td>
+              <td className="w-1/3 text-center border-none px-4">
+                <div className="border-t border-slate-600 pt-2 text-xs font-bold text-slate-800">
+                  Head of Department (HOD)
+                </div>
+              </td>
+              <td className="w-1/3 text-center border-none px-4">
+                <div className="border-t border-slate-600 pt-2 text-xs font-bold text-slate-800">
+                  Dean of Academic Affairs
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   );

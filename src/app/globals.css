@@ -30,6 +30,11 @@
   background: #94a3b8;
 }
 
+/* Hide print-only elements on normal screen */
+.print-only {
+  display: none !important;
+}
+
 /* =========================================================================
    INSTITUTIONAL PRINT STYLES
    ========================================================================= */
@@ -55,13 +60,39 @@
   header:not(.print-header),
   footer,
   button,
-  .print\\:hidden {
+  .print\:hidden {
     display: none !important;
   }
 
-  /* Show elements marked only for print */
+  /* Show elements marked only for print while preserving their display nature */
   .print-only {
     display: block !important;
+  }
+
+  table.print-only,
+  table.print-signatures-table {
+    display: table !important;
+    table-layout: fixed !important;
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 2.5rem !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  table.print-signatures-table tr {
+    display: table-row !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  table.print-signatures-table td {
+    display: table-cell !important;
+    width: 33.333% !important;
+    border: none !important;
+    padding: 0 16px !important;
+    vertical-align: bottom !important;
+    text-align: center !important;
   }
 
   /* Prevent page breaks inside table rows */

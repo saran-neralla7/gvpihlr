@@ -129,3 +129,16 @@ The `/reports` module provides dual operating registers with official university
    - Multi-part Landscape **Download PDF**, **Print Register** (clean browser print), and **Export Excel**.
 
 *All schools, programs, regulations, and faculty can be managed in real-time by the Super Admin at `/admin/master`.*
+
+---
+
+## 7. Approved Feature Roadmap & Upcoming Modules
+
+| ID | Feature Name | Scope & Design Specification | Target Status |
+| :--- | :--- | :--- | :--- |
+| **F-05** | **Dynamic Section & Faculty Timetables** | Interactive weekly schedule grid for every section. Faculty get a *"Today's Schedule"* dashboard card with a one-click *"Mark Attendance for Current Period"* shortcut. | **Selected (Queue)** |
+| **F-07** | **Lab Batch Splitting & Administration** | Section batch partitioning. **Default: Unified Section (No batches)**. If practical laboratories require batches, administrators configure `Batch 1`, `Batch 2`, etc. inside the new **Administration Card** on the Admin Hub. | **Selected (Queue)** |
+| **F-16** | **Grievance Redressal & Helpdesk Ticketing** | In-app ticketing workflow for students and faculty (attendance dispute resolution, bonafide requests, classroom maintenance) with assigned resolution SLAs. | **Selected (Queue)** |
+| **F-IC** | **Dedicated Class In-Charge Login** | Specialized role & portal for designated Section In-Charges/Mentors to oversee daily attendance, verify submitted sessions, contact defaulter parents, and generate signed section registers. | **Selected (Queue)** |
+| **PWA** | **Mobile PWA Production Transformation** | Progressive Web App offline caching, service workers, installable mobile app manifest, touch-friendly $\ge 44\text{px}$ targets, and responsive drawer sheets. | **Core Mandate** |
+

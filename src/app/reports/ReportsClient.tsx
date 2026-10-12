@@ -234,7 +234,7 @@ export default function ReportsClient({
   // EXPORT: SUBJECT-WISE CONSOLIDATED CSV
   // =========================================================================
   const handleExportSubjectWiseCSV = () => {
-    const cols = reportData.subjectColumns || [];
+    const cols = (reportData.subjectColumns || []).filter((c) => c.conducted > 0);
     const headers = [
       "S.No",
       "Roll Number",
@@ -789,17 +789,17 @@ export default function ReportsClient({
             <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  Curriculum Subjects
+                  Section Subjects
                 </span>
                 <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
                   <LayoutGrid className="w-4 h-4" />
                 </div>
               </div>
               <div className="text-2xl font-black text-slate-900 mt-2">
-                {reportData.subjectColumns?.length || 0}
+                {(reportData.subjectColumns || []).filter((c) => c.conducted > 0).length}
                 <span className="text-xs font-semibold text-slate-400 ml-1.5">Subjects</span>
               </div>
-              <p className="text-[11px] text-slate-500 mt-1">Offered in this semester</p>
+              <p className="text-[11px] text-slate-500 mt-1">Conducted for this section</p>
             </div>
 
             <div className="bg-white border border-rose-200/90 rounded-2xl p-5 shadow-xs">

@@ -167,40 +167,12 @@ export async function getSectionStudentAttendanceReport(filter: ReportFilter) {
 
   const availableSubjects = Array.from(subjectMap.values()).sort((a, b) => b.count - a.count);
 
-  // Fetch curriculum subjects offered for this section's program, year & semester
-  const programOfferings = await prisma.subjectOffering.findMany({
-    where: {
-      programId: section.programId,
-      year: section.year,
-      semester: section.semester,
-      isActive: true,
-    },
-    include: {
-      subject: true,
-    },
-    orderBy: [
-      { subject: { type: "asc" } },
-      { subject: { code: "asc" } },
-    ],
-  });
-
+  // Build subject columns strictly from sessions conducted for this specific section
   const subjectColumnsMap = new Map<
     string,
     { id: string; name: string; code: string; shortName: string; type: string; conducted: number }
   >();
 
-  programOfferings.forEach((po) => {
-    subjectColumnsMap.set(po.subject.id, {
-      id: po.subject.id,
-      name: po.subject.name,
-      code: po.subject.code,
-      shortName: po.subject.shortName || po.subject.code,
-      type: po.subject.type,
-      conducted: 0,
-    });
-  });
-
-  // Calculate conducted count for each subject in this session window
   sessions.forEach((s) => {
     const sub = s.assignment?.subjectOffering?.subject;
     if (sub) {
@@ -218,7 +190,10 @@ export async function getSectionStudentAttendanceReport(filter: ReportFilter) {
     }
   });
 
-  const subjectColumns = Array.from(subjectColumnsMap.values());
+  // Only subjects of that particular section that actually had classes conducted
+  const subjectColumns = Array.from(subjectColumnsMap.values()).filter(
+    (c) => c.conducted > 0
+  );
 
   // Calculate per-student stats, attendanceMap, and subject-wise attended count
   const studentReports = enrollments.map((e) => {

@@ -59,6 +59,9 @@ export default function SubjectWiseReportTable({
   endDate = "",
   onExportCSV,
 }: SubjectWiseReportTableProps) {
+  // Only display subjects that were actually conducted for this particular section
+  const visibleSubjects = subjectColumns.filter((col) => col.conducted > 0);
+
   const handlePrint = () => {
     window.print();
   };
@@ -155,7 +158,7 @@ export default function SubjectWiseReportTable({
                 </th>
 
                 {/* Subject Columns */}
-                {subjectColumns.map((col) => (
+                {visibleSubjects.map((col) => (
                   <th
                     key={col.id}
                     className="border border-slate-300 px-3 py-2 text-center bg-blue-50/50 min-w-[100px]"
@@ -208,7 +211,7 @@ export default function SubjectWiseReportTable({
               {students.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={subjectColumns.length + 7}
+                    colSpan={visibleSubjects.length + 7}
                     className="px-4 py-8 text-center text-slate-400 font-medium"
                   >
                     No students matching the selected criteria.
@@ -251,7 +254,7 @@ export default function SubjectWiseReportTable({
                       </td>
 
                       {/* Subject Cells */}
-                      {subjectColumns.map((col) => {
+                      {visibleSubjects.map((col) => {
                         const attended = student.subjectAttendance?.[col.id] ?? 0;
                         const conducted = col.conducted;
                         const pct =

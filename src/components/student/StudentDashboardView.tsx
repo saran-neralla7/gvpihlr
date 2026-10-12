@@ -10,7 +10,11 @@ import {
   Bookmark,
   CalendarCheck,
   Clock,
+  Printer,
+  FileText,
 } from "lucide-react";
+import StudentAttendanceLineChart from "./StudentAttendanceLineChart";
+import StudentAttendanceTranscript from "./StudentAttendanceTranscript";
 
 interface SubjectAttendance {
   subjectName: string;
@@ -63,6 +67,20 @@ export default function StudentDashboardView({
   attendanceSummary,
 }: StudentDashboardViewProps) {
   const [activeTab, setActiveTab] = useState<"attendance" | "overview">("attendance");
+  const [showTranscriptModal, setShowTranscriptModal] = useState(false);
+
+  // Map subjects for official transcript
+  const transcriptBreakdown = attendanceSummary.subjects.map((sub, idx) => ({
+    subjectId: `sub-${idx}`,
+    code: sub.subjectCode,
+    name: sub.subjectName,
+    type: "THEORY",
+    facultyName: "Faculty In-Charge",
+    held: sub.conducted,
+    attended: sub.attended,
+    absent: sub.conducted - sub.attended,
+    percentage: sub.conducted > 0 ? parseFloat(((sub.attended / sub.conducted) * 100).toFixed(1)) : 0,
+  }));
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 items-start">
@@ -193,6 +211,16 @@ export default function StudentDashboardView({
               >
                 Profile Overview
               </button>
+
+              <button
+                type="button"
+                onClick={() => setShowTranscriptModal(true)}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-xs text-center whitespace-nowrap bg-[#0B2545] hover:bg-[#132E5C] text-white flex items-center justify-center gap-1.5"
+                title="Print Official Attendance Transcript / Dossier"
+              >
+                <Printer className="w-3.5 h-3.5 text-blue-300" />
+                <span>Print Transcript</span>
+              </button>
             </div>
           </div>
         </div>
@@ -267,6 +295,18 @@ export default function StudentDashboardView({
                 </div>
               </div>
             </div>
+
+            {/* Student Daily Attendance Trajectory Line Graph */}
+            <StudentAttendanceLineChart
+              sessions={attendanceSummary.sessions.map((s) => ({
+                sessionDate: s.date,
+                status: s.status,
+                periodNumber: s.period,
+                subjectName: s.subjectName,
+              }))}
+              studentName={student.fullName}
+              rollNumber={student.rollNumber}
+            />
 
             {/* Subject-Wise Attendance Breakdown Table */}
             <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs space-y-4">
@@ -458,6 +498,25 @@ export default function StudentDashboardView({
           </div>
         )}
       </div>
+
+      {/* Official Attendance Transcript Dossier Modal */}
+      {showTranscriptModal && (
+        <StudentAttendanceTranscript
+          student={{
+            ...student,
+            rollNumber: student.rollNumber,
+          }}
+          attendance={{
+            totalHeld: attendanceSummary.totalClasses,
+            totalAttended: attendanceSummary.attendedClasses,
+            totalAbsent: attendanceSummary.absentClasses,
+            overallPercentage: parseFloat(attendanceSummary.overallPercentage) || 0,
+            isDefaulter: attendanceSummary.isDefaulter,
+            subjectBreakdown: transcriptBreakdown,
+          }}
+          onClose={() => setShowTranscriptModal(false)}
+        />
+      )}
     </div>
   );
 }

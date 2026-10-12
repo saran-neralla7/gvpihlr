@@ -132,11 +132,11 @@ export default function SubjectWiseReportTable({
         <div className="w-full max-w-full overflow-x-auto rounded-2xl border border-slate-300/90 shadow-2xs">
           <table className="w-full min-w-max border-collapse border-slate-300 text-[11px] print-table">
             <thead>
-              <tr className="bg-slate-100/90 border-b border-slate-300">
+              <tr className="bg-slate-100/90 border-b border-slate-300 print:bg-slate-100">
                 {/* S.No */}
                 <th
                   rowSpan={2}
-                  className="sticky left-0 bg-slate-100 z-20 border border-slate-300 px-2.5 py-2 text-center font-bold text-slate-800 w-12"
+                  className="sticky left-0 bg-slate-100 z-20 border border-slate-300 px-2.5 py-2 text-center font-bold text-slate-800 w-12 print:static print:w-8 print:px-1 print:py-1 print:text-[8px]"
                 >
                   #
                 </th>
@@ -144,7 +144,7 @@ export default function SubjectWiseReportTable({
                 {/* Roll Number (Frozen Sticky) */}
                 <th
                   rowSpan={2}
-                  className="sticky left-12 bg-slate-100 z-20 border border-slate-300 px-3 py-2 text-left font-bold text-slate-800 w-32 shadow-[1px_0_0_0_#cbd5e1]"
+                  className="sticky left-12 bg-slate-100 z-20 border border-slate-300 px-3 py-2 text-left font-bold text-slate-800 w-32 shadow-[1px_0_0_0_#cbd5e1] print:static print:shadow-none print:w-24 print:px-1.5 print:py-1 print:text-[8px]"
                 >
                   Roll Number
                 </th>
@@ -152,7 +152,7 @@ export default function SubjectWiseReportTable({
                 {/* Student Name (Frozen Sticky) */}
                 <th
                   rowSpan={2}
-                  className="sticky left-44 bg-slate-100 z-20 border border-slate-300 px-3 py-2 text-left font-bold text-slate-800 min-w-[190px] shadow-[2px_0_4px_0_rgba(0,0,0,0.06)]"
+                  className="sticky left-44 bg-slate-100 z-20 border border-slate-300 px-3 py-2 text-left font-bold text-slate-800 min-w-[190px] shadow-[2px_0_4px_0_rgba(0,0,0,0.06)] print:static print:shadow-none print:min-w-0 print:w-36 print:px-1.5 print:py-1 print:text-[8px]"
                 >
                   Student Name
                 </th>
@@ -161,46 +161,46 @@ export default function SubjectWiseReportTable({
                 {visibleSubjects.map((col) => (
                   <th
                     key={col.id}
-                    className="border border-slate-300 px-3 py-2 text-center bg-blue-50/50 min-w-[100px]"
+                    className="border border-slate-300 px-3 py-2 text-center bg-blue-50/50 min-w-[100px] print:min-w-0 print:px-1 print:py-1 print:bg-slate-50"
                   >
-                    <div className="font-extrabold text-slate-900 tracking-tight text-xs">
+                    <div className="font-extrabold text-slate-900 tracking-tight text-xs print:text-[8px] print:leading-tight">
                       {col.shortName || col.code}
                     </div>
-                    <div className="text-[10px] font-bold text-blue-700 mt-0.5">
-                      ({col.conducted} Conducted)
+                    <div className="text-[10px] font-bold text-blue-700 mt-0.5 print:text-[7px] print:text-slate-700">
+                      ({col.conducted})
                     </div>
                   </th>
                 ))}
 
-                {/* Total Conducted */}
+                {/* Total Conducted - Visible on screen, HIDDEN in print */}
                 <th
                   rowSpan={2}
-                  className="border border-slate-300 px-3 py-2 text-center font-bold text-slate-700 bg-slate-100 w-20"
+                  className="border border-slate-300 px-3 py-2 text-center font-bold text-slate-700 bg-slate-100 w-20 print:hidden"
                 >
                   <div>Total Held</div>
                   <div className="text-[10px] text-slate-500 font-semibold">({totalSessionsConducted})</div>
                 </th>
 
-                {/* Total Attended */}
+                {/* Total Attended - ALWAYS Visible in print and screen */}
                 <th
                   rowSpan={2}
-                  className="border border-slate-300 px-3 py-2 text-center font-bold text-blue-900 bg-blue-100/60 w-24"
+                  className="border border-slate-300 px-3 py-2 text-center font-bold text-blue-900 bg-blue-100/60 w-24 print:w-14 print:px-1 print:py-1 print:bg-slate-100 print:text-black print:text-[8px]"
                 >
                   Total Attended
                 </th>
 
-                {/* Overall Attendance Percentage */}
+                {/* Overall Attendance Percentage - ALWAYS Visible in print and screen */}
                 <th
                   rowSpan={2}
-                  className="border border-slate-300 px-3 py-2 text-center font-bold text-slate-900 bg-slate-100 w-20"
+                  className="border border-slate-300 px-3 py-2 text-center font-bold text-slate-900 bg-slate-100 w-20 print:w-14 print:px-1 print:py-1 print:text-[8px]"
                 >
                   Attendance %
                 </th>
 
-                {/* Defaulter Status */}
+                {/* Defaulter Status - Visible on screen, HIDDEN in print */}
                 <th
                   rowSpan={2}
-                  className="border border-slate-300 px-3 py-2 text-center font-bold text-slate-800 bg-slate-100 w-24 no-print"
+                  className="border border-slate-300 px-3 py-2 text-center font-bold text-slate-800 bg-slate-100 w-24 no-print print:hidden"
                 >
                   Status
                 </th>
@@ -229,12 +229,12 @@ export default function SubjectWiseReportTable({
                       }`}
                     >
                       {/* S.No */}
-                      <td className="sticky left-0 bg-white z-10 border border-slate-300 px-2 py-1.5 text-center text-slate-500 font-mono text-[10px]">
+                      <td className="sticky left-0 bg-white z-10 border border-slate-300 px-2 py-1.5 text-center text-slate-500 font-mono text-[10px] print:static print:w-8 print:px-1 print:py-1 print:text-[8px]">
                         {idx + 1}
                       </td>
 
                       {/* Roll Number */}
-                      <td className="sticky left-12 bg-white z-10 border border-slate-300 px-3 py-1.5 font-mono font-bold text-slate-900 shadow-[1px_0_0_0_#e2e8f0]">
+                      <td className="sticky left-12 bg-white z-10 border border-slate-300 px-3 py-1.5 font-mono font-bold text-slate-900 shadow-[1px_0_0_0_#e2e8f0] print:static print:shadow-none print:w-24 print:px-1.5 print:py-1 print:text-[8px]">
                         <Link
                           href={`/admin/students/${student.studentId}`}
                           className="hover:text-blue-600 hover:underline"
@@ -244,7 +244,7 @@ export default function SubjectWiseReportTable({
                       </td>
 
                       {/* Student Name */}
-                      <td className="sticky left-44 bg-white z-10 border border-slate-300 px-3 py-1.5 font-semibold text-slate-800 shadow-[2px_0_4px_0_rgba(0,0,0,0.06)]">
+                      <td className="sticky left-44 bg-white z-10 border border-slate-300 px-3 py-1.5 font-semibold text-slate-800 shadow-[2px_0_4px_0_rgba(0,0,0,0.06)] print:static print:shadow-none print:min-w-0 print:w-36 print:px-1.5 print:py-1 print:text-[8px]">
                         <Link
                           href={`/admin/students/${student.studentId}`}
                           className="hover:text-blue-600 hover:underline"
@@ -265,18 +265,18 @@ export default function SubjectWiseReportTable({
                         return (
                           <td
                             key={col.id}
-                            className="border border-slate-300 px-2.5 py-1.5 text-center"
+                            className="border border-slate-300 px-2.5 py-1.5 text-center print:px-1 print:py-1 print:text-[8px]"
                           >
                             {conducted > 0 ? (
                               <div className="flex flex-col items-center justify-center">
-                                <span className="font-bold text-slate-900 text-xs">
+                                <span className="font-bold text-slate-900 text-xs print:text-[8px]">
                                   {attended}
                                 </span>
                                 <span
-                                  className={`text-[9px] font-semibold ${
+                                  className={`text-[9px] font-semibold print:text-[7px] ${
                                     pct !== null && pct < 75
-                                      ? "text-rose-600"
-                                      : "text-slate-400"
+                                      ? "text-rose-600 print:text-rose-700"
+                                      : "text-slate-400 print:text-slate-600"
                                   }`}
                                 >
                                   {pct}%
@@ -289,23 +289,23 @@ export default function SubjectWiseReportTable({
                         );
                       })}
 
-                      {/* Total Held */}
-                      <td className="border border-slate-300 px-2.5 py-1.5 text-center font-mono font-bold text-slate-600 bg-slate-50/50">
+                      {/* Total Held - Visible on screen, HIDDEN in print */}
+                      <td className="border border-slate-300 px-2.5 py-1.5 text-center font-mono font-bold text-slate-600 bg-slate-50/50 print:hidden">
                         {totalSessionsConducted}
                       </td>
 
-                      {/* Total Attended */}
-                      <td className="border border-slate-300 px-2.5 py-1.5 text-center font-mono font-extrabold text-blue-700 bg-blue-50/30">
+                      {/* Total Attended - ALWAYS Visible in print and screen */}
+                      <td className="border border-slate-300 px-2.5 py-1.5 text-center font-mono font-extrabold text-blue-700 bg-blue-50/30 print:w-14 print:px-1 print:py-1 print:text-black print:text-[8px] print:bg-slate-50">
                         {student.attendedClasses}
                       </td>
 
-                      {/* Attendance Percentage */}
-                      <td className="border border-slate-300 px-2.5 py-1.5 text-center font-mono font-black">
+                      {/* Attendance Percentage - ALWAYS Visible in print and screen */}
+                      <td className="border border-slate-300 px-2.5 py-1.5 text-center font-mono font-black print:w-14 print:px-1 print:py-1 print:text-[8px]">
                         <span
-                          className={`px-1.5 py-0.5 rounded text-xs ${
+                          className={`px-1.5 py-0.5 rounded text-xs print:p-0 print:text-[8px] ${
                             isDefaulter
-                              ? "bg-rose-100 text-rose-800 font-black"
-                              : "text-emerald-700 font-bold"
+                              ? "bg-rose-100 text-rose-800 font-black print:text-rose-700"
+                              : "text-emerald-700 font-bold print:text-emerald-800"
                           }`}
                         >
                           {student.percentage !== null
@@ -314,8 +314,8 @@ export default function SubjectWiseReportTable({
                         </span>
                       </td>
 
-                      {/* Status */}
-                      <td className="border border-slate-300 px-2.5 py-1.5 text-center no-print">
+                      {/* Status - Visible on screen, HIDDEN in print */}
+                      <td className="border border-slate-300 px-2.5 py-1.5 text-center no-print print:hidden">
                         {isDefaulter ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-700">
                             Defaulter

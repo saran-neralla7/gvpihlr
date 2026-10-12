@@ -25,7 +25,10 @@ import {
   Check,
   X,
   ExternalLink,
+  Printer,
 } from "lucide-react";
+import StudentAttendanceLineChart from "@/components/student/StudentAttendanceLineChart";
+import StudentAttendanceTranscript from "@/components/student/StudentAttendanceTranscript";
 
 interface StudentProfileProps {
   student: {
@@ -108,6 +111,7 @@ export default function StudentProfileClient({
   const [activeTab, setActiveTab] = useState<"personal" | "attendance" | "academics" | "documents">(
     "personal"
   );
+  const [showTranscriptModal, setShowTranscriptModal] = useState(false);
   const [attendanceSearch, setAttendanceSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "PRESENT" | "ABSENT">("ALL");
 
@@ -213,6 +217,17 @@ export default function StudentProfileClient({
               <span>No Parent Phone</span>
             </button>
           )}
+
+          {/* Official Attendance Transcript Dossier Button */}
+          <button
+            type="button"
+            onClick={() => setShowTranscriptModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0B2545] hover:bg-[#132E5C] active:scale-95 text-white text-xs font-bold transition shadow-xs"
+            title="Open and Print Official Attendance Transcript Dossier"
+          >
+            <Printer className="w-4 h-4 text-blue-300" />
+            <span>Attendance Transcript</span>
+          </button>
         </div>
       </div>
 
@@ -580,6 +595,13 @@ export default function StudentProfileClient({
             </div>
           </div>
 
+          {/* Student Daily Cumulative Attendance Line Graph */}
+          <StudentAttendanceLineChart
+            sessions={attendance.attendanceLog}
+            studentName={student.fullName}
+            rollNumber={student.rollNumber}
+          />
+
           {/* Subject-Wise Breakdown Table */}
           <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs space-y-4">
             <div>
@@ -783,6 +805,15 @@ export default function StudentProfileClient({
             identity verification documents will appear here.
           </p>
         </div>
+      )}
+
+      {/* Official Attendance Transcript Dossier Modal */}
+      {showTranscriptModal && (
+        <StudentAttendanceTranscript
+          student={student}
+          attendance={attendance}
+          onClose={() => setShowTranscriptModal(false)}
+        />
       )}
     </div>
   );

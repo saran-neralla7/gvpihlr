@@ -29,3 +29,75 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* =========================================================================
+   INSTITUTIONAL PRINT STYLES
+   ========================================================================= */
+@media print {
+  @page {
+    size: landscape;
+    margin: 6mm;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide elements marked as non-printable */
+  .no-print,
+  nav,
+  header:not(.print-header),
+  footer,
+  button,
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  /* Show elements marked only for print */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Prevent page breaks inside table rows */
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Clean up sticky positioning so columns don't shift or overlap in print */
+  .sticky {
+    position: static !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+  }
+
+  /* Force print table borders and compact padding */
+  .print-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .print-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 8.5px !important;
+    line-height: 1.15 !important;
+  }
+
+  .print-table th,
+  .print-table td {
+    border: 1px solid #94a3b8 !important;
+    padding: 2.5px 3.5px !important;
+  }
+}
+

@@ -26,6 +26,7 @@ import * as XLSX from "xlsx";
 import SubjectWiseReportTable, {
   SubjectColumnItem,
 } from "./SubjectWiseReportTable";
+import MonthlyAttendanceView from "./MonthlyAttendanceView";
 
 interface SectionOption {
   id: string;
@@ -98,9 +99,9 @@ export default function ReportsClient({
     endDate?: string;
   };
 }) {
-  // Top Active Tab: "subject_wise" | "consolidated" | "matrix" | "defaulters"
+  // Top Active Tab: "subject_wise" | "monthly" | "consolidated" | "matrix" | "defaulters"
   const [activeTab, setActiveTab] = useState<
-    "subject_wise" | "consolidated" | "matrix" | "defaulters"
+    "subject_wise" | "monthly" | "consolidated" | "matrix" | "defaulters"
   >("subject_wise");
 
   const [selectedSectionId, setSelectedSectionId] = useState(initialSectionId);
@@ -722,7 +723,20 @@ export default function ReportsClient({
           >
             <LayoutGrid className="w-4 h-4 text-blue-600" />
             <span>Subject-Wise Consolidated</span>
-            <span className="px-1.5 py-0.5 rounded text-[9px] bg-blue-100 text-blue-700 font-black">
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("monthly")}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition ${
+              activeTab === "monthly"
+                ? "bg-white text-indigo-900 shadow-xs border border-slate-200 font-extrabold"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Calendar className="w-4 h-4 text-indigo-600" />
+            <span>Monthly Attendance</span>
+            <span className="px-1.5 py-0.5 rounded text-[9px] bg-indigo-100 text-indigo-700 font-black">
               NEW
             </span>
           </button>
@@ -736,8 +750,21 @@ export default function ReportsClient({
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <FileText className="w-4 h-4 text-indigo-600" />
+            <FileText className="w-4 h-4 text-slate-700" />
             <span>Section Consolidated</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("matrix")}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition ${
+              activeTab === "matrix"
+                ? "bg-white text-slate-900 shadow-xs border border-slate-200 font-extrabold"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <LayoutGrid className="w-4 h-4 text-emerald-600" />
+            <span>Daily Matrix Register</span>
           </button>
 
           <button
@@ -1025,6 +1052,20 @@ export default function ReportsClient({
             onExportCSV={handleExportSubjectWiseCSV}
           />
         </div>
+      )}
+
+      {/* =========================================================================
+          VIEW: MONTHLY ATTENDANCE (MONTHLY CONSOLIDATED & MONTHLY SUBJECT-WISE)
+          ========================================================================= */}
+      {activeTab === "monthly" && (
+        <MonthlyAttendanceView
+          students={filteredStudents}
+          sessions={reportData.sessions || []}
+          sectionName={reportData.sectionName}
+          programName={reportData.programName}
+          year={reportData.year}
+          semester={reportData.semester}
+        />
       )}
 
       {/* =========================================================================
@@ -1322,10 +1363,10 @@ export default function ReportsClient({
 
             {/* Table */}
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-slate-200 text-xs">
+              <table className="w-full border-collapse border border-slate-200 text-xs print-table">
                 <thead>
                   <tr className="bg-slate-50 text-slate-700 border-b border-slate-200">
-                    <th className="border border-slate-200 px-3 py-2.5 text-center font-bold w-12">
+                    <th className="border border-slate-200 px-3 py-2.5 text-center font-bold w-12 print:w-8 print:p-1 print:text-[8px]">
                       S.No
                     </th>
                     <th className="border border-slate-200 px-4 py-2.5 text-left font-bold w-36">

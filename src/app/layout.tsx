@@ -42,7 +42,7 @@ export default async function RootLayout({
         {/* Page Content Layer above Watermark */}
         <div className="relative z-10 flex min-h-screen flex-col">
           <Header user={session} />
-          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 min-w-0">
             {children}
           </main>
           <footer className="w-full bg-white/80 backdrop-blur-xs border-t border-slate-200 py-4 text-center text-xs text-slate-500">

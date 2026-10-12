@@ -35,26 +35,7 @@ export async function GET(req: Request) {
     const rawEnd = searchParams.get("endDate");
     const endDate = rawEnd && rawEnd.trim() !== "" ? rawEnd.trim() : undefined;
 
-    // Faculty resource authorization check (Admin and Office have campus-wide access):
-    const isPrivileged =
-      session.roles.includes("SUPER_ADMIN") ||
-      session.roles.includes("OFFICE");
-
-    if (!isPrivileged && session.facultyId) {
-      const isAssigned = await prisma.facultySubjectAssignment.findFirst({
-        where: {
-          sectionId,
-          facultyId: session.facultyId,
-          isActive: true,
-        },
-      });
-      if (!isAssigned) {
-        return NextResponse.json(
-          { success: false, error: "Access Denied: You are not assigned to this section." },
-          { status: 403 }
-        );
-      }
-    }
+    // All academic staff (SUPER_ADMIN, OFFICE, FACULTY) are authorized to view section attendance reports.
 
     const report = await getSectionStudentAttendanceReport({
       sectionId,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import {
   FileText,
   Download,
@@ -16,10 +17,15 @@ import {
   Sparkles,
   Users,
   Percent,
+  LayoutGrid,
+  Phone,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import SubjectWiseReportTable, {
+  SubjectColumnItem,
+} from "./SubjectWiseReportTable";
 
 interface SectionOption {
   id: string;
@@ -47,6 +53,7 @@ interface SessionItem {
   subjectName: string;
   subjectCode: string;
   subjectShortName: string;
+  subjectId?: string;
 }
 
 interface StudentReportItem {
@@ -55,6 +62,7 @@ interface StudentReportItem {
   fullName: string;
   phone?: string | null;
   attendanceMap?: Record<string, "P" | "A" | "-">;
+  subjectAttendance?: Record<string, number>;
   totalClasses: number;
   attendedClasses: number;
   absentClasses: number;
@@ -83,14 +91,17 @@ export default function ReportsClient({
     totalSessionsConducted: number;
     sessions?: SessionItem[];
     availableSubjects?: SubjectOption[];
+    subjectColumns?: SubjectColumnItem[];
     students: StudentReportItem[];
     defaultersCount: number;
     startDate?: string;
     endDate?: string;
   };
 }) {
-  // Top Active Tab: "consolidated" (Roster Summary) or "matrix" (Daily Period-Wise Register)
-  const [activeTab, setActiveTab] = useState<"consolidated" | "matrix">("consolidated");
+  // Top Active Tab: "subject_wise" | "consolidated" | "matrix" | "defaulters"
+  const [activeTab, setActiveTab] = useState<
+    "subject_wise" | "consolidated" | "matrix" | "defaulters"
+  >("subject_wise");
 
   const [selectedSectionId, setSelectedSectionId] = useState(initialSectionId);
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
@@ -143,6 +154,7 @@ export default function ReportsClient({
           totalSessionsConducted: data.totalSessionsConducted,
           sessions: data.sessions || [],
           availableSubjects: data.availableSubjects || [],
+          subjectColumns: data.subjectColumns || [],
           students: data.students || [],
           defaultersCount: data.defaultersCount || 0,
           startDate: data.startDate || sDate,
@@ -217,6 +229,50 @@ export default function ReportsClient({
   const selectedSubjectObj = useMemo(() => {
     return availableSubjects.find((s) => s.id === selectedSubjectId);
   }, [availableSubjects, selectedSubjectId]);
+
+  // =========================================================================
+  // EXPORT: SUBJECT-WISE CONSOLIDATED CSV
+  // =========================================================================
+  const handleExportSubjectWiseCSV = () => {
+    const cols = reportData.subjectColumns || [];
+    const headers = [
+      "S.No",
+      "Roll Number",
+      "Student Name",
+      ...cols.map(
+        (c) => `"${c.shortName || c.code} (${c.conducted} Conducted)"`
+      ),
+      `"Total Classes (${reportData.totalSessionsConducted})"`,
+      "Total Attended",
+      "Attendance %",
+      "Defaulter Status",
+    ];
+
+    const rows = filteredStudents.map((s, idx) => [
+      idx + 1,
+      `"${s.rollNumber}"`,
+      `"${s.fullName}"`,
+      ...cols.map((c) => s.subjectAttendance?.[c.id] ?? 0),
+      reportData.totalSessionsConducted,
+      s.attendedClasses,
+      s.percentage !== null ? `"${s.percentage}%"` : `"N/A"`,
+      s.isDefaulter ? `"DEFAULTER (<75%)"` : `"ELIGIBLE"`,
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `GVPIHLR_Subject_Wise_Attendance_${reportData.sectionName}_${startDate}_to_${endDate}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // =========================================================================
   // EXPORT: CONSOLIDATED PDF (Portrait Roster Table with Official Header)
@@ -653,35 +709,326 @@ export default function ReportsClient({
           </p>
         </div>
 
-        {/* View Switcher Tabs */}
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+        {/* View Switcher Tabs - Modern Institutional Report Catalog */}
+        <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
           <button
-            onClick={() => setActiveTab("consolidated")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
-              activeTab === "consolidated"
-                ? "bg-white text-slate-900 shadow-xs border border-slate-200/80"
+            type="button"
+            onClick={() => setActiveTab("subject_wise")}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition ${
+              activeTab === "subject_wise"
+                ? "bg-white text-blue-900 shadow-xs border border-slate-200 font-extrabold"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <FileText className="w-4 h-4 text-blue-600" />
-            <span>Consolidated Report</span>
+            <LayoutGrid className="w-4 h-4 text-blue-600" />
+            <span>Subject-Wise Consolidated</span>
+            <span className="px-1.5 py-0.5 rounded text-[9px] bg-blue-100 text-blue-700 font-black">
+              NEW
+            </span>
           </button>
+
           <button
-            onClick={() => setActiveTab("matrix")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
-              activeTab === "matrix"
-                ? "bg-white text-slate-900 shadow-xs border border-slate-200/80"
+            type="button"
+            onClick={() => setActiveTab("consolidated")}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition ${
+              activeTab === "consolidated"
+                ? "bg-white text-slate-900 shadow-xs border border-slate-200 font-extrabold"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <Calendar className="w-4 h-4 text-purple-600" />
-            <span>Daily Matrix Register</span>
+            <FileText className="w-4 h-4 text-indigo-600" />
+            <span>Section Consolidated</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("defaulters");
+              if (thresholdMode === "ALL") setThresholdMode("75");
+            }}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition ${
+              activeTab === "defaulters"
+                ? "bg-white text-rose-900 shadow-xs border border-slate-200 font-extrabold"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <AlertTriangle className="w-4 h-4 text-rose-600" />
+            <span>Defaulter Analytics</span>
+            {reportData.defaultersCount > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-rose-100 text-rose-700 font-black">
+                {reportData.defaultersCount}
+              </span>
+            )}
           </button>
         </div>
       </div>
 
       {/* =========================================================================
-          VIEW 1: CONSOLIDATED REPORT (PREVIOUS ROSTER VIEW)
+          VIEW 1: SUBJECT-WISE CONSOLIDATED REPORT (NEW REQUESTED REGISTER)
+          ========================================================================= */}
+      {activeTab === "subject_wise" && (
+        <div className="space-y-6">
+          {/* KPI Summary Metric Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 no-print">
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Total Conducted
+                </span>
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-slate-900 mt-2">
+                {reportData.totalSessionsConducted}
+                <span className="text-xs font-semibold text-slate-400 ml-1.5">Sessions</span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1">Conducted across all subjects</p>
+            </div>
+
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Curriculum Subjects
+                </span>
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <LayoutGrid className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-slate-900 mt-2">
+                {reportData.subjectColumns?.length || 0}
+                <span className="text-xs font-semibold text-slate-400 ml-1.5">Subjects</span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1">Offered in this semester</p>
+            </div>
+
+            <div className="bg-white border border-rose-200/90 rounded-2xl p-5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-rose-500">
+                  Defaulters (&lt; 75%)
+                </span>
+                <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-rose-600 mt-2">
+                {reportData.defaultersCount}
+                <span className="text-xs font-semibold text-rose-400 ml-1.5">Students</span>
+              </div>
+              <p className="text-[11px] text-rose-500/80 mt-1">Below mandatory 75% threshold</p>
+            </div>
+
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Average Attendance
+                </span>
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <Percent className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-slate-900 mt-2">
+                {averageAttendanceRate}
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1">Overall section average</p>
+            </div>
+          </div>
+
+          {/* Controls Card */}
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs space-y-4 no-print">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  Class Section *
+                </label>
+                <select
+                  value={selectedSectionId}
+                  onChange={(e) => handleSectionChange(e.target.value)}
+                  className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {sections.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.programName} - Sec {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  Date Window
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-slate-400 text-xs">to</span>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={handleApplyDates}
+                    className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs flex-shrink-0"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-end gap-2">
+                <button
+                  type="button"
+                  onClick={handleExportSubjectWiseCSV}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition shadow-xs"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                  <span>Export CSV</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0B2545] hover:bg-[#132E5C] text-white text-xs font-bold transition shadow-xs"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Print Register</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Search and Defaulter threshold */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-100">
+              <div className="relative flex-1 w-full">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search by student roll number or name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Attendance Filter:
+                </span>
+                <div className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("ALL")}
+                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "ALL"
+                        ? "bg-white text-slate-900 shadow-xs border border-slate-200 font-bold"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("75")}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "75"
+                        ? "bg-rose-600 text-white shadow-xs font-bold"
+                        : "text-rose-700 hover:bg-rose-50"
+                    }`}
+                  >
+                    &lt; 75%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("65")}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "65"
+                        ? "bg-rose-600 text-white shadow-xs font-bold"
+                        : "text-rose-700 hover:bg-rose-50"
+                    }`}
+                  >
+                    &lt; 65%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("60")}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "60"
+                        ? "bg-rose-600 text-white shadow-xs font-bold"
+                        : "text-rose-700 hover:bg-rose-50"
+                    }`}
+                  >
+                    &lt; 60%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("50")}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "50"
+                        ? "bg-rose-600 text-white shadow-xs font-bold"
+                        : "text-rose-700 hover:bg-rose-50"
+                    }`}
+                  >
+                    &lt; 50%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("CUSTOM")}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "CUSTOM"
+                        ? "bg-rose-600 text-white shadow-xs font-bold"
+                        : "text-rose-700 hover:bg-rose-50"
+                    }`}
+                  >
+                    Custom
+                  </button>
+                </div>
+
+                {thresholdMode === "CUSTOM" && (
+                  <div className="flex items-center gap-1 bg-rose-50 border border-rose-200 rounded-xl px-2 py-1">
+                    <span className="text-xs font-bold text-rose-700">&lt;</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={customThreshold}
+                      onChange={(e) => setCustomThreshold(Number(e.target.value))}
+                      className="w-12 px-1 py-0.5 text-xs font-bold bg-white border border-rose-300 rounded text-rose-900 focus:outline-none focus:ring-1 focus:ring-rose-500 text-center"
+                    />
+                    <span className="text-xs font-bold text-rose-700">%</span>
+                  </div>
+                )}
+
+                {thresholdMode !== "ALL" && (
+                  <span className="px-2 py-0.5 rounded-full text-[11px] bg-rose-100 text-rose-800 font-bold">
+                    {countMatchingThreshold} students
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Subject-Wise Report Table Component */}
+          <SubjectWiseReportTable
+            students={filteredStudents}
+            subjectColumns={reportData.subjectColumns || []}
+            totalSessionsConducted={reportData.totalSessionsConducted}
+            sectionName={reportData.sectionName}
+            programName={reportData.programName}
+            year={reportData.year}
+            semester={reportData.semester}
+            startDate={startDate}
+            endDate={endDate}
+            onExportCSV={handleExportSubjectWiseCSV}
+          />
+        </div>
+      )}
+
+      {/* =========================================================================
+          VIEW 2: CONSOLIDATED REPORT (PREVIOUS ROSTER VIEW)
           ========================================================================= */}
       {activeTab === "consolidated" && (
         <div className="space-y-6">
@@ -1365,7 +1712,7 @@ export default function ReportsClient({
           )}
 
           {/* Printable Daily Attendance Register */}
-          <div className="bg-white border border-slate-300/80 rounded-3xl p-6 sm:p-8 shadow-xs print-container space-y-4">
+          <div className="bg-white border border-slate-300/80 rounded-3xl p-5 sm:p-7 shadow-xs print-container space-y-4 max-w-full overflow-hidden">
             {/* Institutional Header */}
             <div className="text-center space-y-1 pb-4 border-b border-slate-200">
               <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 uppercase">
@@ -1393,21 +1740,21 @@ export default function ReportsClient({
               </div>
             </div>
 
-            {/* Matrix Register Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-slate-300 text-[11px] print-table">
+            {/* Matrix Register Table - Contained Scroll with Freeze Panes */}
+            <div className="w-full max-w-full overflow-x-auto rounded-2xl border border-slate-300/90 shadow-2xs">
+              <table className="w-full min-w-max border-collapse border-slate-300 text-[11px] print-table">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-300">
-                    {/* Fixed Columns */}
+                  <tr className="bg-slate-100 border-b border-slate-300">
+                    {/* Fixed Freeze Columns */}
                     <th
                       rowSpan={3}
-                      className="border border-slate-300 px-3 py-2 text-left font-bold text-slate-800 w-28 bg-slate-50"
+                      className="sticky left-0 bg-slate-100 z-20 border border-slate-300 px-3 py-2 text-left font-bold text-slate-800 w-28 shadow-[1px_0_0_0_#cbd5e1]"
                     >
                       Roll No
                     </th>
                     <th
                       rowSpan={3}
-                      className="border border-slate-300 px-3 py-2 text-left font-bold text-slate-800 min-w-[200px] bg-slate-50"
+                      className="sticky left-28 bg-slate-100 z-20 border border-slate-300 px-3 py-2 text-left font-bold text-slate-800 min-w-[190px] shadow-[2px_0_4px_0_rgba(0,0,0,0.06)]"
                     >
                       Name
                     </th>
@@ -1484,14 +1831,24 @@ export default function ReportsClient({
                           idx % 2 === 0 ? "bg-white" : "bg-slate-50/30"
                         }`}
                       >
-                        {/* Roll No */}
-                        <td className="border border-slate-300 px-3 py-1.5 font-mono font-bold text-slate-800 whitespace-nowrap">
-                          {st.rollNumber}
+                        {/* Roll No (Sticky Freeze) */}
+                        <td className="sticky left-0 bg-white z-10 border border-slate-300 px-3 py-1.5 font-mono font-bold text-slate-900 whitespace-nowrap shadow-[1px_0_0_0_#e2e8f0]">
+                          <Link
+                            href={`/admin/students/${st.studentId}`}
+                            className="hover:text-blue-600 hover:underline"
+                          >
+                            {st.rollNumber}
+                          </Link>
                         </td>
 
-                        {/* Student Full Name */}
-                        <td className="border border-slate-300 px-3 py-1.5 font-bold text-slate-900 uppercase whitespace-nowrap">
-                          {st.fullName}
+                        {/* Student Full Name (Sticky Freeze) */}
+                        <td className="sticky left-28 bg-white z-10 border border-slate-300 px-3 py-1.5 font-bold text-slate-900 uppercase whitespace-nowrap shadow-[2px_0_4px_0_rgba(0,0,0,0.06)]">
+                          <Link
+                            href={`/admin/students/${st.studentId}`}
+                            className="hover:text-blue-600 hover:underline"
+                          >
+                            {st.fullName}
+                          </Link>
                         </td>
 
                         {/* Session P / A Cells */}
@@ -1573,6 +1930,202 @@ export default function ReportsClient({
                 Eligibility Threshold: <strong>&ge; 75.00%</strong> | Defaulters in View:{" "}
                 <strong className="text-rose-600">{reportData.defaultersCount}</strong>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          VIEW 4: DEFAULTER ANALYTICS & INTERVENTION LIST
+          ========================================================================= */}
+      {activeTab === "defaulters" && (
+        <div className="space-y-6">
+          {/* Defaulter Action Header */}
+          <div className="bg-rose-50 border border-rose-200 rounded-3xl p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-xs font-black">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>MANDATORY ATTENDANCE DEFICIT ALERT</span>
+              </div>
+              <h3 className="text-xl font-black text-rose-950">
+                Attendance Defaulters &amp; Direct Parent Communication
+              </h3>
+              <p className="text-xs text-rose-800/80 max-w-2xl">
+                Students below statutory university attendance guidelines. Use the direct dial buttons to contact parents or students directly from mobile.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-[#8B1528] hover:bg-[#6D1020] text-white rounded-xl text-xs font-bold transition shadow-xs"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Print Defaulter Notice</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Defaulters Filter Controls */}
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs space-y-4 no-print">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-700">Threshold:</span>
+                <div className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("75")}
+                    className={`px-3 py-1 text-xs font-bold rounded-lg transition ${
+                      thresholdMode === "75"
+                        ? "bg-rose-600 text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    &lt; 75%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("65")}
+                    className={`px-3 py-1 text-xs font-bold rounded-lg transition ${
+                      thresholdMode === "65"
+                        ? "bg-rose-600 text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    &lt; 65%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("60")}
+                    className={`px-3 py-1 text-xs font-bold rounded-lg transition ${
+                      thresholdMode === "60"
+                        ? "bg-rose-600 text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    &lt; 60%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("50")}
+                    className={`px-3 py-1 text-xs font-bold rounded-lg transition ${
+                      thresholdMode === "50"
+                        ? "bg-rose-600 text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    &lt; 50%
+                  </button>
+                </div>
+              </div>
+
+              <div className="relative flex-1 max-w-md w-full">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search defaulter roll number or name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Defaulter Table */}
+          <div className="bg-white border border-slate-300/80 rounded-3xl p-6 shadow-xs max-w-full overflow-hidden">
+            <div className="w-full max-w-full overflow-x-auto rounded-2xl border border-slate-200">
+              <table className="w-full min-w-max border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-100 border-b border-slate-200 text-left font-bold text-slate-700">
+                    <th className="px-3 py-3 w-12 text-center">#</th>
+                    <th className="px-4 py-3">Roll Number</th>
+                    <th className="px-4 py-3 min-w-[200px]">Student Name</th>
+                    <th className="px-3 py-3 text-center">Classes Held</th>
+                    <th className="px-3 py-3 text-center">Attended</th>
+                    <th className="px-3 py-3 text-center">Absent</th>
+                    <th className="px-3 py-3 text-center">Percentage</th>
+                    <th className="px-3 py-3 text-center">Classes to 75%</th>
+                    <th className="px-4 py-3 text-center no-print">Direct Call Contact</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredStudents
+                    .filter((s) => s.totalClasses > 0 && s.percentage !== null && s.percentage < (activeThresholdCutoff ?? 75))
+                    .map((student, idx) => {
+                      // Calculate shortfall classes needed to reach 75%
+                      // (attended + X) / (total + X) >= 0.75 => attended + X >= 0.75*total + 0.75*X => 0.25*X >= 0.75*total - attended => X = (3*total - 4*attended)
+                      const needed = Math.max(
+                        0,
+                        Math.ceil((0.75 * student.totalClasses - student.attendedClasses) / 0.25)
+                      );
+
+                      return (
+                        <tr key={student.studentId} className="hover:bg-rose-50/30 transition">
+                          <td className="px-3 py-3 text-center text-slate-400 font-mono text-[11px]">
+                            {idx + 1}
+                          </td>
+                          <td className="px-4 py-3 font-mono font-bold text-slate-900">
+                            <Link
+                              href={`/admin/students/${student.studentId}`}
+                              className="hover:text-blue-600 hover:underline"
+                            >
+                              {student.rollNumber}
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3 font-bold text-slate-800">
+                            <Link
+                              href={`/admin/students/${student.studentId}`}
+                              className="hover:text-blue-600 hover:underline"
+                            >
+                              {student.fullName}
+                            </Link>
+                          </td>
+                          <td className="px-3 py-3 text-center font-mono font-semibold text-slate-600">
+                            {student.totalClasses}
+                          </td>
+                          <td className="px-3 py-3 text-center font-mono font-bold text-slate-700">
+                            {student.attendedClasses}
+                          </td>
+                          <td className="px-3 py-3 text-center font-mono font-bold text-rose-600">
+                            {student.absentClasses}
+                          </td>
+                          <td className="px-3 py-3 text-center">
+                            <span className="px-2 py-1 rounded-lg text-xs font-black bg-rose-100 text-rose-700">
+                              {student.percentage}%
+                            </span>
+                          </td>
+                          <td className="px-3 py-3 text-center font-mono font-bold text-amber-700">
+                            +{needed} consecutive
+                          </td>
+                          <td className="px-4 py-3 text-center no-print">
+                            <div className="flex items-center justify-center gap-1.5">
+                              {student.phone ? (
+                                <a
+                                  href={`tel:${student.phone}`}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-lg text-xs font-bold transition"
+                                  title="Call Student"
+                                >
+                                  <Phone className="w-3.5 h-3.5" />
+                                  <span>Student</span>
+                                </a>
+                              ) : null}
+                              <Link
+                                href={`/admin/students/${student.studentId}`}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-lg text-xs font-bold transition"
+                                title="Open Profile to Call Parent"
+                              >
+                                <Phone className="w-3.5 h-3.5" />
+                                <span>Parent</span>
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict cKRAN9nDaHI2QrdNwYPVxead8lfQ6vsaVoS3kcWqoQ8pw5vMBApQEeF7rrZUleY
+\restrict EmQPc67FbnFBiIkFdlqP950PIu9RnSgQyuTeW1CUa3acQhXl4SHMRF2xgseQodL
 
 -- Dumped from database version 16.14 (Homebrew)
 -- Dumped by pg_dump version 16.14 (Homebrew)
@@ -85884,6 +85884,10 @@ cmv5c2ngf00052mixy2g4xl11	cmuzu9oof003iydphgyvr3cii	LOGIN	User	cmuzu9oof003iydph
 cmv5c2sd600072mixf60f5zds	\N	FAILED_LOGIN	User	26131A0501	\N	\N	FAILURE	{"reason": "User not found or inactive", "username": "26131A0501"}	2026-10-12 14:14:38.874
 cmv5c3r3r00092mixiqqigqwo	cmuzp7hsc000bbynpr08m4i25	LOGIN	User	cmuzp7hsc000bbynpr08m4i25	\N	\N	SUCCESS	{"roles": ["SUPER_ADMIN"]}	2026-10-12 14:15:23.895
 cmv5cxv7i000b2mixllr6fq87	cmv5cxakt000110wnsmb2rfxg	LOGIN	User	cmv5cxakt000110wnsmb2rfxg	\N	\N	SUCCESS	{"roles": ["OFFICE"]}	2026-10-12 14:38:48.895
+cmv5dlq2o000d2mix2jmltjhn	cmuzp7hsc000bbynpr08m4i25	LOGOUT	User	cmuzp7hsc000bbynpr08m4i25	\N	\N	SUCCESS	{}	2026-10-12 14:57:21.985
+cmv5dlwgi000f2mix0mi713n0	cmv5cxakt000110wnsmb2rfxg	LOGIN	User	cmv5cxakt000110wnsmb2rfxg	::1	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36	SUCCESS	{"roles": ["OFFICE"], "device": "macOS • Google Chrome (Desktop)", "description": "User \\"GVPIHLR Central Academic Office\\" (office) signed in successfully as OFFICE"}	2026-10-12 14:57:30.259
+cmv5dmppk000h2mixm4yolu5x	cmv5cxakt000110wnsmb2rfxg	LOGOUT	User	cmv5cxakt000110wnsmb2rfxg	\N	\N	SUCCESS	{}	2026-10-12 14:58:08.169
+cmv5dmw7i000j2mix831dyuf9	cmv0jr1am002pmzmyhq3k4q28	LOGIN	User	cmv0jr1am002pmzmyhq3k4q28	::1	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36	SUCCESS	{"roles": ["STUDENT"], "device": "macOS • Google Chrome (Desktop)", "description": "User \\"ADIRAJU SRI NAGA PRADYUMNA\\" (26UECHE0001) signed in successfully as STUDENT"}	2026-10-12 14:58:16.59
 \.
 
 
@@ -91877,11 +91881,11 @@ cmv0lfkf5070m10e0y7gk7dep	26UEMEC0121	26uemec0121@student.gvpihlr.edu.in	$2a$10$
 cmv0lfkf6070y10e0coksc98s	26UEMEC0132	26uemec0132@student.gvpihlr.edu.in	$2a$10$AAmj8bvVcBdwLMwiNVionOQFo2WVzjXhWdk31CM8UR/UQS0xsZWFa	MUMMANA PAVAN	8125571717	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N
 cmv0lfkfl076z10e0rve3p6ob	26UEMRB0012	26uemrb0012@student.gvpihlr.edu.in	$2a$10$085YdfwpMJuz5HqDcRT/KOimGpqEWvyXl17GVDCrZUaP/YZ44KsW2	PILLA MAHALAKSHMI	9951955780	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N
 cmv0lfkgc07cz10e0tzt4nmyq	26UEMRB0027	26uemrb0027@student.gvpihlr.edu.in	$2a$10$OfU3tn9MDv88kMp3TSmQauMe8.FVGWtxqLCNETBZlc5v.KOKJgGQK	MORRI HASINI	8106174393	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N
-cmv0jr1am002pmzmyhq3k4q28	26UECHE0001	26ueche0001@student.gvpihlr.edu.in	$2a$10$HZMHHs5f2Zp0J2Ce0aM8FOjzTBDfg6R6cKGzdtKRsz0d3zm3o4CYO	ADIRAJU SRI NAGA PRADYUMNA	8019888678	t	f	2026-10-09 08:01:28.041	0	\N	2026-10-09 05:50:36.599	2026-10-09 08:01:28.042	\N
 cmuzp7hsc000bbynpr08m4i25	admin	admin@gvpihlr.edu.in	$2a$12$olLcQ23IA0/wz/9ao901q.un91tdowzuc1DUEvtNvPsUZ2sGYuR5q	GVPIHLR Super Administrator	+91 9876543210	t	f	2026-10-12 14:15:23.893	0	\N	2026-10-08 15:35:36.396	2026-10-12 14:15:23.894	\N
-cmv5cxakt000110wnsmb2rfxg	office	office@gvpihlr.edu.in	$2a$12$eHRDQeKY5VRYfvRvea56qe.3rUAtZNlnupZqsbbT635dtHW221Z1C	GVPIHLR Central Academic Office	+91 891 2739507	t	f	2026-10-12 14:38:48.891	0	\N	2026-10-12 14:38:22.157	2026-10-12 14:38:48.892	\N
 cmuzu9oof003iydphgyvr3cii	BSK	bsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. B Santosh Kumar	+91 9440112233	t	f	2026-10-12 14:14:32.509	0	\N	2026-10-08 17:57:16.72	2026-10-12 14:52:18.437	\N
 cmuzu9oox004rydph03f490gx	GSK	gsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. G Santosh Kumar	+91 9440112233	t	f	2026-10-08 18:00:33.331	0	\N	2026-10-08 17:57:16.737	2026-10-12 14:52:18.442	\N
+cmv5cxakt000110wnsmb2rfxg	office	office@gvpihlr.edu.in	$2a$12$eHRDQeKY5VRYfvRvea56qe.3rUAtZNlnupZqsbbT635dtHW221Z1C	GVPIHLR Central Academic Office	+91 891 2739507	t	f	2026-10-12 14:57:30.255	0	\N	2026-10-12 14:38:22.157	2026-10-12 14:57:30.256	\N
+cmv0jr1am002pmzmyhq3k4q28	26UECHE0001	26ueche0001@student.gvpihlr.edu.in	$2a$10$HZMHHs5f2Zp0J2Ce0aM8FOjzTBDfg6R6cKGzdtKRsz0d3zm3o4CYO	ADIRAJU SRI NAGA PRADYUMNA	8019888678	t	f	2026-10-12 14:58:16.588	0	\N	2026-10-09 05:50:36.599	2026-10-12 14:58:16.589	\N
 \.
 
 
@@ -94196,5 +94200,5 @@ REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict cKRAN9nDaHI2QrdNwYPVxead8lfQ6vsaVoS3kcWqoQ8pw5vMBApQEeF7rrZUleY
+\unrestrict EmQPc67FbnFBiIkFdlqP950PIu9RnSgQyuTeW1CUa3acQhXl4SHMRF2xgseQodL
 

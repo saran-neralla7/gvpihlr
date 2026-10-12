@@ -27,20 +27,12 @@ export default async function ReportsPage() {
     where: { isCurrent: true, isActive: true },
   });
 
-  // Section scoping: Faculty only sees assigned sections; Super Admin sees all
-  const sectionWhere: any = {
-    academicYearId: currentAY?.id,
-    isActive: true,
-  };
-
-  if (!isSuperAdmin && session.facultyId) {
-    sectionWhere.assignments = {
-      some: { facultyId: session.facultyId, isActive: true },
-    };
-  }
-
+  // Load all active sections (Accessible by Super Admin, Office, and Faculty)
   const sections = await prisma.section.findMany({
-    where: sectionWhere,
+    where: {
+      academicYearId: currentAY?.id,
+      isActive: true,
+    },
     include: {
       program: true,
     },
@@ -50,20 +42,8 @@ export default async function ReportsPage() {
     ],
   });
 
-  // Subject scoping
-  const subjectWhere: any = { isActive: true };
-  if (!isSuperAdmin && session.facultyId) {
-    subjectWhere.offerings = {
-      some: {
-        assignments: {
-          some: { facultyId: session.facultyId, isActive: true },
-        },
-      },
-    };
-  }
-
   const subjects = await prisma.subject.findMany({
-    where: subjectWhere,
+    where: { isActive: true },
     orderBy: { name: "asc" },
   });
 
@@ -77,6 +57,7 @@ export default async function ReportsPage() {
     totalSessionsConducted: 0,
     sessions: [] as any[],
     availableSubjects: [] as any[],
+    subjectColumns: [] as any[],
     students: [] as any[],
     defaultersCount: 0,
     startDate: "",
@@ -95,6 +76,7 @@ export default async function ReportsPage() {
         totalSessionsConducted: rep.totalSessionsConducted,
         sessions: rep.sessions || [],
         availableSubjects: rep.availableSubjects || [],
+        subjectColumns: (rep as any).subjectColumns || [],
         students: rep.students,
         defaultersCount: rep.defaultersCount,
         startDate: rep.startDate || "",

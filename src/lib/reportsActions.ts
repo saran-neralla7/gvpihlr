@@ -99,9 +99,11 @@ export async function getSectionStudentAttendanceReport(filter: ReportFilter) {
       formattedDate: `${day}/${month}`,
       periodNumber: s.periodNumber,
       periodTiming,
+      subjectId: sub?.id || "",
       subjectName: sub?.name || "Subject",
       subjectCode: sub?.code || "",
       subjectShortName: `(${shortName})`,
+      cleanShortName: shortName,
     };
   });
 
@@ -165,16 +167,81 @@ export async function getSectionStudentAttendanceReport(filter: ReportFilter) {
 
   const availableSubjects = Array.from(subjectMap.values()).sort((a, b) => b.count - a.count);
 
-  // Calculate per-student stats and attendanceMap
+  // Fetch curriculum subjects offered for this section's program, year & semester
+  const programOfferings = await prisma.subjectOffering.findMany({
+    where: {
+      programId: section.programId,
+      year: section.year,
+      semester: section.semester,
+      isActive: true,
+    },
+    include: {
+      subject: true,
+    },
+    orderBy: [
+      { subject: { type: "asc" } },
+      { subject: { code: "asc" } },
+    ],
+  });
+
+  const subjectColumnsMap = new Map<
+    string,
+    { id: string; name: string; code: string; shortName: string; type: string; conducted: number }
+  >();
+
+  programOfferings.forEach((po) => {
+    subjectColumnsMap.set(po.subject.id, {
+      id: po.subject.id,
+      name: po.subject.name,
+      code: po.subject.code,
+      shortName: po.subject.shortName || po.subject.code,
+      type: po.subject.type,
+      conducted: 0,
+    });
+  });
+
+  // Calculate conducted count for each subject in this session window
+  sessions.forEach((s) => {
+    const sub = s.assignment?.subjectOffering?.subject;
+    if (sub) {
+      if (!subjectColumnsMap.has(sub.id)) {
+        subjectColumnsMap.set(sub.id, {
+          id: sub.id,
+          name: sub.name,
+          code: sub.code,
+          shortName: sub.shortName || sub.code,
+          type: sub.type,
+          conducted: 0,
+        });
+      }
+      subjectColumnsMap.get(sub.id)!.conducted += 1;
+    }
+  });
+
+  const subjectColumns = Array.from(subjectColumnsMap.values());
+
+  // Calculate per-student stats, attendanceMap, and subject-wise attended count
   const studentReports = enrollments.map((e) => {
     const studentRecords = records.filter((r) => r.studentId === e.student.id);
     const attendanceMap: Record<string, "P" | "A"> = {};
+    const subjectAttendance: Record<string, number> = {};
+
+    subjectColumns.forEach((col) => {
+      subjectAttendance[col.id] = 0;
+    });
 
     studentRecords.forEach((r) => {
-      attendanceMap[r.sessionId] =
-        r.status === AttendanceStatus.PRESENT || r.status === AttendanceStatus.ON_DUTY
-          ? "P"
-          : "A";
+      const isPresent =
+        r.status === AttendanceStatus.PRESENT || r.status === AttendanceStatus.ON_DUTY;
+      attendanceMap[r.sessionId] = isPresent ? "P" : "A";
+
+      if (isPresent) {
+        const sessionObj = sessions.find((s) => s.id === r.sessionId);
+        const subId = sessionObj?.assignment?.subjectOffering?.subject?.id;
+        if (subId && subjectAttendance[subId] !== undefined) {
+          subjectAttendance[subId] += 1;
+        }
+      }
     });
 
     const attendedCount = studentRecords.filter(
@@ -190,6 +257,7 @@ export async function getSectionStudentAttendanceReport(filter: ReportFilter) {
       fullName: e.student.user.fullName,
       phone: e.student.user.phone,
       attendanceMap,
+      subjectAttendance,
       totalClasses: totalPossible,
       attendedClasses: attendedCount,
       absentClasses: totalPossible - attendedCount,
@@ -210,6 +278,7 @@ export async function getSectionStudentAttendanceReport(filter: ReportFilter) {
     },
     sessions: formattedSessions,
     availableSubjects,
+    subjectColumns,
     totalSessionsConducted,
     students: studentReports,
     defaultersCount: studentReports.filter((s) => s.isDefaulter).length,

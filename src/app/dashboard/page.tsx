@@ -38,14 +38,6 @@ export default async function DashboardPage() {
   if (isSuperAdmin || isOfficeUser) {
     const allAdminCards = [
       {
-        title: "Reports",
-        description: "Daily consolidated and subject-wise attendance registers & exports.",
-        badgeColor: "bg-teal-600",
-        icon: FileText,
-        link: "/reports",
-        officeAllowed: true,
-      },
-      {
         title: "Students",
         description: "Manage student profiles, enrollments, and attendance.",
         badgeColor: "bg-blue-600",
@@ -59,6 +51,14 @@ export default async function DashboardPage() {
         badgeColor: "bg-indigo-600",
         icon: Users,
         link: "/admin/faculty",
+        officeAllowed: true,
+      },
+      {
+        title: "Attendance Reports",
+        description: "Subject-wise & section consolidated registers, matrix view, and defaulters.",
+        badgeColor: "bg-teal-600",
+        icon: FileText,
+        link: "/reports",
         officeAllowed: true,
       },
       {

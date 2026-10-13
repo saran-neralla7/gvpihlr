@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict RSt5fqxFCfbnCoLrE5NAtkdnNQr6iNIg8fvULq2zHhyk2eobVMlnDQldULyK0Xt
+\restrict 3e7tpRbH0Tcl6yCcbQ4KHXGNLaFBNL6XREw6bgedeM86tE9puPOG2ylh4Izg6yQ
 
 -- Dumped from database version 16.15
 -- Dumped by pg_dump version 16.15
@@ -85734,6 +85734,8 @@ cmv6cb1fz0005136a42hq62eo	cmuzp7hsc000bbynpr08m4i25	LOGIN	User	cmuzp7hsc000bbynp
 cmv6cb24a0007136ap1i6g5se	cmv6bio1q0000wlgnrfs3tz71	LOGIN	User	cmv6bio1q0000wlgnrfs3tz71	::1	Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.19041.6456	SUCCESS	{"roles": ["DEAN", "DEAN", "DEAN", "FACULTY", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN"], "device": "Windows • Web Browser (Desktop)", "description": "User \\"First Year Incharge\\" (firstyearincharge) signed in successfully as DEAN, DEAN, DEAN, FACULTY, ACADEMIC_ADMIN, ACADEMIC_ADMIN, ACADEMIC_ADMIN"}	2026-10-13 07:08:50.938
 cmv6cfth60009136antg6xu5f	cmv6bio1q0000wlgnrfs3tz71	LOGIN	User	cmv6bio1q0000wlgnrfs3tz71	::1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36	SUCCESS	{"roles": ["DEAN", "DEAN", "DEAN", "FACULTY", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN"], "device": "Windows • Google Chrome (Desktop)", "description": "User \\"First Year Incharge\\" (firstyearincharge) signed in successfully as DEAN, DEAN, DEAN, FACULTY, ACADEMIC_ADMIN, ACADEMIC_ADMIN, ACADEMIC_ADMIN"}	2026-10-13 07:12:33.019
 cmv6cwfna0001jveufb6t7t98	cmv6bio1q0000wlgnrfs3tz71	LOGIN	User	cmv6bio1q0000wlgnrfs3tz71	::1	Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.19041.6456	SUCCESS	{"roles": ["DEAN", "DEAN", "DEAN", "FACULTY", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN"], "device": "Windows • Web Browser (Desktop)", "description": "User \\"First Year Incharge\\" (firstyearincharge) signed in successfully as DEAN, DEAN, DEAN, FACULTY, ACADEMIC_ADMIN, ACADEMIC_ADMIN, ACADEMIC_ADMIN"}	2026-10-13 07:25:28.246
+cmv6cy55q0003jveugnxw6dm7	cmv6bio1q0000wlgnrfs3tz71	LOGOUT	User	cmv6bio1q0000wlgnrfs3tz71	\N	\N	SUCCESS	{}	2026-10-13 07:26:47.966
+cmv6cy9zb0005jveu2m2mgdju	cmuzp7hsc000bbynpr08m4i25	LOGIN	User	cmuzp7hsc000bbynpr08m4i25	::1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36	SUCCESS	{"roles": ["SUPER_ADMIN"], "device": "Windows • Google Chrome (Desktop)", "description": "User \\"GVPIHLR Super Administrator\\" (admin) signed in successfully as SUPER_ADMIN"}	2026-10-13 07:26:54.215
 \.
 
 
@@ -91734,8 +91736,8 @@ cmuzu9oox004rydph03f490gx	GSK	gsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeem
 cmv0jr1am002pmzmyhq3k4q28	26UECHE0001	26ueche0001@student.gvpihlr.edu.in	$2a$10$HZMHHs5f2Zp0J2Ce0aM8FOjzTBDfg6R6cKGzdtKRsz0d3zm3o4CYO	ADIRAJU SRI NAGA PRADYUMNA	8019888678	t	f	2026-10-12 14:58:16.588	0	\N	2026-10-09 05:50:36.599	2026-10-12 14:58:16.589	\N
 cmv5cxakt000110wnsmb2rfxg	office	office@gvpihlr.edu.in	$2a$12$eHRDQeKY5VRYfvRvea56qe.3rUAtZNlnupZqsbbT635dtHW221Z1C	GVPIHLR Central Academic Office	+91 891 2739507	t	f	2026-10-13 04:49:30.789	0	\N	2026-10-12 14:38:22.157	2026-10-13 04:49:30.79	\N
 cmv6bio250001wlgnf01b2c0s	incharge	incharge@gvpihlr.edu.in	$2a$12$DACBbHg15IyRSP8lHGwRAe1l4CbSFlZuQ.03oE3eOaTalwW7Q/Ltu	First Year Incharge	+91 9876543211	t	f	2026-10-13 06:55:09.373	1	\N	2026-10-13 06:46:46.35	2026-10-13 06:59:31.725	\N
-cmuzp7hsc000bbynpr08m4i25	admin	admin@gvpihlr.edu.in	$2a$12$olLcQ23IA0/wz/9ao901q.un91tdowzuc1DUEvtNvPsUZ2sGYuR5q	GVPIHLR Super Administrator	+91 9876543210	t	f	2026-10-13 07:08:50.046	0	\N	2026-10-08 15:35:36.396	2026-10-13 07:08:50.048	\N
 cmv6bio1q0000wlgnrfs3tz71	firstyearincharge	firstyearincharge@gvpihlr.edu.in	$2a$12$DACBbHg15IyRSP8lHGwRAe1l4CbSFlZuQ.03oE3eOaTalwW7Q/Ltu	First Year Incharge	+91 9876543211	t	f	2026-10-13 07:25:28.241	0	\N	2026-10-13 06:46:46.335	2026-10-13 07:25:28.242	\N
+cmuzp7hsc000bbynpr08m4i25	admin	admin@gvpihlr.edu.in	$2a$12$olLcQ23IA0/wz/9ao901q.un91tdowzuc1DUEvtNvPsUZ2sGYuR5q	GVPIHLR Super Administrator	+91 9876543210	t	f	2026-10-13 07:26:54.212	0	\N	2026-10-08 15:35:36.396	2026-10-13 07:26:54.213	\N
 \.
 
 
@@ -94057,5 +94059,5 @@ ALTER TABLE ONLY public."UserRole"
 -- PostgreSQL database dump complete
 --
 
-\unrestrict RSt5fqxFCfbnCoLrE5NAtkdnNQr6iNIg8fvULq2zHhyk2eobVMlnDQldULyK0Xt
+\unrestrict 3e7tpRbH0Tcl6yCcbQ4KHXGNLaFBNL6XREw6bgedeM86tE9puPOG2ylh4Izg6yQ
 

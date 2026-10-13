@@ -340,3 +340,347 @@ export async function getInstitutionalMetrics() {
     },
   };
 }
+
+export interface AllSectionsReportItem {
+  sectionId: string;
+  sectionName: string;
+  displayName: string;
+  programName: string;
+  programCode: string;
+  schoolName: string;
+  schoolCode: string;
+  year: number;
+  semester: number;
+  totalStudents: number;
+  totalSessionsConducted: number;
+  averageAttendance: number;
+  defaultersCount: number;
+  subjectColumns: {
+    id: string;
+    name: string;
+    code: string;
+    shortName: string;
+    type: string;
+    conducted: number;
+  }[];
+  students: {
+    studentId: string;
+    rollNumber: string;
+    fullName: string;
+    phone?: string | null;
+    totalClasses: number;
+    attendedClasses: number;
+    absentClasses: number;
+    percentage: number | null;
+    isDefaulter: boolean;
+    subjectAttendance: Record<string, number>;
+  }[];
+}
+
+export interface AllSectionsReportResponse {
+  success: boolean;
+  error?: string;
+  dateRange: {
+    startDate: string;
+    endDate: string;
+  };
+  summary: {
+    totalSections: number;
+    totalStudents: number;
+    overallAverageAttendance: number;
+    totalDefaulters: number;
+    totalSessionsConducted: number;
+  };
+  sections: AllSectionsReportItem[];
+}
+
+/**
+ * Fetch and compile attendance data across ALL sections in scope in one click.
+ * Supports consolidated student reports and subject-wise reports.
+ */
+export async function getAllSectionsAttendanceReport(filter?: {
+  startDate?: string;
+  endDate?: string;
+}): Promise<AllSectionsReportResponse> {
+  const session = await getCurrentSession();
+  if (!session) {
+    return {
+      success: false,
+      error: "Unauthorized",
+      dateRange: { startDate: "", endDate: "" },
+      summary: {
+        totalSections: 0,
+        totalStudents: 0,
+        overallAverageAttendance: 0,
+        totalDefaulters: 0,
+        totalSessionsConducted: 0,
+      },
+      sections: [],
+    };
+  }
+
+  const hasSchoolScope = !!(
+    session.allowedSchoolIds && session.allowedSchoolIds.length > 0
+  );
+  const scopedSchoolIds = session.allowedSchoolIds || [];
+
+  const currentYear = await prisma.academicYear.findFirst({
+    where: { isCurrent: true, isActive: true },
+  });
+
+  const sections = await prisma.section.findMany({
+    where: {
+      isActive: true,
+      ...(currentYear ? { academicYearId: currentYear.id } : {}),
+      ...(hasSchoolScope
+        ? { program: { schoolId: { in: scopedSchoolIds } } }
+        : {}),
+    },
+    include: {
+      program: { include: { school: true } },
+    },
+    orderBy: [
+      { program: { school: { code: "asc" } } },
+      { program: { code: "asc" } },
+      { name: "asc" },
+    ],
+  });
+
+  const sectionIds = sections.map((s) => s.id);
+
+  const sessionWhere: any = {
+    sectionId: { in: sectionIds },
+  };
+
+  if (filter?.startDate) {
+    const sDate = new Date(filter.startDate);
+    sDate.setUTCHours(0, 0, 0, 0);
+    sessionWhere.sessionDate = {
+      ...(sessionWhere.sessionDate || {}),
+      gte: sDate,
+    };
+  }
+  if (filter?.endDate) {
+    const eDate = new Date(filter.endDate);
+    eDate.setUTCHours(23, 59, 59, 999);
+    sessionWhere.sessionDate = {
+      ...(sessionWhere.sessionDate || {}),
+      lte: eDate,
+    };
+  }
+
+  const [allSessions, allEnrollments] = await Promise.all([
+    prisma.attendanceSession.findMany({
+      where: sessionWhere,
+      include: {
+        assignment: {
+          include: {
+            subjectOffering: { include: { subject: true } },
+          },
+        },
+      },
+      orderBy: [{ sessionDate: "asc" }, { periodNumber: "asc" }],
+    }),
+    prisma.studentEnrollment.findMany({
+      where: {
+        sectionId: { in: sectionIds },
+        isCurrent: true,
+      },
+      include: {
+        student: {
+          include: {
+            user: { select: { fullName: true, phone: true } },
+          },
+        },
+      },
+      orderBy: { student: { rollNumber: "asc" } },
+    }),
+  ]);
+
+  const allSessionIds = allSessions.map((s) => s.id);
+
+  const allRecords = await prisma.attendanceRecord.findMany({
+    where: { sessionId: { in: allSessionIds } },
+    select: {
+      sessionId: true,
+      studentId: true,
+      status: true,
+    },
+  });
+
+  // Group data by sectionId
+  const sessionsBySection = new Map<string, typeof allSessions>();
+  for (const s of allSessions) {
+    const list = sessionsBySection.get(s.sectionId) || [];
+    list.push(s);
+    sessionsBySection.set(s.sectionId, list);
+  }
+
+  const enrollmentsBySection = new Map<string, typeof allEnrollments>();
+  for (const e of allEnrollments) {
+    const list = enrollmentsBySection.get(e.sectionId) || [];
+    list.push(e);
+    enrollmentsBySection.set(e.sectionId, list);
+  }
+
+  // Map records by sessionId -> studentId -> status
+  const recordsBySession = new Map<string, Map<string, AttendanceStatus>>();
+  for (const r of allRecords) {
+    if (!recordsBySession.has(r.sessionId)) {
+      recordsBySession.set(r.sessionId, new Map());
+    }
+    recordsBySession.get(r.sessionId)!.set(r.studentId, r.status);
+  }
+
+  let totalStudentsAll = 0;
+  let totalDefaultersAll = 0;
+  let totalPercentageSum = 0;
+  let validPercentageCount = 0;
+
+  const sectionResults: AllSectionsReportItem[] = sections.map((sec) => {
+    const secSessions = sessionsBySection.get(sec.id) || [];
+    const secEnrollments = enrollmentsBySection.get(sec.id) || [];
+    const totalSessionsConducted = secSessions.length;
+
+    // Collect subjects with conducted counts
+    const subjectColumnsMap = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        code: string;
+        shortName: string;
+        type: string;
+        conducted: number;
+      }
+    >();
+
+    for (const sess of secSessions) {
+      const sub = sess.assignment?.subjectOffering?.subject;
+      if (sub) {
+        if (!subjectColumnsMap.has(sub.id)) {
+          subjectColumnsMap.set(sub.id, {
+            id: sub.id,
+            name: sub.name,
+            code: sub.code,
+            shortName: sub.shortName || sub.code,
+            type: sub.type,
+            conducted: 0,
+          });
+        }
+        subjectColumnsMap.get(sub.id)!.conducted += 1;
+      }
+    }
+
+    const subjectColumns = Array.from(subjectColumnsMap.values()).filter(
+      (c) => c.conducted > 0
+    );
+
+    let secDefaulters = 0;
+    let secPercentageSum = 0;
+    let secPercentageCount = 0;
+
+    const studentReports = secEnrollments.map((enr) => {
+      const studentId = enr.student.id;
+      let attendedCount = 0;
+      const subjectAttendance: Record<string, number> = {};
+
+      for (const col of subjectColumns) {
+        subjectAttendance[col.id] = 0;
+      }
+
+      for (const sess of secSessions) {
+        const studentStatus = recordsBySession.get(sess.id)?.get(studentId);
+        if (
+          studentStatus === AttendanceStatus.PRESENT ||
+          studentStatus === AttendanceStatus.ON_DUTY
+        ) {
+          attendedCount++;
+          const subId = sess.assignment?.subjectOffering?.subject?.id;
+          if (subId && subjectAttendance[subId] !== undefined) {
+            subjectAttendance[subId] += 1;
+          }
+        }
+      }
+
+      const absentClasses = Math.max(0, totalSessionsConducted - attendedCount);
+      const percentage =
+        totalSessionsConducted > 0
+          ? parseFloat(
+              ((attendedCount / totalSessionsConducted) * 100).toFixed(1)
+            )
+          : null;
+
+      const isDefaulter = percentage !== null && percentage < 75;
+      if (isDefaulter) {
+        secDefaulters++;
+      }
+      if (percentage !== null) {
+        secPercentageSum += percentage;
+        secPercentageCount++;
+        totalPercentageSum += percentage;
+        validPercentageCount++;
+      }
+
+      return {
+        studentId,
+        rollNumber: enr.student.rollNumber,
+        fullName: enr.student.user?.fullName || "Student",
+        phone: enr.student.user?.phone || null,
+        totalClasses: totalSessionsConducted,
+        attendedClasses: attendedCount,
+        absentClasses,
+        percentage,
+        isDefaulter,
+        subjectAttendance,
+      };
+    });
+
+    const averageAttendance =
+      secPercentageCount > 0
+        ? parseFloat((secPercentageSum / secPercentageCount).toFixed(1))
+        : 0;
+
+    totalStudentsAll += secEnrollments.length;
+    totalDefaultersAll += secDefaulters;
+
+    return {
+      sectionId: sec.id,
+      sectionName: sec.name,
+      displayName: sec.displayName,
+      programName: sec.program.name,
+      programCode: sec.program.code,
+      schoolName: sec.program.school?.name || "School",
+      schoolCode: sec.program.school?.code || "SCH",
+      year: sec.year,
+      semester: sec.semester,
+      totalStudents: secEnrollments.length,
+      totalSessionsConducted,
+      averageAttendance,
+      defaultersCount: secDefaulters,
+      subjectColumns,
+      students: studentReports,
+    };
+  });
+
+  const overallAverageAttendance =
+    validPercentageCount > 0
+      ? parseFloat((totalPercentageSum / validPercentageCount).toFixed(1))
+      : 0;
+
+  return {
+    success: true,
+    dateRange: {
+      startDate: filter?.startDate || "2026-07-01",
+      endDate: filter?.endDate || "2026-10-31",
+    },
+    summary: {
+      totalSections: sections.length,
+      totalStudents: totalStudentsAll,
+      overallAverageAttendance,
+      totalDefaulters: totalDefaultersAll,
+      totalSessionsConducted: allSessions.length,
+    },
+    sections: sectionResults,
+  };
+}

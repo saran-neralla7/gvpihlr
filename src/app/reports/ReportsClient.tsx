@@ -29,6 +29,8 @@ import SubjectWiseReportTable, {
   SubjectColumnItem,
 } from "./SubjectWiseReportTable";
 import MonthlyAttendanceView from "./MonthlyAttendanceView";
+import AllSectionsPrintReports from "./AllSectionsPrintReports";
+import type { AllSectionsReportResponse } from "@/lib/reportsActions";
 
 interface SchoolOption {
   id: string;
@@ -159,6 +161,36 @@ export default function ReportsClient({
   const [rangeMin, setRangeMin] = useState<number>(65);
   const [rangeMax, setRangeMax] = useState<number>(75);
   const [isLoading, setIsLoading] = useState(false);
+
+  // One-Click All Sections Consolidated Report States
+  const [allSectionsModalOpen, setAllSectionsModalOpen] = useState(false);
+  const [allSectionsData, setAllSectionsData] = useState<AllSectionsReportResponse | null>(null);
+  const [allSectionsMode, setAllSectionsMode] = useState<"consolidated" | "subject_wise">("consolidated");
+  const [isLoadingAllSections, setIsLoadingAllSections] = useState(false);
+
+  const handleOpenAllSectionsPrint = async (mode: "consolidated" | "subject_wise") => {
+    setIsLoadingAllSections(true);
+    setAllSectionsMode(mode);
+    try {
+      const params = new URLSearchParams();
+      if (startDate && startDate.trim()) params.append("startDate", startDate.trim());
+      if (endDate && endDate.trim()) params.append("endDate", endDate.trim());
+
+      const res = await fetch(`/api/reports/all-sections?${params.toString()}`);
+      const data = await res.json();
+      if (data && data.success) {
+        setAllSectionsData(data);
+        setAllSectionsModalOpen(true);
+      } else {
+        alert("Unable to compile all sections report: " + (data?.error || data?.message || "Unknown error"));
+      }
+    } catch (err) {
+      console.error("Failed to load all sections report", err);
+      alert("Error fetching all sections report data.");
+    } finally {
+      setIsLoadingAllSections(false);
+    }
+  };
 
   // 1. Available Schools (all schools or derived from sections)
   const availableSchools = useMemo(() => {
@@ -1155,6 +1187,58 @@ export default function ReportsClient({
       </div>
 
       {/* =========================================================================
+          ONE-CLICK ALL SECTIONS PRINT COMPILATION BANNER (Portrait A4)
+          ========================================================================= */}
+      <div className="bg-gradient-to-r from-[#0B2545] via-[#133663] to-[#1D4ED8] text-white rounded-3xl p-5 sm:p-6 shadow-md flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 no-print border border-blue-900/30">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-[10px] font-black uppercase tracking-wider text-blue-200">
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>Official University Examination &amp; Executive Registers (Portrait A4)</span>
+          </div>
+          <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
+            Consolidated Attendance for All Sections in 1 Click
+          </h3>
+          <p className="text-xs text-blue-100 max-w-2xl font-medium leading-relaxed">
+            Instantly compile, view, and print attendance for all first-year sections under one master university register. Formatted with high-clarity typography (numbers &ge; 10pt), clean portrait A4 pagination, and official university signature blocks.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full lg:w-auto">
+          {/* Button 1: Consolidated All Sections */}
+          <button
+            type="button"
+            disabled={isLoadingAllSections}
+            onClick={() => handleOpenAllSectionsPrint("consolidated")}
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white text-slate-900 hover:bg-blue-50 text-xs font-black transition shadow-sm hover:shadow active:scale-[0.98] disabled:opacity-50"
+            title="Generate &amp; Print Consolidated Attendance of All Sections in 1 Click (Portrait A4)"
+          >
+            <Printer className="w-4 h-4 text-blue-800" />
+            <span>
+              {isLoadingAllSections && allSectionsMode === "consolidated"
+                ? "Compiling All Sections..."
+                : "Print All Sections Consolidated"}
+            </span>
+          </button>
+
+          {/* Button 2: Subject-Wise All Sections */}
+          <button
+            type="button"
+            disabled={isLoadingAllSections}
+            onClick={() => handleOpenAllSectionsPrint("subject_wise")}
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-blue-500 hover:bg-blue-400 text-white text-xs font-black transition shadow-sm hover:shadow active:scale-[0.98] disabled:opacity-50 border border-blue-400/40"
+            title="Generate &amp; Print Subject-Wise Consolidated Attendance of All Sections in 1 Click (Portrait A4)"
+          >
+            <LayoutGrid className="w-4 h-4 text-white" />
+            <span>
+              {isLoadingAllSections && allSectionsMode === "subject_wise"
+                ? "Compiling All Sections..."
+                : "Print All Sections Subject-Wise"}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* =========================================================================
           UNIVERSAL ACADEMIC SELECTOR (School -> Program -> Year -> Semester -> Section)
           Visible across all report tabs, hidden in print
           ========================================================================= */}
@@ -1406,7 +1490,7 @@ export default function ReportsClient({
                 <button
                   type="button"
                   onClick={handleExportSubjectWiseCSV}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition shadow-xs"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition shadow-xs"
                 >
                   <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
                   <span>Export CSV</span>
@@ -1414,10 +1498,20 @@ export default function ReportsClient({
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0B2545] hover:bg-[#132E5C] text-white text-xs font-bold transition shadow-xs"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#0B2545] hover:bg-[#132E5C] text-white text-xs font-bold transition shadow-xs"
                 >
                   <Printer className="w-4 h-4" />
                   <span>Print Register</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={isLoadingAllSections}
+                  onClick={() => handleOpenAllSectionsPrint("subject_wise")}
+                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold transition shadow-xs disabled:opacity-50 flex-shrink-0"
+                  title="Print Subject-Wise Consolidated Attendance for All Sections in 1 Click (Portrait A4)"
+                >
+                  <Printer className="w-4 h-4 text-blue-200" />
+                  <span>All Sections (1-Click)</span>
                 </button>
               </div>
             </div>
@@ -1782,7 +1876,7 @@ export default function ReportsClient({
               <div className="flex items-end gap-2">
                 <button
                   onClick={handleExportConsolidatedPDF}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#8B1528] hover:bg-[#6D1020] text-white text-xs font-bold transition shadow-xs"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#8B1528] hover:bg-[#6D1020] text-white text-xs font-bold transition shadow-xs"
                   title="Download Consolidated PDF"
                 >
                   <Download className="w-4 h-4" />
@@ -1790,11 +1884,21 @@ export default function ReportsClient({
                 </button>
                 <button
                   onClick={handleExportConsolidatedExcel}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition shadow-xs"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition shadow-xs"
                   title="Export to Excel"
                 >
                   <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
                   <span>Export Excel</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={isLoadingAllSections}
+                  onClick={() => handleOpenAllSectionsPrint("consolidated")}
+                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#0B2545] hover:bg-[#132E5C] text-white text-xs font-bold transition shadow-xs disabled:opacity-50 flex-shrink-0"
+                  title="Print All Sections Consolidated Attendance in 1 Click (Portrait A4)"
+                >
+                  <Printer className="w-4 h-4 text-blue-200" />
+                  <span>All Sections (1-Click)</span>
                 </button>
               </div>
             </div>
@@ -3504,6 +3608,17 @@ export default function ReportsClient({
           </div>
           )}
         </div>
+      )}
+
+      {/* =========================================================================
+          ONE-CLICK ALL SECTIONS PRINT MODAL (Portrait A4)
+          ========================================================================= */}
+      {allSectionsModalOpen && allSectionsData && (
+        <AllSectionsPrintReports
+          data={allSectionsData}
+          initialMode={allSectionsMode}
+          onClose={() => setAllSectionsModalOpen(false)}
+        />
       )}
     </div>
   );

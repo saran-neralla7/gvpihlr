@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 1vR4RySk0cnK92yBM4MyK1ETgAB7jj9QEGZfxkefLIBvYppYuMGid6vLKzK5caT
+\restrict FIZcK51GKdx4Jhjwqt1jmdzalfVtqEh0MaOZNZqcfmbnDJieGaID1L3tZfingRY
 
 -- Dumped from database version 16.15
 -- Dumped by pg_dump version 16.15
@@ -18,6 +18,173 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_schoolId_fkey";
+ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_roleId_fkey";
+ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_programId_fkey";
+ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_departmentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_sectionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_labBatchId_fkey";
+ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_facultyId_fkey";
+ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_assignmentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_academicYearId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Subject" DROP CONSTRAINT IF EXISTS "Subject_departmentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_subjectId_fkey";
+ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_regulationId_fkey";
+ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_programId_fkey";
+ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_academicYearId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Student" DROP CONSTRAINT IF EXISTS "Student_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_studentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_sectionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_programId_fkey";
+ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_academicYearId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Section" DROP CONSTRAINT IF EXISTS "Section_programId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Section" DROP CONSTRAINT IF EXISTS "Section_academicYearId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Program" DROP CONSTRAINT IF EXISTS "Program_schoolId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Program" DROP CONSTRAINT IF EXISTS "Program_regulationId_fkey";
+ALTER TABLE IF EXISTS ONLY public."LabBatch" DROP CONSTRAINT IF EXISTS "LabBatch_sectionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."LabBatchStudent" DROP CONSTRAINT IF EXISTS "LabBatchStudent_studentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."LabBatchStudent" DROP CONSTRAINT IF EXISTS "LabBatchStudent_labBatchId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Faculty" DROP CONSTRAINT IF EXISTS "Faculty_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Faculty" DROP CONSTRAINT IF EXISTS "Faculty_departmentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_subjectOfferingId_fkey";
+ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_sectionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_facultyId_fkey";
+ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_academicYearId_fkey";
+ALTER TABLE IF EXISTS ONLY public."Department" DROP CONSTRAINT IF EXISTS "Department_schoolId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AuditLog" DROP CONSTRAINT IF EXISTS "AuditLog_userId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_sectionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_recordedById_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_labBatchId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_facultyId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_assignmentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_academicYearId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceRecord" DROP CONSTRAINT IF EXISTS "AttendanceRecord_studentId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceRecord" DROP CONSTRAINT IF EXISTS "AttendanceRecord_sessionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceAuditLog" DROP CONSTRAINT IF EXISTS "AttendanceAuditLog_sessionId_fkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceAuditLog" DROP CONSTRAINT IF EXISTS "AttendanceAuditLog_changedById_fkey";
+DROP INDEX IF EXISTS public."User_username_key";
+DROP INDEX IF EXISTS public."User_email_key";
+DROP INDEX IF EXISTS public."UserRole_userId_roleId_schoolId_departmentId_programId_key";
+DROP INDEX IF EXISTS public."UserRole_userId_idx";
+DROP INDEX IF EXISTS public."UserRole_roleId_idx";
+DROP INDEX IF EXISTS public."TimetableEntry_sectionId_dayOfWeek_idx";
+DROP INDEX IF EXISTS public."TimetableEntry_facultyId_dayOfWeek_idx";
+DROP INDEX IF EXISTS public."Subject_departmentId_idx";
+DROP INDEX IF EXISTS public."Subject_code_key";
+DROP INDEX IF EXISTS public."Subject_code_idx";
+DROP INDEX IF EXISTS public."SubjectOffering_subjectId_idx";
+DROP INDEX IF EXISTS public."SubjectOffering_regulationId_idx";
+DROP INDEX IF EXISTS public."SubjectOffering_programId_year_semester_idx";
+DROP INDEX IF EXISTS public."SubjectOffering_academicYearId_programId_subjectId_year_sem_key";
+DROP INDEX IF EXISTS public."SubjectOffering_academicYearId_idx";
+DROP INDEX IF EXISTS public."Student_userId_key";
+DROP INDEX IF EXISTS public."Student_status_idx";
+DROP INDEX IF EXISTS public."Student_rollNumber_key";
+DROP INDEX IF EXISTS public."Student_rollNumber_idx";
+DROP INDEX IF EXISTS public."Student_registerNumber_key";
+DROP INDEX IF EXISTS public."StudentEnrollment_studentId_idx";
+DROP INDEX IF EXISTS public."StudentEnrollment_studentId_academicYearId_semester_key";
+DROP INDEX IF EXISTS public."StudentEnrollment_sectionId_idx";
+DROP INDEX IF EXISTS public."StudentEnrollment_programId_year_semester_idx";
+DROP INDEX IF EXISTS public."StudentEnrollment_academicYearId_idx";
+DROP INDEX IF EXISTS public."Section_year_semester_idx";
+DROP INDEX IF EXISTS public."Section_programId_idx";
+DROP INDEX IF EXISTS public."Section_academicYearId_programId_year_semester_name_key";
+DROP INDEX IF EXISTS public."Section_academicYearId_idx";
+DROP INDEX IF EXISTS public."School_code_key";
+DROP INDEX IF EXISTS public."School_code_idx";
+DROP INDEX IF EXISTS public."Role_name_key";
+DROP INDEX IF EXISTS public."Regulation_code_key";
+DROP INDEX IF EXISTS public."Regulation_code_idx";
+DROP INDEX IF EXISTS public."Program_schoolId_idx";
+DROP INDEX IF EXISTS public."Program_regulationId_idx";
+DROP INDEX IF EXISTS public."Program_code_key";
+DROP INDEX IF EXISTS public."Program_code_idx";
+DROP INDEX IF EXISTS public."LabBatch_sectionId_idx";
+DROP INDEX IF EXISTS public."LabBatch_sectionId_batchNumber_key";
+DROP INDEX IF EXISTS public."LabBatchStudent_studentId_idx";
+DROP INDEX IF EXISTS public."LabBatchStudent_labBatchId_studentId_key";
+DROP INDEX IF EXISTS public."LabBatchStudent_labBatchId_idx";
+DROP INDEX IF EXISTS public."Faculty_userId_key";
+DROP INDEX IF EXISTS public."Faculty_shortName_idx";
+DROP INDEX IF EXISTS public."Faculty_employeeId_key";
+DROP INDEX IF EXISTS public."Faculty_employeeId_idx";
+DROP INDEX IF EXISTS public."Faculty_departmentId_idx";
+DROP INDEX IF EXISTS public."FacultySubjectAssignment_subjectOfferingId_idx";
+DROP INDEX IF EXISTS public."FacultySubjectAssignment_sectionId_idx";
+DROP INDEX IF EXISTS public."FacultySubjectAssignment_facultyId_idx";
+DROP INDEX IF EXISTS public."FacultySubjectAssignment_academicYearId_idx";
+DROP INDEX IF EXISTS public."FacultySubjectAssignment_academicYearId_facultyId_subjectOf_key";
+DROP INDEX IF EXISTS public."Department_schoolId_idx";
+DROP INDEX IF EXISTS public."Department_code_key";
+DROP INDEX IF EXISTS public."Department_code_idx";
+DROP INDEX IF EXISTS public."AuditLog_userId_idx";
+DROP INDEX IF EXISTS public."AuditLog_timestamp_idx";
+DROP INDEX IF EXISTS public."AuditLog_resource_resourceId_idx";
+DROP INDEX IF EXISTS public."AuditLog_action_idx";
+DROP INDEX IF EXISTS public."AttendanceSession_sectionId_sessionDate_idx";
+DROP INDEX IF EXISTS public."AttendanceSession_facultyId_sessionDate_idx";
+DROP INDEX IF EXISTS public."AttendanceSession_assignmentId_idx";
+DROP INDEX IF EXISTS public."AttendanceSession_academicYearId_sectionId_assignmentId_ses_key";
+DROP INDEX IF EXISTS public."AttendanceSession_academicYearId_idx";
+DROP INDEX IF EXISTS public."AttendanceRecord_studentId_status_idx";
+DROP INDEX IF EXISTS public."AttendanceRecord_sessionId_studentId_key";
+DROP INDEX IF EXISTS public."AttendanceRecord_sessionId_idx";
+DROP INDEX IF EXISTS public."AttendanceAuditLog_studentId_idx";
+DROP INDEX IF EXISTS public."AttendanceAuditLog_sessionId_idx";
+DROP INDEX IF EXISTS public."AttendanceAuditLog_changedById_idx";
+DROP INDEX IF EXISTS public."AcademicYear_isCurrent_idx";
+DROP INDEX IF EXISTS public."AcademicYear_code_key";
+ALTER TABLE IF EXISTS ONLY public."User" DROP CONSTRAINT IF EXISTS "User_pkey";
+ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_pkey";
+ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_pkey";
+ALTER TABLE IF EXISTS ONLY public."Subject" DROP CONSTRAINT IF EXISTS "Subject_pkey";
+ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_pkey";
+ALTER TABLE IF EXISTS ONLY public."Student" DROP CONSTRAINT IF EXISTS "Student_pkey";
+ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_pkey";
+ALTER TABLE IF EXISTS ONLY public."Section" DROP CONSTRAINT IF EXISTS "Section_pkey";
+ALTER TABLE IF EXISTS ONLY public."School" DROP CONSTRAINT IF EXISTS "School_pkey";
+ALTER TABLE IF EXISTS ONLY public."Role" DROP CONSTRAINT IF EXISTS "Role_pkey";
+ALTER TABLE IF EXISTS ONLY public."Regulation" DROP CONSTRAINT IF EXISTS "Regulation_pkey";
+ALTER TABLE IF EXISTS ONLY public."Program" DROP CONSTRAINT IF EXISTS "Program_pkey";
+ALTER TABLE IF EXISTS ONLY public."LabBatch" DROP CONSTRAINT IF EXISTS "LabBatch_pkey";
+ALTER TABLE IF EXISTS ONLY public."LabBatchStudent" DROP CONSTRAINT IF EXISTS "LabBatchStudent_pkey";
+ALTER TABLE IF EXISTS ONLY public."Faculty" DROP CONSTRAINT IF EXISTS "Faculty_pkey";
+ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_pkey";
+ALTER TABLE IF EXISTS ONLY public."Department" DROP CONSTRAINT IF EXISTS "Department_pkey";
+ALTER TABLE IF EXISTS ONLY public."AuditLog" DROP CONSTRAINT IF EXISTS "AuditLog_pkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_pkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceRecord" DROP CONSTRAINT IF EXISTS "AttendanceRecord_pkey";
+ALTER TABLE IF EXISTS ONLY public."AttendanceAuditLog" DROP CONSTRAINT IF EXISTS "AttendanceAuditLog_pkey";
+ALTER TABLE IF EXISTS ONLY public."AcademicYear" DROP CONSTRAINT IF EXISTS "AcademicYear_pkey";
+DROP TABLE IF EXISTS public."UserRole";
+DROP TABLE IF EXISTS public."User";
+DROP TABLE IF EXISTS public."TimetableEntry";
+DROP TABLE IF EXISTS public."SubjectOffering";
+DROP TABLE IF EXISTS public."Subject";
+DROP TABLE IF EXISTS public."StudentEnrollment";
+DROP TABLE IF EXISTS public."Student";
+DROP TABLE IF EXISTS public."Section";
+DROP TABLE IF EXISTS public."School";
+DROP TABLE IF EXISTS public."Role";
+DROP TABLE IF EXISTS public."Regulation";
+DROP TABLE IF EXISTS public."Program";
+DROP TABLE IF EXISTS public."LabBatchStudent";
+DROP TABLE IF EXISTS public."LabBatch";
+DROP TABLE IF EXISTS public."FacultySubjectAssignment";
+DROP TABLE IF EXISTS public."Faculty";
+DROP TABLE IF EXISTS public."Department";
+DROP TABLE IF EXISTS public."AuditLog";
+DROP TABLE IF EXISTS public."AttendanceSession";
+DROP TABLE IF EXISTS public."AttendanceRecord";
+DROP TABLE IF EXISTS public."AttendanceAuditLog";
+DROP TABLE IF EXISTS public."AcademicYear";
+DROP TYPE IF EXISTS public."SubjectType";
+DROP TYPE IF EXISTS public."StudentStatus";
+DROP TYPE IF EXISTS public."SessionType";
+DROP TYPE IF EXISTS public."RoleType";
+DROP TYPE IF EXISTS public."AttendanceStatus";
 --
 -- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: pg_database_owner
 --
@@ -94025,5 +94192,5 @@ ALTER TABLE ONLY public."UserRole"
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 1vR4RySk0cnK92yBM4MyK1ETgAB7jj9QEGZfxkefLIBvYppYuMGid6vLKzK5caT
+\unrestrict FIZcK51GKdx4Jhjwqt1jmdzalfVtqEh0MaOZNZqcfmbnDJieGaID1L3tZfingRY
 

@@ -227,7 +227,9 @@ export default function SubjectWiseReportTable({
                     colSpan={visibleSubjects.length + 7}
                     className="px-4 py-8 text-center text-slate-400 font-medium"
                   >
-                    No students matching the selected criteria.
+                    {totalSessionsConducted === 0
+                      ? "No attendance is marked for this section."
+                      : "No students matching the selected criteria."}
                   </td>
                 </tr>
               ) : (

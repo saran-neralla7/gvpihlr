@@ -19,6 +19,8 @@ import {
   Percent,
   LayoutGrid,
   Phone,
+  CalendarX,
+  AlertCircle,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -150,8 +152,12 @@ export default function ReportsClient({
 
   const [reportData, setReportData] = useState(initialReport);
   const [searchQuery, setSearchQuery] = useState("");
-  const [thresholdMode, setThresholdMode] = useState<"ALL" | "75" | "65" | "60" | "50" | "30" | "CUSTOM">("ALL");
+  const [thresholdMode, setThresholdMode] = useState<
+    "ALL" | "75" | "BETWEEN_65_75" | "65" | "60" | "50" | "30" | "CUSTOM" | "RANGE"
+  >("ALL");
   const [customThreshold, setCustomThreshold] = useState<number>(60);
+  const [rangeMin, setRangeMin] = useState<number>(65);
+  const [rangeMax, setRangeMax] = useState<number>(75);
   const [isLoading, setIsLoading] = useState(false);
 
   // 1. Available Schools (all schools or derived from sections)
@@ -198,20 +204,35 @@ export default function ReportsClient({
       return true;
     });
   }, [sections, selectedSchoolId, selectedProgramId, selectedYear, selectedSemester]);
+
   // Active attendance percentage cutoff
   const activeThresholdCutoff = useMemo(() => {
-    if (thresholdMode === "ALL") return null;
+    if (thresholdMode === "ALL" || thresholdMode === "BETWEEN_65_75" || thresholdMode === "RANGE") return null;
     if (thresholdMode === "CUSTOM") return Number.isFinite(customThreshold) ? customThreshold : 0;
     return parseFloat(thresholdMode);
   }, [thresholdMode, customThreshold]);
 
-  // Count of students below active threshold
+  // Count of students matching active threshold or range
   const countMatchingThreshold = useMemo(() => {
-    if (activeThresholdCutoff === null) return 0;
-    return reportData.students.filter(
-      (s) => s.totalClasses > 0 && s.percentage !== null && s.percentage < activeThresholdCutoff
-    ).length;
-  }, [reportData.students, activeThresholdCutoff]);
+    if (thresholdMode === "ALL") return 0;
+    return reportData.students.filter((s) => {
+      if (s.totalClasses === 0 || s.percentage === null) return false;
+      if (thresholdMode === "BETWEEN_65_75") {
+        return s.percentage >= 65.0 && s.percentage < 75.0;
+      }
+      if (thresholdMode === "RANGE") {
+        const minVal = Number.isFinite(rangeMin) ? rangeMin : 0;
+        const maxVal = Number.isFinite(rangeMax) ? rangeMax : 100;
+        return s.percentage >= minVal && s.percentage <= maxVal;
+      }
+      if (thresholdMode === "CUSTOM") {
+        const cutoff = Number.isFinite(customThreshold) ? customThreshold : 0;
+        return s.percentage < cutoff;
+      }
+      const cutoff = parseFloat(thresholdMode);
+      return !isNaN(cutoff) ? s.percentage < cutoff : false;
+    }).length;
+  }, [reportData.students, thresholdMode, customThreshold, rangeMin, rangeMax]);
 
   // Fetch report when section, subject, or dates change
   const fetchReport = async (secId: string, subId: string, sDate: string, eDate: string) => {
@@ -273,6 +294,24 @@ export default function ReportsClient({
       setSelectedSectionId(nextSec.id);
       setSelectedSubjectId("");
       fetchReport(nextSec.id, "", startDate, endDate);
+    } else {
+      setSelectedSectionId("");
+      setSelectedSubjectId("");
+      setReportData({
+        sectionName: "",
+        displayName: "",
+        programName: matchingProgs[0]?.name || "Selected Program",
+        year: 1,
+        semester: 1,
+        totalSessionsConducted: 0,
+        sessions: [],
+        availableSubjects: [],
+        subjectColumns: [],
+        students: [],
+        defaultersCount: 0,
+        startDate: startDate,
+        endDate: endDate,
+      });
     }
   };
 
@@ -280,7 +319,7 @@ export default function ReportsClient({
   const handleProgramChange = (newProgId: string) => {
     setSelectedProgramId(newProgId);
     const progObj = (programs || []).find((p) => p.id === newProgId);
-    if (progObj && progObj.schoolId && !selectedSchoolId) {
+    if (progObj && progObj.schoolId) {
       setSelectedSchoolId(progObj.schoolId);
     }
 
@@ -296,6 +335,24 @@ export default function ReportsClient({
       setSelectedSectionId(nextSec.id);
       setSelectedSubjectId("");
       fetchReport(nextSec.id, "", startDate, endDate);
+    } else {
+      setSelectedSectionId("");
+      setSelectedSubjectId("");
+      setReportData({
+        sectionName: "",
+        displayName: "",
+        programName: progObj?.name || "Selected Program",
+        year: selectedYear,
+        semester: selectedSemester,
+        totalSessionsConducted: 0,
+        sessions: [],
+        availableSubjects: [],
+        subjectColumns: [],
+        students: [],
+        defaultersCount: 0,
+        startDate: startDate,
+        endDate: endDate,
+      });
     }
   };
 
@@ -315,6 +372,25 @@ export default function ReportsClient({
       setSelectedSectionId(nextSec.id);
       setSelectedSubjectId("");
       fetchReport(nextSec.id, "", startDate, endDate);
+    } else {
+      setSelectedSectionId("");
+      setSelectedSubjectId("");
+      const progObj = (programs || []).find((p) => p.id === selectedProgramId);
+      setReportData({
+        sectionName: "",
+        displayName: "",
+        programName: progObj?.name || reportData.programName,
+        year: newYear,
+        semester: selectedSemester,
+        totalSessionsConducted: 0,
+        sessions: [],
+        availableSubjects: [],
+        subjectColumns: [],
+        students: [],
+        defaultersCount: 0,
+        startDate: startDate,
+        endDate: endDate,
+      });
     }
   };
 
@@ -334,12 +410,51 @@ export default function ReportsClient({
       setSelectedSectionId(nextSec.id);
       setSelectedSubjectId("");
       fetchReport(nextSec.id, "", startDate, endDate);
+    } else {
+      setSelectedSectionId("");
+      setSelectedSubjectId("");
+      const progObj = (programs || []).find((p) => p.id === selectedProgramId);
+      setReportData({
+        sectionName: "",
+        displayName: "",
+        programName: progObj?.name || reportData.programName,
+        year: selectedYear,
+        semester: newSem,
+        totalSessionsConducted: 0,
+        sessions: [],
+        availableSubjects: [],
+        subjectColumns: [],
+        students: [],
+        defaultersCount: 0,
+        startDate: startDate,
+        endDate: endDate,
+      });
     }
   };
 
   // 5. Section Direct Handler
   const handleSectionChange = (newSecId: string) => {
     setSelectedSectionId(newSecId);
+    if (!newSecId) {
+      setSelectedSubjectId("");
+      const progObj = (programs || []).find((p) => p.id === selectedProgramId);
+      setReportData({
+        sectionName: "",
+        displayName: "",
+        programName: progObj?.name || reportData.programName,
+        year: selectedYear,
+        semester: selectedSemester,
+        totalSessionsConducted: 0,
+        sessions: [],
+        availableSubjects: [],
+        subjectColumns: [],
+        students: [],
+        defaultersCount: 0,
+        startDate: startDate,
+        endDate: endDate,
+      });
+      return;
+    }
     const secObj = sections.find((s) => s.id === newSecId);
     if (secObj) {
       if (secObj.schoolId) setSelectedSchoolId(secObj.schoolId);
@@ -375,14 +490,33 @@ export default function ReportsClient({
         s.fullName.toLowerCase().includes(searchQuery.toLowerCase());
       if (!matchesSearch) return false;
 
-      if (activeThresholdCutoff !== null) {
-        if (s.totalClasses === 0 || s.percentage === null) return false;
-        return s.percentage < activeThresholdCutoff;
+      if (thresholdMode === "ALL") return true;
+
+      if (s.totalClasses === 0 || s.percentage === null) return false;
+
+      if (thresholdMode === "BETWEEN_65_75") {
+        return s.percentage >= 65.0 && s.percentage < 75.0;
+      }
+
+      if (thresholdMode === "RANGE") {
+        const minVal = Number.isFinite(rangeMin) ? rangeMin : 0;
+        const maxVal = Number.isFinite(rangeMax) ? rangeMax : 100;
+        return s.percentage >= minVal && s.percentage <= maxVal;
+      }
+
+      if (thresholdMode === "CUSTOM") {
+        const cutoff = Number.isFinite(customThreshold) ? customThreshold : 0;
+        return s.percentage < cutoff;
+      }
+
+      const cutoff = parseFloat(thresholdMode);
+      if (!isNaN(cutoff)) {
+        return s.percentage < cutoff;
       }
 
       return true;
     });
-  }, [reportData.students, searchQuery, activeThresholdCutoff]);
+  }, [reportData.students, searchQuery, thresholdMode, customThreshold, rangeMin, rangeMax]);
 
   const sessions = reportData.sessions || [];
 
@@ -1038,7 +1172,15 @@ export default function ReportsClient({
             )}
           </div>
           <div className="text-[11px] font-semibold text-slate-500">
-            Active: <span className="font-bold text-blue-900">{reportData.programName}</span> • Year {reportData.year || 1} Sem {reportData.semester || 1} • <span className="font-bold text-slate-900">Sec {reportData.sectionName}</span>
+            {selectedSectionId && reportData.sectionName ? (
+              <>
+                Active: <span className="font-bold text-blue-900">{reportData.programName}</span> • Year {reportData.year || selectedYear} Sem {reportData.semester || selectedSemester} • <span className="font-bold text-slate-900">Sec {reportData.sectionName}</span>
+              </>
+            ) : (
+              <span className="text-amber-700 font-bold">
+                No attendance is marked for this section.
+              </span>
+            )}
           </div>
         </div>
 
@@ -1135,7 +1277,7 @@ export default function ReportsClient({
                   </option>
                 ))
               ) : (
-                <option value="">No sections match filters</option>
+                <option value="">No attendance is marked for this section</option>
               )}
             </select>
           </div>
@@ -1322,6 +1464,18 @@ export default function ReportsClient({
                   </button>
                   <button
                     type="button"
+                    onClick={() => setThresholdMode("BETWEEN_65_75")}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "BETWEEN_65_75"
+                        ? "bg-rose-600 text-white shadow-xs font-bold"
+                        : "text-rose-700 hover:bg-rose-50"
+                    }`}
+                    title="Between 65% and 75% Attendance (Condonable Range)"
+                  >
+                    65% – 75%
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setThresholdMode("65")}
                     className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
                       thresholdMode === "65"
@@ -1392,6 +1546,57 @@ export default function ReportsClient({
                     />
                     <span className="text-xs font-bold">%</span>
                   </div>
+
+                  {/* Range Input: Admin specifies Min % to Max % */}
+                  <div
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border transition ${
+                      thresholdMode === "RANGE"
+                        ? "bg-rose-600 text-white border-rose-600 shadow-xs"
+                        : "bg-white border-slate-200 text-slate-700 hover:border-slate-300"
+                    }`}
+                  >
+                    <span className="text-xs font-bold">Range:</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={thresholdMode === "RANGE" ? rangeMin : ""}
+                      placeholder="Min"
+                      onFocus={() => setThresholdMode("RANGE")}
+                      onChange={(e) => {
+                        setThresholdMode("RANGE");
+                        const val = Number(e.target.value);
+                        setRangeMin(isNaN(val) ? 0 : val);
+                      }}
+                      className={`w-11 px-1 py-0.5 text-xs font-bold rounded text-center focus:outline-none ${
+                        thresholdMode === "RANGE"
+                          ? "bg-white text-rose-900"
+                          : "bg-transparent text-slate-900 placeholder-slate-400"
+                      }`}
+                      title="Minimum Percentage"
+                    />
+                    <span className="text-xs font-bold">%–</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={thresholdMode === "RANGE" ? rangeMax : ""}
+                      placeholder="Max"
+                      onFocus={() => setThresholdMode("RANGE")}
+                      onChange={(e) => {
+                        setThresholdMode("RANGE");
+                        const val = Number(e.target.value);
+                        setRangeMax(isNaN(val) ? 100 : val);
+                      }}
+                      className={`w-11 px-1 py-0.5 text-xs font-bold rounded text-center focus:outline-none ${
+                        thresholdMode === "RANGE"
+                          ? "bg-white text-rose-900"
+                          : "bg-transparent text-slate-900 placeholder-slate-400"
+                      }`}
+                      title="Maximum Percentage"
+                    />
+                    <span className="text-xs font-bold">%</span>
+                  </div>
                 </div>
 
                 {thresholdMode !== "ALL" && (
@@ -1403,19 +1608,42 @@ export default function ReportsClient({
             </div>
           </div>
 
-          {/* Subject-Wise Report Table Component */}
-          <SubjectWiseReportTable
-            students={filteredStudents}
-            subjectColumns={reportData.subjectColumns || []}
-            totalSessionsConducted={reportData.totalSessionsConducted}
-            sectionName={reportData.sectionName}
-            programName={reportData.programName}
-            year={reportData.year}
-            semester={reportData.semester}
-            startDate={startDate}
-            endDate={endDate}
-            onExportCSV={handleExportSubjectWiseCSV}
-          />
+          {/* Conditional: Placeholder if No Attendance is Marked, else render SubjectWiseReportTable */}
+          {reportData.totalSessionsConducted === 0 || !selectedSectionId ? (
+            <div className="bg-white border border-slate-200/90 rounded-3xl p-10 sm:p-14 text-center shadow-xs space-y-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-3xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shadow-2xs">
+                <CalendarX className="w-8 h-8 sm:w-10 sm:h-10 text-amber-600" />
+              </div>
+              <div className="space-y-1.5 max-w-lg mx-auto">
+                <h3 className="text-lg sm:text-xl font-black text-slate-900">
+                  No attendance is marked for this section.
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
+                  Attendance records or class sessions have not been recorded for this section yet.
+                  Records will automatically populate once faculty post session attendance.
+                </p>
+              </div>
+              <div className="pt-2">
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  0 Sessions Conducted • All Database Records Preserved
+                </span>
+              </div>
+            </div>
+          ) : (
+            <SubjectWiseReportTable
+              students={filteredStudents}
+              subjectColumns={reportData.subjectColumns || []}
+              totalSessionsConducted={reportData.totalSessionsConducted}
+              sectionName={reportData.sectionName}
+              programName={reportData.programName}
+              year={reportData.year}
+              semester={reportData.semester}
+              startDate={startDate}
+              endDate={endDate}
+              onExportCSV={handleExportSubjectWiseCSV}
+            />
+          )}
         </div>
       )}
 
@@ -1614,6 +1842,18 @@ export default function ReportsClient({
                   </button>
                   <button
                     type="button"
+                    onClick={() => setThresholdMode("BETWEEN_65_75")}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "BETWEEN_65_75"
+                        ? "bg-rose-600 text-white shadow-xs font-bold"
+                        : "text-rose-700 hover:bg-rose-50"
+                    }`}
+                    title="Between 65% and 75% Attendance (Condonable Range)"
+                  >
+                    65% – 75%
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setThresholdMode("65")}
                     className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
                       thresholdMode === "65"
@@ -1684,6 +1924,57 @@ export default function ReportsClient({
                     />
                     <span className="text-xs font-bold">%</span>
                   </div>
+
+                  {/* Range Input: Admin specifies Min % to Max % */}
+                  <div
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border transition ${
+                      thresholdMode === "RANGE"
+                        ? "bg-rose-600 text-white border-rose-600 shadow-xs"
+                        : "bg-white border-slate-200 text-slate-700 hover:border-slate-300"
+                    }`}
+                  >
+                    <span className="text-xs font-bold">Range:</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={thresholdMode === "RANGE" ? rangeMin : ""}
+                      placeholder="Min"
+                      onFocus={() => setThresholdMode("RANGE")}
+                      onChange={(e) => {
+                        setThresholdMode("RANGE");
+                        const val = Number(e.target.value);
+                        setRangeMin(isNaN(val) ? 0 : val);
+                      }}
+                      className={`w-11 px-1 py-0.5 text-xs font-bold rounded text-center focus:outline-none ${
+                        thresholdMode === "RANGE"
+                          ? "bg-white text-rose-900"
+                          : "bg-transparent text-slate-900 placeholder-slate-400"
+                      }`}
+                      title="Minimum Percentage"
+                    />
+                    <span className="text-xs font-bold">%–</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={thresholdMode === "RANGE" ? rangeMax : ""}
+                      placeholder="Max"
+                      onFocus={() => setThresholdMode("RANGE")}
+                      onChange={(e) => {
+                        setThresholdMode("RANGE");
+                        const val = Number(e.target.value);
+                        setRangeMax(isNaN(val) ? 100 : val);
+                      }}
+                      className={`w-11 px-1 py-0.5 text-xs font-bold rounded text-center focus:outline-none ${
+                        thresholdMode === "RANGE"
+                          ? "bg-white text-rose-900"
+                          : "bg-transparent text-slate-900 placeholder-slate-400"
+                      }`}
+                      title="Maximum Percentage"
+                    />
+                    <span className="text-xs font-bold">%</span>
+                  </div>
                 </div>
 
                 {thresholdMode !== "ALL" && (
@@ -1695,20 +1986,30 @@ export default function ReportsClient({
             </div>
           </div>
 
-          {/* Warning Banner when 0 sessions are conducted */}
-          {reportData.totalSessionsConducted === 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 text-amber-800 text-xs">
-              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-              <div>
-                <strong>No sessions recorded for this selection yet.</strong> Attendance has not been
-                entered or conducted for the chosen subject or date range. All records remain safely
-                preserved in the database.
+          {/* Conditional: Placeholder if No Attendance is Marked, else render Consolidated Table */}
+          {reportData.totalSessionsConducted === 0 || !selectedSectionId ? (
+            <div className="bg-white border border-slate-200/90 rounded-3xl p-10 sm:p-14 text-center shadow-xs space-y-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-3xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shadow-2xs">
+                <CalendarX className="w-8 h-8 sm:w-10 sm:h-10 text-amber-600" />
+              </div>
+              <div className="space-y-1.5 max-w-lg mx-auto">
+                <h3 className="text-lg sm:text-xl font-black text-slate-900">
+                  No attendance is marked for this section.
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
+                  Attendance records or class sessions have not been recorded for this section yet.
+                  Records will automatically populate once faculty post session attendance.
+                </p>
+              </div>
+              <div className="pt-2">
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  0 Sessions Conducted • All Database Records Preserved
+                </span>
               </div>
             </div>
-          )}
-
-          {/* Consolidated Roster Table */}
-          <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-4 print-container">
+          ) : (
+            <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-4 print-container">
             {/* Table Institutional Header with Logo in Same Row */}
             <div className="flex items-center justify-between gap-4 pb-4 border-b border-slate-200">
               <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center">
@@ -1903,6 +2204,7 @@ export default function ReportsClient({
               </tbody>
             </table>
           </div>
+          )}
         </div>
       )}
 
@@ -2086,6 +2388,18 @@ export default function ReportsClient({
                   </button>
                   <button
                     type="button"
+                    onClick={() => setThresholdMode("BETWEEN_65_75")}
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
+                      thresholdMode === "BETWEEN_65_75"
+                        ? "bg-rose-600 text-white shadow-xs font-bold"
+                        : "text-rose-700 hover:bg-rose-50"
+                    }`}
+                    title="Between 65% and 75% Attendance (Condonable Range)"
+                  >
+                    65% – 75%
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setThresholdMode("65")}
                     className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
                       thresholdMode === "65"
@@ -2156,6 +2470,57 @@ export default function ReportsClient({
                     />
                     <span className="text-xs font-bold">%</span>
                   </div>
+
+                  {/* Range Input: Admin specifies Min % to Max % */}
+                  <div
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border transition ${
+                      thresholdMode === "RANGE"
+                        ? "bg-rose-600 text-white border-rose-600 shadow-xs"
+                        : "bg-white border-slate-200 text-slate-700 hover:border-slate-300"
+                    }`}
+                  >
+                    <span className="text-xs font-bold">Range:</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={thresholdMode === "RANGE" ? rangeMin : ""}
+                      placeholder="Min"
+                      onFocus={() => setThresholdMode("RANGE")}
+                      onChange={(e) => {
+                        setThresholdMode("RANGE");
+                        const val = Number(e.target.value);
+                        setRangeMin(isNaN(val) ? 0 : val);
+                      }}
+                      className={`w-11 px-1 py-0.5 text-xs font-bold rounded text-center focus:outline-none ${
+                        thresholdMode === "RANGE"
+                          ? "bg-white text-rose-900"
+                          : "bg-transparent text-slate-900 placeholder-slate-400"
+                      }`}
+                      title="Minimum Percentage"
+                    />
+                    <span className="text-xs font-bold">%–</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={thresholdMode === "RANGE" ? rangeMax : ""}
+                      placeholder="Max"
+                      onFocus={() => setThresholdMode("RANGE")}
+                      onChange={(e) => {
+                        setThresholdMode("RANGE");
+                        const val = Number(e.target.value);
+                        setRangeMax(isNaN(val) ? 100 : val);
+                      }}
+                      className={`w-11 px-1 py-0.5 text-xs font-bold rounded text-center focus:outline-none ${
+                        thresholdMode === "RANGE"
+                          ? "bg-white text-rose-900"
+                          : "bg-transparent text-slate-900 placeholder-slate-400"
+                      }`}
+                      title="Maximum Percentage"
+                    />
+                    <span className="text-xs font-bold">%</span>
+                  </div>
                 </div>
 
                 {thresholdMode !== "ALL" && (
@@ -2167,19 +2532,32 @@ export default function ReportsClient({
             </div>
           </div>
 
-          {/* Warning Banner when 0 sessions conducted in Date Range */}
-          {sessions.length === 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 text-amber-800 text-xs">
-              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-              <div>
-                <strong>No sessions conducted in the selected date range ({startDate} to {endDate}).</strong> Try
-                clicking <strong>&quot;All Ingested (22 Sep - 07 Oct)&quot;</strong> above to view conducted classes.
+          {/* Conditional: Placeholder if No Attendance is Marked, else render Daily Matrix Register */}
+          {sessions.length === 0 || reportData.totalSessionsConducted === 0 || !selectedSectionId ? (
+            <div className="bg-white border border-slate-200/90 rounded-3xl p-10 sm:p-14 text-center shadow-xs space-y-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-3xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shadow-2xs">
+                <CalendarX className="w-8 h-8 sm:w-10 sm:h-10 text-amber-600" />
+              </div>
+              <div className="space-y-1.5 max-w-lg mx-auto">
+                <h3 className="text-lg sm:text-xl font-black text-slate-900">
+                  No attendance is marked for this section.
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
+                  Attendance records or class sessions have not been recorded for this section yet.
+                  Records will automatically populate once faculty post session attendance.
+                </p>
+              </div>
+              <div className="pt-2">
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  0 Sessions Conducted • All Database Records Preserved
+                </span>
               </div>
             </div>
-          )}
-
-          {/* Live Daily Attendance Register (Screen Only) */}
-          <div className="bg-white border border-slate-300/80 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4 max-w-full overflow-hidden no-print">
+          ) : (
+            <>
+              {/* Live Daily Attendance Register (Screen Only) */}
+              <div className="bg-white border border-slate-300/80 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4 max-w-full overflow-hidden no-print">
             {/* Table Institutional Header with Logo in Same Row */}
             <div className="flex items-center justify-between gap-4 pb-4 border-b border-slate-200">
               <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center">
@@ -2770,6 +3148,8 @@ export default function ReportsClient({
               </table>
             </div>
           </div>
+          </>
+          )}
         </div>
       )}
 
@@ -2821,6 +3201,18 @@ export default function ReportsClient({
                     }`}
                   >
                     &lt; 75%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("BETWEEN_65_75")}
+                    className={`px-3 py-1 text-xs font-bold rounded-lg transition ${
+                      thresholdMode === "BETWEEN_65_75"
+                        ? "bg-rose-600 text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                    title="Between 65% and 75% Attendance (Condonable Range)"
+                  >
+                    65% – 75%
                   </button>
                   <button
                     type="button"
@@ -2894,10 +3286,61 @@ export default function ReportsClient({
                     />
                     <span className="text-xs font-bold">%</span>
                   </div>
+
+                  {/* Range Input: Admin specifies Min % to Max % */}
+                  <div
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border transition ${
+                      thresholdMode === "RANGE"
+                        ? "bg-rose-600 text-white border-rose-600 shadow-xs"
+                        : "bg-white border-slate-200 text-slate-700 hover:border-slate-300"
+                    }`}
+                  >
+                    <span className="text-xs font-bold">Range:</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={thresholdMode === "RANGE" ? rangeMin : ""}
+                      placeholder="Min"
+                      onFocus={() => setThresholdMode("RANGE")}
+                      onChange={(e) => {
+                        setThresholdMode("RANGE");
+                        const val = Number(e.target.value);
+                        setRangeMin(isNaN(val) ? 0 : val);
+                      }}
+                      className={`w-11 px-1 py-0.5 text-xs font-bold rounded text-center focus:outline-none ${
+                        thresholdMode === "RANGE"
+                          ? "bg-white text-rose-900"
+                          : "bg-transparent text-slate-900 placeholder-slate-400"
+                      }`}
+                      title="Minimum Percentage"
+                    />
+                    <span className="text-xs font-bold">%–</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={thresholdMode === "RANGE" ? rangeMax : ""}
+                      placeholder="Max"
+                      onFocus={() => setThresholdMode("RANGE")}
+                      onChange={(e) => {
+                        setThresholdMode("RANGE");
+                        const val = Number(e.target.value);
+                        setRangeMax(isNaN(val) ? 100 : val);
+                      }}
+                      className={`w-11 px-1 py-0.5 text-xs font-bold rounded text-center focus:outline-none ${
+                        thresholdMode === "RANGE"
+                          ? "bg-white text-rose-900"
+                          : "bg-transparent text-slate-900 placeholder-slate-400"
+                      }`}
+                      title="Maximum Percentage"
+                    />
+                    <span className="text-xs font-bold">%</span>
+                  </div>
                 </div>
 
                 <span className="px-2.5 py-1 rounded-full text-[11px] bg-rose-100 text-rose-800 font-bold">
-                  {filteredStudents.filter((s) => s.totalClasses > 0 && s.percentage !== null && s.percentage < (activeThresholdCutoff ?? 75)).length} students
+                  {filteredStudents.length} students
                 </span>
               </div>
 
@@ -2914,8 +3357,30 @@ export default function ReportsClient({
             </div>
           </div>
 
-          {/* Defaulter Table */}
-          <div className="bg-white border border-slate-300/80 rounded-3xl p-6 shadow-xs max-w-full overflow-hidden">
+          {/* Conditional: Placeholder if No Attendance is Marked, else render Defaulter Table */}
+          {reportData.totalSessionsConducted === 0 || !selectedSectionId ? (
+            <div className="bg-white border border-slate-200/90 rounded-3xl p-10 sm:p-14 text-center shadow-xs space-y-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-3xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shadow-2xs">
+                <CalendarX className="w-8 h-8 sm:w-10 sm:h-10 text-amber-600" />
+              </div>
+              <div className="space-y-1.5 max-w-lg mx-auto">
+                <h3 className="text-lg sm:text-xl font-black text-slate-900">
+                  No attendance is marked for this section.
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
+                  Attendance records or class sessions have not been recorded for this section yet.
+                  Records will automatically populate once faculty post session attendance.
+                </p>
+              </div>
+              <div className="pt-2">
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  0 Sessions Conducted • All Database Records Preserved
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white border border-slate-300/80 rounded-3xl p-6 shadow-xs max-w-full overflow-hidden">
             <div className="w-full max-w-full overflow-x-auto rounded-2xl border border-slate-200">
               <table className="w-full min-w-max border-collapse text-xs">
                 <thead>
@@ -2932,11 +3397,9 @@ export default function ReportsClient({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredStudents
-                    .filter((s) => s.totalClasses > 0 && s.percentage !== null && s.percentage < (activeThresholdCutoff ?? 75))
-                    .map((student, idx) => {
+                  {filteredStudents.length > 0 ? (
+                    filteredStudents.map((student, idx) => {
                       // Calculate shortfall classes needed to reach 75%
-                      // (attended + X) / (total + X) >= 0.75 => attended + X >= 0.75*total + 0.75*X => 0.25*X >= 0.75*total - attended => X = (3*total - 4*attended)
                       const needed = Math.max(
                         0,
                         Math.ceil((0.75 * student.totalClasses - student.attendedClasses) / 0.25)
@@ -3004,7 +3467,14 @@ export default function ReportsClient({
                           </td>
                         </tr>
                       );
-                    })}
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={9} className="text-center py-10 text-slate-400 font-medium">
+                        No students found matching your criteria.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -3032,6 +3502,7 @@ export default function ReportsClient({
               </tbody>
             </table>
           </div>
+          )}
         </div>
       )}
     </div>

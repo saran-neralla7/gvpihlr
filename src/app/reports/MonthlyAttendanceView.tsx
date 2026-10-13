@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   Calendar,
+  CalendarX,
   FileSpreadsheet,
   Printer,
   FileText,
@@ -263,6 +264,31 @@ export default function MonthlyAttendanceView({
       document.body.removeChild(link);
     }
   };
+
+  if (sessions.length === 0 || !sectionName) {
+    return (
+      <div className="bg-white border border-slate-200/90 rounded-3xl p-10 sm:p-14 text-center shadow-xs space-y-4">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-3xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shadow-2xs">
+          <CalendarX className="w-8 h-8 sm:w-10 sm:h-10 text-amber-600" />
+        </div>
+        <div className="space-y-1.5 max-w-lg mx-auto">
+          <h3 className="text-lg sm:text-xl font-black text-slate-900">
+            No attendance is marked for this section.
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
+            Attendance records or class sessions have not been recorded for this section yet.
+            Records will automatically populate once faculty post session attendance.
+          </p>
+        </div>
+        <div className="pt-2">
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            0 Sessions Conducted • All Database Records Preserved
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

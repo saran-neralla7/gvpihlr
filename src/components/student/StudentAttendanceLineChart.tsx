@@ -25,11 +25,14 @@ interface StudentAttendanceLineChartProps {
   rollNumber?: string;
 }
 
-interface DailyAggregatedPoint {
-  dateKey: string;
-  formattedDate: string;
-  dayHeld: number;
-  dayAttended: number;
+export type TrajectoryGranularity = "daily" | "weekly" | "monthly";
+
+export interface TrajectoryPoint {
+  key: string;
+  label: string;
+  subLabel?: string;
+  periodHeld: number;
+  periodAttended: number;
   cumulativeHeld: number;
   cumulativeAttended: number;
   cumulativePercentage: number;
@@ -42,29 +45,35 @@ export default function StudentAttendanceLineChart({
   studentName,
   rollNumber,
 }: StudentAttendanceLineChartProps) {
+  const [granularity, setGranularity] = useState<TrajectoryGranularity>("daily");
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
-  // Compute chronological day-by-day attendance trajectory
-  const dailyProgression: DailyAggregatedPoint[] = useMemo(() => {
+  // Parse session date string robustly
+  const parseDate = (dateVal: string): Date | null => {
+    if (!dateVal) return null;
+    if (typeof dateVal === "string" && dateVal.includes("/")) {
+      const parts = dateVal.split("/");
+      if (parts.length === 3) {
+        const d = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const y = parseInt(parts[2], 10);
+        const dt = new Date(y, m, d);
+        if (!isNaN(dt.getTime())) return dt;
+      }
+    }
+    const dt = new Date(dateVal);
+    return isNaN(dt.getTime()) ? null : dt;
+  };
+
+  // 1. Day-by-Day Trajectory
+  const dailyProgression: TrajectoryPoint[] = useMemo(() => {
     if (!sessions || sessions.length === 0) return [];
 
-    // 1. Group sessions by date
     const dayMap = new Map<string, { held: number; attended: number; rawDate: Date }>();
 
     sessions.forEach((s) => {
-      // Normalize date to YYYY-MM-DD
-      let raw: Date;
-      if (typeof s.sessionDate === "string" && s.sessionDate.includes("/")) {
-        const parts = s.sessionDate.split("/");
-        if (parts.length === 3) {
-          raw = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-        } else {
-          raw = new Date(s.sessionDate);
-        }
-      } else {
-        raw = new Date(s.sessionDate);
-      }
-      if (isNaN(raw.getTime())) return;
+      const raw = parseDate(s.sessionDate);
+      if (!raw) return;
 
       const yyyy = raw.getFullYear();
       const mm = String(raw.getMonth() + 1).padStart(2, "0");
@@ -83,10 +92,7 @@ export default function StudentAttendanceLineChart({
       }
     });
 
-    // 2. Sort dates chronologically ascending
     const sortedDateKeys = Array.from(dayMap.keys()).sort((a, b) => a.localeCompare(b));
-
-    // 3. Compute running cumulative metrics
     let runningHeld = 0;
     let runningAttended = 0;
 
@@ -116,10 +122,11 @@ export default function StudentAttendanceLineChart({
       });
 
       return {
-        dateKey,
-        formattedDate,
-        dayHeld: dayData.held,
-        dayAttended: dayData.attended,
+        key: dateKey,
+        label: formattedDate,
+        subLabel: dateKey,
+        periodHeld: dayData.held,
+        periodAttended: dayData.attended,
         cumulativeHeld: runningHeld,
         cumulativeAttended: runningAttended,
         cumulativePercentage: roundedPct,
@@ -129,7 +136,170 @@ export default function StudentAttendanceLineChart({
     });
   }, [sessions]);
 
-  if (dailyProgression.length === 0) {
+  // 2. Weekly (Mon-Fri) Trajectory
+  const weeklyProgression: TrajectoryPoint[] = useMemo(() => {
+    if (!sessions || sessions.length === 0) return [];
+
+    const weekMap = new Map<
+      string,
+      { held: number; attended: number; monday: Date; friday: Date }
+    >();
+
+    sessions.forEach((s) => {
+      const raw = parseDate(s.sessionDate);
+      if (!raw) return;
+
+      const dayOfWeek = raw.getDay(); // 0 is Sun, 1 is Mon, ..., 5 is Fri, 6 is Sat
+      const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const monday = new Date(raw.getFullYear(), raw.getMonth(), raw.getDate() + diffToMonday);
+      const friday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 4);
+
+      const yyyy = monday.getFullYear();
+      const mm = String(monday.getMonth() + 1).padStart(2, "0");
+      const dd = String(monday.getDate()).padStart(2, "0");
+      const weekKey = `${yyyy}-${mm}-${dd}`;
+
+      if (!weekMap.has(weekKey)) {
+        weekMap.set(weekKey, { held: 0, attended: 0, monday, friday });
+      }
+
+      const item = weekMap.get(weekKey)!;
+      item.held += 1;
+      const isPresent = s.status === "PRESENT" || s.status === "ON_DUTY" || s.status === "P";
+      if (isPresent) {
+        item.attended += 1;
+      }
+    });
+
+    const sortedWeekKeys = Array.from(weekMap.keys()).sort((a, b) => a.localeCompare(b));
+    let runningHeld = 0;
+    let runningAttended = 0;
+
+    return sortedWeekKeys.map((weekKey, idx) => {
+      const weekData = weekMap.get(weekKey)!;
+      runningHeld += weekData.held;
+      runningAttended += weekData.attended;
+
+      const pct = runningHeld > 0 ? (runningAttended / runningHeld) * 100 : 0;
+      const roundedPct = Math.round(pct * 10) / 10;
+
+      let tier: "GREEN" | "ORANGE" | "RED" = "RED";
+      let tierColor = "#EF4444";
+
+      if (roundedPct >= 75) {
+        tier = "GREEN";
+        tierColor = "#10B981";
+      } else if (roundedPct >= 60) {
+        tier = "ORANGE";
+        tierColor = "#F59E0B";
+      }
+
+      const monStr = weekData.monday.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+      });
+      const friStr = weekData.friday.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+      });
+      const label = `W${idx + 1} (${monStr}–${friStr})`;
+      const subLabel = `Mon ${monStr} – Fri ${friStr}`;
+
+      return {
+        key: weekKey,
+        label,
+        subLabel,
+        periodHeld: weekData.held,
+        periodAttended: weekData.attended,
+        cumulativeHeld: runningHeld,
+        cumulativeAttended: runningAttended,
+        cumulativePercentage: roundedPct,
+        tier,
+        tierColor,
+      };
+    });
+  }, [sessions]);
+
+  // 3. Monthly Trajectory
+  const monthlyProgression: TrajectoryPoint[] = useMemo(() => {
+    if (!sessions || sessions.length === 0) return [];
+
+    const monthMap = new Map<
+      string,
+      { held: number; attended: number; rawDate: Date }
+    >();
+
+    sessions.forEach((s) => {
+      const raw = parseDate(s.sessionDate);
+      if (!raw) return;
+
+      const yyyy = raw.getFullYear();
+      const mm = String(raw.getMonth() + 1).padStart(2, "0");
+      const monthKey = `${yyyy}-${mm}`;
+
+      if (!monthMap.has(monthKey)) {
+        monthMap.set(monthKey, { held: 0, attended: 0, rawDate: raw });
+      }
+
+      const item = monthMap.get(monthKey)!;
+      item.held += 1;
+      const isPresent = s.status === "PRESENT" || s.status === "ON_DUTY" || s.status === "P";
+      if (isPresent) {
+        item.attended += 1;
+      }
+    });
+
+    const sortedMonthKeys = Array.from(monthMap.keys()).sort((a, b) => a.localeCompare(b));
+    let runningHeld = 0;
+    let runningAttended = 0;
+
+    return sortedMonthKeys.map((monthKey) => {
+      const monthData = monthMap.get(monthKey)!;
+      runningHeld += monthData.held;
+      runningAttended += monthData.attended;
+
+      const pct = runningHeld > 0 ? (runningAttended / runningHeld) * 100 : 0;
+      const roundedPct = Math.round(pct * 10) / 10;
+
+      let tier: "GREEN" | "ORANGE" | "RED" = "RED";
+      let tierColor = "#EF4444";
+
+      if (roundedPct >= 75) {
+        tier = "GREEN";
+        tierColor = "#10B981";
+      } else if (roundedPct >= 60) {
+        tier = "ORANGE";
+        tierColor = "#F59E0B";
+      }
+
+      const label = monthData.rawDate.toLocaleDateString("en-IN", {
+        month: "short",
+        year: "numeric",
+      });
+
+      return {
+        key: monthKey,
+        label,
+        subLabel: monthKey,
+        periodHeld: monthData.held,
+        periodAttended: monthData.attended,
+        cumulativeHeld: runningHeld,
+        cumulativeAttended: runningAttended,
+        cumulativePercentage: roundedPct,
+        tier,
+        tierColor,
+      };
+    });
+  }, [sessions]);
+
+  // Current active progression array based on toggle
+  const activeProgression = useMemo(() => {
+    if (granularity === "weekly") return weeklyProgression;
+    if (granularity === "monthly") return monthlyProgression;
+    return dailyProgression;
+  }, [granularity, dailyProgression, weeklyProgression, monthlyProgression]);
+
+  if (activeProgression.length === 0) {
     return (
       <div className="bg-white border border-slate-200/90 rounded-3xl p-6 text-center text-slate-400">
         <Calendar className="w-8 h-8 mx-auto text-slate-300 mb-2" />
@@ -149,7 +319,7 @@ export default function StudentAttendanceLineChart({
   const chartWidth = svgWidth - paddingLeft - paddingRight;
   const chartHeight = svgHeight - paddingTop - paddingBottom;
 
-  const count = dailyProgression.length;
+  const count = activeProgression.length;
   const minPct = 0;
   const maxPct = 100;
 
@@ -166,13 +336,14 @@ export default function StudentAttendanceLineChart({
   const y75 = getY(75);
   const y60 = getY(60);
 
-  const latestPoint = dailyProgression[dailyProgression.length - 1];
-  const activeHoverPoint = hoveredIdx !== null ? dailyProgression[hoveredIdx] : null;
+  const latestPoint = activeProgression[activeProgression.length - 1];
+  const firstPoint = activeProgression[0];
+  const activeHoverPoint = hoveredIdx !== null ? activeProgression[hoveredIdx] : null;
 
   return (
     <div className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-7 shadow-xs space-y-5">
-      {/* Header and Trajectory Badges */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* Header, Granularity Toggle, and Legend Badges */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
@@ -180,29 +351,85 @@ export default function StudentAttendanceLineChart({
             </div>
             <div>
               <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
-                Daily Cumulative Attendance Trajectory
+                {granularity === "daily"
+                  ? "Daily Cumulative Attendance Trajectory"
+                  : granularity === "weekly"
+                  ? "Weekly (Mon–Fri) Attendance Trajectory"
+                  : "Monthly Attendance Trajectory"}
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                Day-by-day progression tracked from Day 1 ({dailyProgression[0].formattedDate}) to Date ({latestPoint.formattedDate}).
+                {granularity === "daily"
+                  ? `Day-by-day progression tracked from ${firstPoint.label} to ${latestPoint.label}.`
+                  : granularity === "weekly"
+                  ? `Academic week progression (Mon–Fri) tracked from ${firstPoint.label} to ${latestPoint.label}.`
+                  : `Monthly progression tracked from ${firstPoint.label} to ${latestPoint.label}.`}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Legend Pills with strict color coding */}
-        <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            &ge; 75% Safe
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-            <span className="w-2 h-2 rounded-full bg-amber-500" />
-            60% - 74% Warning
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 text-rose-800 border border-rose-200">
-            <span className="w-2 h-2 rounded-full bg-rose-500" />
-            &lt; 60% Critical
-          </span>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Granularity Toggle Buttons */}
+          <div className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-100 p-1 gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setGranularity("daily");
+                setHoveredIdx(null);
+              }}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
+                granularity === "daily"
+                  ? "bg-white text-blue-700 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Day-Wise
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setGranularity("weekly");
+                setHoveredIdx(null);
+              }}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
+                granularity === "weekly"
+                  ? "bg-white text-blue-700 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Weekly (Mon–Fri)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setGranularity("monthly");
+                setHoveredIdx(null);
+              }}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
+                granularity === "monthly"
+                  ? "bg-white text-blue-700 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Monthly
+            </button>
+          </div>
+
+          {/* Legend Pills with strict color coding */}
+          <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              &ge; 75% Safe
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+              <span className="w-2 h-2 rounded-full bg-amber-500" />
+              60% - 74% Warning
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 text-rose-800 border border-rose-200">
+              <span className="w-2 h-2 rounded-full bg-rose-500" />
+              &lt; 60% Critical
+            </span>
+          </div>
         </div>
       </div>
 
@@ -291,17 +518,17 @@ export default function StudentAttendanceLineChart({
             <polygon
               points={`
                 ${getX(0)},${getY(0)}
-                ${dailyProgression.map((p, i) => `${getX(i)},${getY(p.cumulativePercentage)}`).join(" ")}
+                ${activeProgression.map((p, i) => `${getX(i)},${getY(p.cumulativePercentage)}`).join(" ")}
                 ${getX(count - 1)},${getY(0)}
               `}
               fill="url(#areaGradient)"
             />
           )}
 
-          {/* Colored Line Segments connecting each day */}
-          {dailyProgression.map((point, i) => {
+          {/* Colored Line Segments connecting each point */}
+          {activeProgression.map((point, i) => {
             if (i === 0) return null;
-            const prev = dailyProgression[i - 1];
+            const prev = activeProgression[i - 1];
             const x1 = getX(i - 1);
             const y1 = getY(prev.cumulativePercentage);
             const x2 = getX(i);
@@ -323,7 +550,7 @@ export default function StudentAttendanceLineChart({
           })}
 
           {/* Interactive Data Points (Circles) */}
-          {dailyProgression.map((point, i) => {
+          {activeProgression.map((point, i) => {
             const cx = getX(i);
             const cy = getY(point.cumulativePercentage);
             const isHovered = hoveredIdx === i;
@@ -361,7 +588,7 @@ export default function StudentAttendanceLineChart({
                   className="transition-all duration-150 drop-shadow-xs"
                 />
 
-                {/* Date Label on X Axis */}
+                {/* Label on X Axis */}
                 <text
                   x={cx}
                   y={svgHeight - 12}
@@ -372,7 +599,7 @@ export default function StudentAttendanceLineChart({
                       : "fill-slate-500 font-semibold"
                   }`}
                 >
-                  {point.formattedDate}
+                  {point.label}
                 </text>
               </g>
             );
@@ -394,7 +621,7 @@ export default function StudentAttendanceLineChart({
           >
             <div className="flex items-center justify-between gap-3 border-b border-slate-700/80 pb-1 font-bold">
               <span className="text-slate-300 font-mono text-[11px]">
-                {activeHoverPoint.formattedDate} ({activeHoverPoint.dateKey})
+                {activeHoverPoint.label} {activeHoverPoint.subLabel && activeHoverPoint.subLabel !== activeHoverPoint.label ? `(${activeHoverPoint.subLabel})` : ""}
               </span>
               <span
                 className="text-[10px] font-black px-1.5 py-0.5 rounded-full"
@@ -418,9 +645,18 @@ export default function StudentAttendanceLineChart({
 
             <div className="grid grid-cols-2 gap-3 text-[11px] pt-0.5">
               <div>
-                <span className="text-slate-400 block text-[10px]">On this day</span>
+                <span className="text-slate-400 block text-[10px]">
+                  {granularity === "daily"
+                    ? "On this day"
+                    : granularity === "weekly"
+                    ? "In this week (Mon-Fri)"
+                    : "In this month"}
+                </span>
                 <span className="font-mono font-bold text-slate-100">
-                  {activeHoverPoint.dayAttended} / {activeHoverPoint.dayHeld} classes
+                  {activeHoverPoint.periodAttended} / {activeHoverPoint.periodHeld} classes
+                </span>
+                <span className="text-[10px] text-slate-400 font-mono block">
+                  ({activeHoverPoint.periodHeld > 0 ? Math.round((activeHoverPoint.periodAttended / activeHoverPoint.periodHeld) * 100) : 0}% for period)
                 </span>
               </div>
               <div>
@@ -444,22 +680,26 @@ export default function StudentAttendanceLineChart({
       {/* Summary Trajectory Insights Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
         <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
-          <span className="text-[10px] font-bold uppercase text-slate-400 block">First Marked Day</span>
+          <span className="text-[10px] font-bold uppercase text-slate-400 block">
+            {granularity === "daily" ? "First Marked Day" : granularity === "weekly" ? "First Week" : "First Month"}
+          </span>
           <span className="font-mono font-bold text-slate-900 block mt-0.5">
-            {dailyProgression[0].formattedDate}
+            {firstPoint.label}
           </span>
           <span className="text-[10px] text-slate-500 font-mono">
-            {dailyProgression[0].dayAttended}/{dailyProgression[0].dayHeld} classes
+            {firstPoint.periodAttended}/{firstPoint.periodHeld} classes
           </span>
         </div>
 
         <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
-          <span className="text-[10px] font-bold uppercase text-slate-400 block">Latest Marked Day</span>
+          <span className="text-[10px] font-bold uppercase text-slate-400 block">
+            {granularity === "daily" ? "Latest Marked Day" : granularity === "weekly" ? "Latest Week" : "Latest Month"}
+          </span>
           <span className="font-mono font-bold text-slate-900 block mt-0.5">
-            {latestPoint.formattedDate}
+            {latestPoint.label}
           </span>
           <span className="text-[10px] text-slate-500 font-mono">
-            {latestPoint.dayAttended}/{latestPoint.dayHeld} classes
+            {latestPoint.periodAttended}/{latestPoint.periodHeld} classes
           </span>
         </div>
 

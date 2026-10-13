@@ -150,7 +150,7 @@ export default function ReportsClient({
 
   const [reportData, setReportData] = useState(initialReport);
   const [searchQuery, setSearchQuery] = useState("");
-  const [thresholdMode, setThresholdMode] = useState<"ALL" | "75" | "65" | "60" | "50" | "CUSTOM">("ALL");
+  const [thresholdMode, setThresholdMode] = useState<"ALL" | "75" | "65" | "60" | "50" | "30" | "CUSTOM">("ALL");
   const [customThreshold, setCustomThreshold] = useState<number>(60);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -1298,31 +1298,44 @@ export default function ReportsClient({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setThresholdMode("CUSTOM")}
+                    onClick={() => setThresholdMode("30")}
                     className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
-                      thresholdMode === "CUSTOM"
+                      thresholdMode === "30"
                         ? "bg-rose-600 text-white shadow-xs font-bold"
                         : "text-rose-700 hover:bg-rose-50"
                     }`}
                   >
-                    Custom
+                    &lt; 30%
                   </button>
-                </div>
-
-                {thresholdMode === "CUSTOM" && (
-                  <div className="flex items-center gap-1 bg-rose-50 border border-rose-200 rounded-xl px-2 py-1">
-                    <span className="text-xs font-bold text-rose-700">&lt;</span>
+                  <div
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border transition ${
+                      thresholdMode === "CUSTOM"
+                        ? "bg-rose-600 text-white border-rose-600 shadow-xs"
+                        : "bg-white border-slate-200 text-slate-700 hover:border-slate-300"
+                    }`}
+                  >
+                    <span className="text-xs font-bold">&lt;</span>
                     <input
                       type="number"
                       min={1}
                       max={100}
-                      value={customThreshold}
-                      onChange={(e) => setCustomThreshold(Number(e.target.value))}
-                      className="w-12 px-1 py-0.5 text-xs font-bold bg-white border border-rose-300 rounded text-rose-900 focus:outline-none focus:ring-1 focus:ring-rose-500 text-center"
+                      value={thresholdMode === "CUSTOM" ? customThreshold : ""}
+                      placeholder="Custom"
+                      onFocus={() => setThresholdMode("CUSTOM")}
+                      onChange={(e) => {
+                        setThresholdMode("CUSTOM");
+                        const val = Number(e.target.value);
+                        setCustomThreshold(isNaN(val) ? 0 : val);
+                      }}
+                      className={`w-12 px-1 py-0.5 text-xs font-bold rounded text-center focus:outline-none ${
+                        thresholdMode === "CUSTOM"
+                          ? "bg-white text-rose-900"
+                          : "bg-transparent text-slate-900 placeholder-slate-400"
+                      }`}
                     />
-                    <span className="text-xs font-bold text-rose-700">%</span>
+                    <span className="text-xs font-bold">%</span>
                   </div>
-                )}
+                </div>
 
                 {thresholdMode !== "ALL" && (
                   <span className="px-2 py-0.5 rounded-full text-[11px] bg-rose-100 text-rose-800 font-bold">
@@ -1577,31 +1590,44 @@ export default function ReportsClient({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setThresholdMode("CUSTOM")}
+                    onClick={() => setThresholdMode("30")}
                     className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
-                      thresholdMode === "CUSTOM"
+                      thresholdMode === "30"
                         ? "bg-rose-600 text-white shadow-xs font-bold"
                         : "text-rose-700 hover:bg-rose-50"
                     }`}
                   >
-                    Custom
+                    &lt; 30%
                   </button>
-                </div>
-
-                {thresholdMode === "CUSTOM" && (
-                  <div className="flex items-center gap-1 bg-rose-50 border border-rose-200 rounded-xl px-2 py-1">
-                    <span className="text-xs font-bold text-rose-700">&lt;</span>
+                  <div
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border transition ${
+                      thresholdMode === "CUSTOM"
+                        ? "bg-rose-600 text-white border-rose-600 shadow-xs"
+                        : "bg-white border-slate-200 text-slate-700 hover:border-slate-300"
+                    }`}
+                  >
+                    <span className="text-xs font-bold">&lt;</span>
                     <input
                       type="number"
                       min={1}
                       max={100}
-                      value={customThreshold}
-                      onChange={(e) => setCustomThreshold(Number(e.target.value))}
-                      className="w-12 px-1 py-0.5 text-xs font-bold bg-white border border-rose-300 rounded text-rose-900 focus:outline-none focus:ring-1 focus:ring-rose-500 text-center"
+                      value={thresholdMode === "CUSTOM" ? customThreshold : ""}
+                      placeholder="Custom"
+                      onFocus={() => setThresholdMode("CUSTOM")}
+                      onChange={(e) => {
+                        setThresholdMode("CUSTOM");
+                        const val = Number(e.target.value);
+                        setCustomThreshold(isNaN(val) ? 0 : val);
+                      }}
+                      className={`w-12 px-1 py-0.5 text-xs font-bold rounded text-center focus:outline-none ${
+                        thresholdMode === "CUSTOM"
+                          ? "bg-white text-rose-900"
+                          : "bg-transparent text-slate-900 placeholder-slate-400"
+                      }`}
                     />
-                    <span className="text-xs font-bold text-rose-700">%</span>
+                    <span className="text-xs font-bold">%</span>
                   </div>
-                )}
+                </div>
 
                 {thresholdMode !== "ALL" && (
                   <span className="px-2 py-0.5 rounded-full text-[11px] bg-rose-100 text-rose-800 font-bold">
@@ -2024,31 +2050,44 @@ export default function ReportsClient({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setThresholdMode("CUSTOM")}
+                    onClick={() => setThresholdMode("30")}
                     className={`px-2 py-1 text-xs font-semibold rounded-lg transition ${
-                      thresholdMode === "CUSTOM"
+                      thresholdMode === "30"
                         ? "bg-rose-600 text-white shadow-xs font-bold"
                         : "text-rose-700 hover:bg-rose-50"
                     }`}
                   >
-                    Custom
+                    &lt; 30%
                   </button>
-                </div>
-
-                {thresholdMode === "CUSTOM" && (
-                  <div className="flex items-center gap-1 bg-rose-50 border border-rose-200 rounded-xl px-2 py-1">
-                    <span className="text-xs font-bold text-rose-700">&lt;</span>
+                  <div
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border transition ${
+                      thresholdMode === "CUSTOM"
+                        ? "bg-rose-600 text-white border-rose-600 shadow-xs"
+                        : "bg-white border-slate-200 text-slate-700 hover:border-slate-300"
+                    }`}
+                  >
+                    <span className="text-xs font-bold">&lt;</span>
                     <input
                       type="number"
                       min={1}
                       max={100}
-                      value={customThreshold}
-                      onChange={(e) => setCustomThreshold(Number(e.target.value))}
-                      className="w-12 px-1 py-0.5 text-xs font-bold bg-white border border-rose-300 rounded text-rose-900 focus:outline-none focus:ring-1 focus:ring-rose-500 text-center"
+                      value={thresholdMode === "CUSTOM" ? customThreshold : ""}
+                      placeholder="Custom"
+                      onFocus={() => setThresholdMode("CUSTOM")}
+                      onChange={(e) => {
+                        setThresholdMode("CUSTOM");
+                        const val = Number(e.target.value);
+                        setCustomThreshold(isNaN(val) ? 0 : val);
+                      }}
+                      className={`w-12 px-1 py-0.5 text-xs font-bold rounded text-center focus:outline-none ${
+                        thresholdMode === "CUSTOM"
+                          ? "bg-white text-rose-900"
+                          : "bg-transparent text-slate-900 placeholder-slate-400"
+                      }`}
                     />
-                    <span className="text-xs font-bold text-rose-700">%</span>
+                    <span className="text-xs font-bold">%</span>
                   </div>
-                )}
+                </div>
 
                 {thresholdMode !== "ALL" && (
                   <span className="px-2 py-0.5 rounded-full text-[11px] bg-rose-100 text-rose-800 font-bold">
@@ -2352,7 +2391,7 @@ export default function ReportsClient({
           {/* Defaulters Filter Controls */}
           <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs space-y-4 no-print">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-bold text-slate-700">Threshold:</span>
                 <div className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1 gap-1">
                   <button
@@ -2399,7 +2438,50 @@ export default function ReportsClient({
                   >
                     &lt; 50%
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdMode("30")}
+                    className={`px-3 py-1 text-xs font-bold rounded-lg transition ${
+                      thresholdMode === "30"
+                        ? "bg-rose-600 text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    &lt; 30%
+                  </button>
+                  <div
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border transition ${
+                      thresholdMode === "CUSTOM"
+                        ? "bg-rose-600 text-white border-rose-600 shadow-xs"
+                        : "bg-white border-slate-200 text-slate-700 hover:border-slate-300"
+                    }`}
+                  >
+                    <span className="text-xs font-bold">&lt;</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={thresholdMode === "CUSTOM" ? customThreshold : ""}
+                      placeholder="Custom"
+                      onFocus={() => setThresholdMode("CUSTOM")}
+                      onChange={(e) => {
+                        setThresholdMode("CUSTOM");
+                        const val = Number(e.target.value);
+                        setCustomThreshold(isNaN(val) ? 0 : val);
+                      }}
+                      className={`w-14 px-1 py-0.5 text-xs font-bold rounded text-center focus:outline-none ${
+                        thresholdMode === "CUSTOM"
+                          ? "bg-white text-rose-900"
+                          : "bg-transparent text-slate-900 placeholder-slate-400"
+                      }`}
+                    />
+                    <span className="text-xs font-bold">%</span>
+                  </div>
                 </div>
+
+                <span className="px-2.5 py-1 rounded-full text-[11px] bg-rose-100 text-rose-800 font-bold">
+                  {filteredStudents.filter((s) => s.totalClasses > 0 && s.percentage !== null && s.percentage < (activeThresholdCutoff ?? 75)).length} students
+                </span>
               </div>
 
               <div className="relative flex-1 max-w-md w-full">

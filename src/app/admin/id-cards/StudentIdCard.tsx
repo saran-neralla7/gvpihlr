@@ -46,9 +46,30 @@ export default function StudentIdCard({
       }}
     >
       {/* =========================================================================
-          TOP HEADER SECTION: Deep Royal Blue with Asymmetric Left Sweep Curve
+          CONTINUOUS TOP HEADER & BACKGROUND WAVE
+          Single continuous blue shape covering the entire header and sweeping
+          seamlessly down the left side beside the photo.
           ========================================================================= */}
-      <div className="relative bg-[#1A4384] text-white pt-2.5 pb-2 px-3 text-center overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 w-full h-[310px] pointer-events-none z-0 overflow-hidden">
+        <svg
+          viewBox="0 0 330 310"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-full h-full"
+          preserveAspectRatio="none"
+        >
+          {/* Continuous blue header that sweeps smoothly down on the left flank */}
+          <path
+            d="M 0,0 L 330,0 L 330,152 C 260,182 185,212 120,240 C 50,270 15,286 0,296 Z"
+            fill="#1A4384"
+          />
+        </svg>
+      </div>
+
+      {/* =========================================================================
+          HEADER CONTENT (Positioned over the continuous blue background)
+          ========================================================================= */}
+      <div className="relative z-10 pt-2.5 pb-2 px-3 text-center">
         {/* Estd. 2026 on Top Right */}
         <div className="absolute top-2 right-3 text-[10px] font-bold text-slate-100 tracking-wider">
           Estd. 2026
@@ -84,47 +105,15 @@ export default function StudentIdCard({
         <p className="text-[7.5px] font-medium text-slate-100 leading-tight">
           Ph: 0891-2739507, Email: office@gvpihlr.in
         </p>
-
-        {/* Smooth Asymmetric Wave Cutout (curves lower on left, higher on right) */}
-        <div className="absolute -bottom-1 left-0 right-0 w-full overflow-hidden leading-none pointer-events-none">
-          <svg
-            viewBox="0 0 330 35"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-full h-7 text-white"
-            preserveAspectRatio="none"
-          >
-            <path
-              d="M0 35 C60 30 120 10 210 5 C270 2 310 8 330 0 L330 35 L0 35 Z"
-              fill="#FFFFFF"
-            />
-          </svg>
-        </div>
-      </div>
-
-      {/* Blue side curve extending down on left behind photo */}
-      <div className="absolute top-[148px] left-0 w-24 h-24 pointer-events-none z-0">
-        <svg
-          viewBox="0 0 100 100"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-full h-full"
-        >
-          <path
-            d="M0 0 C40 10 70 35 60 70 C50 95 20 100 0 100 Z"
-            fill="#1A4384"
-            opacity="0.95"
-          />
-        </svg>
       </div>
 
       {/* =========================================================================
           MIDDLE SECTION: Photo, Student Name, Details Table
           ========================================================================= */}
-      <div className="flex-1 px-4 pt-1 pb-1 flex flex-col justify-between relative z-10">
-        {/* Passport Photo Frame */}
-        <div className="flex justify-center -mt-2">
-          <div className="w-[104px] h-[126px] bg-slate-50 rounded-[4px] border-[1.5px] border-[#475569] shadow-xs overflow-hidden flex items-center justify-center relative bg-white">
+      <div className="flex-1 px-4 pt-0 pb-1 flex flex-col justify-between relative z-10">
+        {/* Passport Photo Frame (Placed partially over blue on left, white on right) */}
+        <div className="flex justify-center mt-1">
+          <div className="w-[104px] h-[126px] bg-slate-50 rounded-[3px] border-[1.5px] border-[#334155] shadow-xs overflow-hidden flex items-center justify-center relative bg-white">
             {photoUrl ? (
               <img
                 src={photoUrl}
@@ -145,14 +134,14 @@ export default function StudentIdCard({
           </div>
         </div>
 
-        {/* Student Full Name in Bold Red/Crimson */}
+        {/* Student Full Name in Bold Crimson Red */}
         <div className="text-center mt-1.5 mb-1">
           <h2 className="text-[15px] font-black text-[#B91C1C] tracking-wider uppercase leading-tight truncate px-1">
             {fullName}
           </h2>
         </div>
 
-        {/* Key-Value Details Table */}
+        {/* Key-Value Details Table with Perfect Column Alignment */}
         <div className="space-y-1.5 text-[11px] font-semibold text-slate-900 border-t border-b border-slate-100 py-2">
           {/* Branch */}
           <div className="flex items-start">
@@ -212,15 +201,13 @@ export default function StudentIdCard({
       </div>
 
       {/* =========================================================================
-          BOTTOM FOOTER: Clean Registrar-I/C & Bottom Blue Arc with Serial
+          BOTTOM FOOTER: Clean Registrar-I/C & Bottom Blue Band with Serial
           ========================================================================= */}
       <div className="relative pt-1 pb-1 px-4 flex items-end justify-between bg-white z-10">
-        {/* Left: Empty space (serial number printed inside bottom blue bar below) */}
-        <div className="text-left z-20 pb-2">
-          {/* Left spacing */}
-        </div>
+        {/* Left spacing for serial printed inside bottom blue curve */}
+        <div className="text-left z-20 pb-2"></div>
 
-        {/* Right: Signature Space (Blank for now) & Registrar-I/C */}
+        {/* Right: Signature Space (Blank until official signature provided) & Registrar-I/C */}
         <div className="text-center flex flex-col items-center z-20 pb-2">
           <div className="h-6 flex items-center justify-center">
             {signatureUrl ? (

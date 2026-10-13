@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   Calendar,
@@ -10,7 +10,6 @@ import {
   Clock,
   Users,
   Building2,
-  BookOpen,
   ChevronRight,
   ChevronLeft,
   X,
@@ -18,12 +17,12 @@ import {
   ArrowRight,
   TrendingUp,
   Filter,
-  Layers,
   Sparkles,
   BarChart3,
   CalendarDays,
   UserCheck,
   UserX,
+  ChevronDown,
 } from "lucide-react";
 import {
   DailyAnalyticsResult,
@@ -48,15 +47,42 @@ export default function DailyAnalyticsClient({
   const [activeHourIndex, setActiveHourIndex] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // Custom Institutional Date Picker Popover State
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const calendarRef = useRef<HTMLDivElement>(null);
+
+  // Parse current selected date into Year, Month, Day
+  const [currentViewDate, setCurrentViewDate] = useState(() => {
+    return selectedDate ? new Date(`${selectedDate}T00:00:00`) : new Date();
+  });
+
+  // Close calendar popover on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
+        setIsCalendarOpen(false);
+      }
+    }
+    if (isCalendarOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isCalendarOpen]);
+
+  // Set of dates that have attendance sessions recorded
+  const datesWithSessionsSet = new Set(data.availableDates.map((d) => d.date));
+
   // Handle Date Change
   const handleDateChange = (newDateStr: string) => {
     if (!newDateStr || newDateStr === selectedDate) return;
     setSelectedDate(newDateStr);
+    setIsCalendarOpen(false);
     startTransition(async () => {
       const res = await getDailyAttendanceAnalytics(newDateStr);
       if (res.success) {
         setData(res);
-        // If modal is currently open, refresh its data
         if (activeSectionModal) {
           const updated = res.sections.find((s) => s.sectionId === activeSectionModal.sectionId);
           setActiveSectionModal(updated || null);
@@ -65,18 +91,22 @@ export default function DailyAnalyticsClient({
     });
   };
 
+  // Step Date by Days (+1 or -1)
+  const handleStepDay = (delta: number) => {
+    const cur = new Date(`${selectedDate}T00:00:00`);
+    cur.setDate(cur.getDate() + delta);
+    const nextIso = cur.toISOString().split("T")[0];
+    handleDateChange(nextIso);
+  };
+
   // Filter sections
   const filteredSections = data.sections.filter((s) => {
-    // School filter
     if (selectedSchool !== "ALL" && s.schoolCode !== selectedSchool && s.schoolId !== selectedSchool) {
       return false;
     }
-
-    // Status filter
     if (selectedStatus === "CONDUCTED" && !s.isMarked) return false;
     if (selectedStatus === "UNMARKED" && s.isMarked) return false;
 
-    // Search query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchName = s.sectionName.toLowerCase().includes(q);
@@ -85,11 +115,10 @@ export default function DailyAnalyticsClient({
       const matchSchool = s.schoolName.toLowerCase().includes(q);
       if (!matchName && !matchDisp && !matchProg && !matchSchool) return false;
     }
-
     return true;
   });
 
-  // Format date display
+  // Formatted date title
   const formattedDateTitle = (() => {
     if (!selectedDate) return "Today";
     const d = new Date(`${selectedDate}T00:00:00`);
@@ -101,10 +130,39 @@ export default function DailyAnalyticsClient({
     });
   })();
 
+  const shortFormattedDate = (() => {
+    if (!selectedDate) return "Select Date";
+    const d = new Date(`${selectedDate}T00:00:00`);
+    return d.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  })();
+
+  // Calendar calculations for popover
+  const viewYear = currentViewDate.getFullYear();
+  const viewMonth = currentViewDate.getMonth(); // 0-indexed
+
+  const monthName = currentViewDate.toLocaleDateString("en-US", { month: "long" });
+
+  const firstDayOfMonth = new Date(viewYear, viewMonth, 1).getDay(); // 0 is Sunday
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+  const handlePrevMonth = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentViewDate(new Date(viewYear, viewMonth - 1, 1));
+  };
+
+  const handleNextMonth = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentViewDate(new Date(viewYear, viewMonth + 1, 1));
+  };
+
   return (
     <div className="space-y-6">
       {/* =========================================================================
-          TOP BANNER: Day-Wise Attendance Analytics
+          TOP BANNER: Day-Wise Attendance Analytics with Custom Institutional Date Picker
           ========================================================================= */}
       <div className="bg-gradient-to-r from-[#0F2C59] via-[#163A70] to-[#0B2545] text-white rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2 max-w-2xl">
@@ -121,73 +179,184 @@ export default function DailyAnalyticsClient({
           </p>
         </div>
 
-        {/* Date Selector Header Control */}
-        <div className="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/20 flex flex-col gap-2 w-full md:w-auto">
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-200">
-            Selected Attendance Date
-          </span>
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => handleDateChange(e.target.value)}
-              className="bg-white text-slate-900 px-3.5 py-2 rounded-xl text-xs font-bold font-mono focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-xs cursor-pointer"
-            />
-            {isPending && (
-              <span className="text-xs font-semibold text-amber-300 animate-pulse">
-                Loading...
-              </span>
-            )}
+        {/* =========================================================================
+            CUSTOM INSTITUTIONAL DATE PICKER (No Native Browser Input)
+            ========================================================================= */}
+        <div className="relative w-full md:w-auto" ref={calendarRef}>
+          <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex flex-col gap-1.5 shadow-sm">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-200 flex items-center justify-between">
+              <span>Attendance Date</span>
+              {isPending && (
+                <span className="text-amber-300 font-semibold animate-pulse text-[10px]">
+                  Loading...
+                </span>
+              )}
+            </span>
+
+            {/* Institutional Date Button + Day Stepper */}
+            <div className="flex items-center gap-1.5">
+              {/* Prev Day Button */}
+              <button
+                type="button"
+                onClick={() => handleStepDay(-1)}
+                className="p-2 rounded-xl bg-white/15 hover:bg-white/25 text-white transition flex items-center justify-center border border-white/10"
+                title="Previous Day"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {/* Main Date Display Trigger */}
+              <button
+                type="button"
+                onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                className="flex items-center justify-between gap-3 px-3.5 py-2 rounded-xl bg-white text-slate-900 hover:bg-slate-50 transition border border-white shadow-xs font-bold text-xs"
+              >
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-blue-700 flex-shrink-0" />
+                  <span className="font-extrabold text-slate-900 tracking-tight">
+                    {shortFormattedDate}
+                  </span>
+                </div>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
+                    isCalendarOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {/* Next Day Button */}
+              <button
+                type="button"
+                onClick={() => handleStepDay(1)}
+                className="p-2 rounded-xl bg-white/15 hover:bg-white/25 text-white transition flex items-center justify-center border border-white/10"
+                title="Next Day"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
+
+          {/* =========================================================================
+              CUSTOM DROPDOWN CALENDAR POPOVER (Institutional Styled)
+              ========================================================================= */}
+          {isCalendarOpen && (
+            <div className="absolute right-0 mt-2 w-80 bg-white text-slate-900 rounded-3xl shadow-2xl border border-slate-200 p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
+              {/* Calendar Month & Navigation Header */}
+              <div className="flex items-center justify-between pb-3 mb-2 border-b border-slate-100">
+                <button
+                  type="button"
+                  onClick={handlePrevMonth}
+                  className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-600 transition"
+                  title="Previous Month"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                <div className="text-xs font-black text-slate-900 tracking-wide uppercase">
+                  {monthName} {viewYear}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleNextMonth}
+                  className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-600 transition"
+                  title="Next Month"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Days of the Week Header */}
+              <div className="grid grid-cols-7 gap-1 text-center mb-1">
+                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((dayName, idx) => (
+                  <span
+                    key={idx}
+                    className="text-[10px] font-extrabold text-slate-400 uppercase py-1"
+                  >
+                    {dayName}
+                  </span>
+                ))}
+              </div>
+
+              {/* Month Days Grid */}
+              <div className="grid grid-cols-7 gap-1 text-center">
+                {/* Empty cells before 1st day of month */}
+                {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+                  <div key={`empty-${i}`} className="h-8 w-8" />
+                ))}
+
+                {/* Days of the current month */}
+                {Array.from({ length: daysInMonth }).map((_, i) => {
+                  const dayNum = i + 1;
+                  const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+                  const isSelected = dateStr === selectedDate;
+                  const hasSessions = datesWithSessionsSet.has(dateStr);
+                  const isToday =
+                    dateStr === new Date().toISOString().split("T")[0];
+
+                  return (
+                    <button
+                      key={dayNum}
+                      type="button"
+                      onClick={() => handleDateChange(dateStr)}
+                      className={`h-8 w-8 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center relative mx-auto ${
+                        isSelected
+                          ? "bg-[#0F2C59] text-white shadow-xs font-black"
+                          : isToday
+                          ? "bg-blue-50 text-blue-700 border border-blue-300 font-extrabold"
+                          : "hover:bg-slate-100 text-slate-700"
+                      }`}
+                    >
+                      <span>{dayNum}</span>
+                      {/* Dot indicator if attendance sessions exist */}
+                      {hasSessions && (
+                        <span
+                          className={`w-1 h-1 rounded-full absolute bottom-1 ${
+                            isSelected ? "bg-amber-300" : "bg-emerald-500"
+                          }`}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Calendar Footer Shortcuts */}
+              <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const latest = data.availableDates[0]?.date;
+                    if (latest) handleDateChange(latest);
+                  }}
+                  className="font-bold text-blue-700 hover:text-blue-900 transition text-[11px]"
+                >
+                  Latest Recorded Date
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const todayStr = new Date().toISOString().split("T")[0];
+                    handleDateChange(todayStr);
+                  }}
+                  className="font-bold text-slate-600 hover:text-slate-900 transition text-[11px]"
+                >
+                  Today
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCalendarOpen(false)}
+                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* =========================================================================
-          QUICK DATE JUMP CHIPS (Recent Days with Sessions)
-          ========================================================================= */}
-      {data.availableDates && data.availableDates.length > 0 && (
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              <CalendarDays className="w-4 h-4 text-blue-600" />
-              <span>Quick Jump to Recent Attendance Dates:</span>
-            </span>
-            <span className="text-[11px] font-semibold text-slate-400">
-              Showing active session records
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            {data.availableDates.slice(0, 8).map((d) => {
-              const isSelected = d.date === selectedDate;
-              return (
-                <button
-                  key={d.date}
-                  type="button"
-                  onClick={() => handleDateChange(d.date)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-                    isSelected
-                      ? "bg-[#0F2C59] text-white shadow-xs ring-2 ring-blue-500/30"
-                      : "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                  }`}
-                >
-                  <Calendar className="w-3.5 h-3.5" />
-                  <span>{d.label}</span>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                      isSelected
-                        ? "bg-white/20 text-white"
-                        : "bg-slate-200 text-slate-600"
-                    }`}
-                  >
-                    {d.sessionCount} sessions
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* =========================================================================
           KPI SUMMARY BANNER (Overall Stats for Selected Date)

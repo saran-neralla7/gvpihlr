@@ -76,33 +76,28 @@ export default function IdCardsClient({
   const [activeTab, setActiveTab] = useState<"sample" | "single" | "batch">("sample");
 
   // =========================================================================
-  // 1. SAMPLE ID CARD STATE
+  // 1. SAMPLE ID CARD STATE (GENERIC SAMPLE DATA & PLACEHOLDER)
   // =========================================================================
   const sampleStudentData: StudentIdCardData = {
-    fullName: "GUDALA PAVANI",
-    rollNumber: "26UEECE0053",
-    branch: "ECE (VLSI Design and Technology)",
-    parentName: "Gudala Kannarao",
-    dateOfBirth: "22-11-2008",
-    mobile: "7995414517",
-    photoUrl: "/sample-student-pavani.jpg",
-    serialNumber: "GVPIHLR202600446",
-    signatureUrl: "/sample-registrar-signature.png",
+    fullName: "SAMPLE STUDENT NAME",
+    rollNumber: "26UCS0001",
+    branch: "Computer Science and Engineering",
+    parentName: "Sample Parent Name",
+    dateOfBirth: "15-08-2008",
+    mobile: "9876543210",
+    photoUrl: null,
+    serialNumber: "GVPIHLR202600001",
+    signatureUrl: null,
   };
 
   const [sampleData, setSampleData] = useState<StudentIdCardData>(sampleStudentData);
-  const [showOriginalComparison, setShowOriginalComparison] = useState(true);
 
   // =========================================================================
   // 2. SINGLE STUDENT SEARCH & GENERATION STATE
   // =========================================================================
-  const [searchRoll, setSearchRoll] = useState("26UEECE0053");
+  const [searchRoll, setSearchRoll] = useState(() => students[0]?.rollNumber || "");
   const [selectedStudent, setSelectedStudent] = useState<StudentRecord | null>(() => {
-    return (
-      students.find((s) => s.rollNumber.toUpperCase() === "26UEECE0053") ||
-      students[0] ||
-      null
-    );
+    return students[0] || null;
   });
   const [customPhotoUrl, setCustomPhotoUrl] = useState<string | null>(null);
   const [customDob, setCustomDob] = useState<string>("");
@@ -160,11 +155,7 @@ export default function IdCardsClient({
       "B.Tech Engineering";
 
     // Photo
-    const photo =
-      customPhotoUrl ||
-      (selectedStudent.rollNumber === "26UEECE0053"
-        ? "/sample-student-pavani.jpg"
-        : null);
+    const photo = customPhotoUrl || null;
 
     return {
       fullName: selectedStudent.fullName,
@@ -175,7 +166,7 @@ export default function IdCardsClient({
       mobile: selectedStudent.phone || selectedStudent.parentPhone || "—",
       photoUrl: photo,
       serialNumber: `GVPIHLR2026${selectedStudent.rollNumber.replace(/[^0-9]/g, "").padStart(4, "0")}`,
-      signatureUrl: "/sample-registrar-signature.png",
+      signatureUrl: null,
     };
   }, [selectedStudent, customPhotoUrl, customDob, customBranch]);
 
@@ -369,18 +360,18 @@ export default function IdCardsClient({
                   Sample Student ID Card Preview
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Exact template matching the physical university ID card for student{" "}
-                  <strong>GUDALA PAVANI (26UEECE0053)</strong>.
+                  Exact template matching the physical university ID card design with neutral placeholder data.
                 </p>
               </div>
 
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowOriginalComparison(!showOriginalComparison)}
-                  className="px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold transition"
+                  onClick={() => setActiveTab("single")}
+                  className="px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold transition flex items-center gap-1.5"
                 >
-                  {showOriginalComparison ? "Hide Original Photo" : "Compare with Original Photo"}
+                  <Search className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Generate by Roll No</span>
                 </button>
                 <button
                   type="button"
@@ -393,34 +384,14 @@ export default function IdCardsClient({
               </div>
             </div>
 
-            {/* Display Side by Side: Generated Card + Original Photo */}
-            <div className="flex flex-wrap items-center justify-center gap-8 py-4">
-              {/* Generated ID Card */}
-              <div className="flex flex-col items-center gap-3">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  Generated Web ID Card
-                </span>
+            {/* Display Generated Sample Card Centered */}
+            <div className="flex flex-col items-center justify-center py-6">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                Generated ID Card Preview
+              </span>
+              <div className="p-3 bg-slate-50/60 rounded-3xl border border-slate-200/70 shadow-xs">
                 <StudentIdCard student={sampleData} />
               </div>
-
-              {/* Original Card Photo for Proof/Comparison */}
-              {showOriginalComparison && (
-                <div className="flex flex-col items-center gap-3">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                    Original Sample Card (Reference)
-                  </span>
-                  <div
-                    className="border-2 border-dashed border-slate-300 rounded-[20px] p-2 bg-slate-50 shadow-xs flex items-center justify-center overflow-hidden"
-                    style={{ width: "330px", height: "520px" }}
-                  >
-                    <img
-                      src="/sample-id-card-original.jpg"
-                      alt="Original Sample Physical Card"
-                      className="w-full h-full object-contain rounded-xl"
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
@@ -723,12 +694,9 @@ export default function IdCardsClient({
                     ? new Date(st.dateOfBirth).toLocaleDateString("en-GB").replace(/\//g, "-")
                     : "22-11-2008",
                   mobile: st.phone || st.parentPhone || "—",
-                  photoUrl:
-                    st.rollNumber === "26UEECE0053"
-                      ? "/sample-student-pavani.jpg"
-                      : null,
+                  photoUrl: null,
                   serialNumber: `GVPIHLR2026${st.rollNumber.replace(/[^0-9]/g, "").padStart(4, "0")}`,
-                  signatureUrl: "/sample-registrar-signature.png",
+                  signatureUrl: null,
                 };
 
                 return (
@@ -759,12 +727,9 @@ export default function IdCardsClient({
                     ? new Date(st.dateOfBirth).toLocaleDateString("en-GB").replace(/\//g, "-")
                     : "22-11-2008",
                   mobile: st.phone || st.parentPhone || "—",
-                  photoUrl:
-                    st.rollNumber === "26UEECE0053"
-                      ? "/sample-student-pavani.jpg"
-                      : null,
+                  photoUrl: null,
                   serialNumber: `GVPIHLR2026${st.rollNumber.replace(/[^0-9]/g, "").padStart(4, "0")}`,
-                  signatureUrl: "/sample-registrar-signature.png",
+                  signatureUrl: null,
                 };
 
                 return (

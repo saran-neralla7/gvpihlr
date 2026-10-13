@@ -50,6 +50,15 @@ export default async function AdminHubPage() {
       officeAllowed: true,
     },
     {
+      title: "Day-Wise Analytics",
+      description: "Live daily present & absent counts across all sections with hour-by-hour period drilldown.",
+      icon: BarChart3,
+      iconColor: "text-emerald-600 bg-emerald-50",
+      link: "/admin/day-analytics",
+      officeAllowed: true,
+      badge: "Hourly Breakdown",
+    },
+    {
       title: "Manage Students",
       description: "Dedicated student directory, search, category filters, and student profile inspection.",
       icon: GraduationCap,

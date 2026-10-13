@@ -11,6 +11,7 @@ import {
   Database,
   Shield,
   CreditCard,
+  BarChart3,
 } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -69,6 +70,14 @@ export default async function DashboardPage() {
         badgeColor: "bg-teal-600",
         icon: FileText,
         link: "/reports",
+        officeAllowed: true,
+      },
+      {
+        title: "Day-Wise Analytics",
+        description: "Daily present & absent student counts across sections with hour-wise period breakdown.",
+        badgeColor: "bg-emerald-600",
+        icon: BarChart3,
+        link: "/admin/day-analytics",
         officeAllowed: true,
       },
       {

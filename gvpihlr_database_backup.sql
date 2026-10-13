@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict oCoMM8PL0eBrRBmwf7X3M0IhxeNswdCfrkNkdbwve2HdkP9QsFe9vOStmRxg69T
+\restrict JrIlBe2i6JeIxd4tHcdEWkPMi1pee5B0s5yrv9TwImyq9tHCNpIOO76mD2WOLpR
 
 -- Dumped from database version 16.15
 -- Dumped by pg_dump version 16.15
@@ -85723,6 +85723,15 @@ cmv68r9970003144fcyyjxm04	cmuzp7hsc000bbynpr08m4i25	LOGIN	User	cmuzp7hsc000bbynp
 cmv6btb4r0001dv6o3old3of5	cmv6bio1q0000wlgnrfs3tz71	LOGIN	User	cmv6bio1q0000wlgnrfs3tz71	::1	Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.19041.6456	SUCCESS	{"roles": ["DEAN", "DEAN", "DEAN", "FACULTY", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN"], "device": "Windows • Web Browser (Desktop)", "description": "User \\"First Year Incharge\\" (firstyearincharge) signed in successfully as DEAN, DEAN, DEAN, FACULTY, ACADEMIC_ADMIN, ACADEMIC_ADMIN, ACADEMIC_ADMIN"}	2026-10-13 06:55:02.812
 cmv6btg7j0003dv6o9w7551y7	cmv6bio250001wlgnf01b2c0s	LOGIN	User	cmv6bio250001wlgnf01b2c0s	::1	Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.19041.6456	SUCCESS	{"roles": ["DEAN", "DEAN", "DEAN", "FACULTY", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN"], "device": "Windows • Web Browser (Desktop)", "description": "User \\"First Year Incharge\\" (incharge) signed in successfully as DEAN, DEAN, DEAN, FACULTY, ACADEMIC_ADMIN, ACADEMIC_ADMIN, ACADEMIC_ADMIN"}	2026-10-13 06:55:09.391
 cmv6btmpj0005dv6oubjqhpeu	cmv6bio1q0000wlgnrfs3tz71	LOGIN	User	cmv6bio1q0000wlgnrfs3tz71	::1	Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.19041.6456	SUCCESS	{"roles": ["DEAN", "DEAN", "DEAN", "FACULTY", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN"], "device": "Windows • Web Browser (Desktop)", "description": "User \\"First Year Incharge\\" (firstyearincharge) signed in successfully as DEAN, DEAN, DEAN, FACULTY, ACADEMIC_ADMIN, ACADEMIC_ADMIN, ACADEMIC_ADMIN"}	2026-10-13 06:55:17.816
+cmv6byvsu0007dv6okmew2lhf	cmuzp7hsc000bbynpr08m4i25	LOGOUT	User	cmuzp7hsc000bbynpr08m4i25	\N	\N	SUCCESS	{}	2026-10-13 06:59:22.878
+cmv6bz2mz0009dv6od9ppx730	cmv6bio250001wlgnf01b2c0s	FAILED_LOGIN	User	cmv6bio250001wlgnf01b2c0s	::1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36	FAILURE	{"device": "Windows • Google Chrome (Desktop)", "locked": false, "description": "Failed login attempt (Incorrect password) for user: incharge", "failedAttempts": 1}	2026-10-13 06:59:31.74
+cmv6bzf2t000bdv6o6gqlgb4g	cmv6bio1q0000wlgnrfs3tz71	FAILED_LOGIN	User	cmv6bio1q0000wlgnrfs3tz71	::1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36	FAILURE	{"device": "Windows • Google Chrome (Desktop)", "locked": false, "description": "Failed login attempt (Incorrect password) for user: firstyearincharge", "failedAttempts": 1}	2026-10-13 06:59:47.861
+cmv6bzm13000ddv6oidew11fb	cmv6bio1q0000wlgnrfs3tz71	LOGIN	User	cmv6bio1q0000wlgnrfs3tz71	::1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36	SUCCESS	{"roles": ["DEAN", "DEAN", "DEAN", "FACULTY", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN"], "device": "Windows • Google Chrome (Desktop)", "description": "User \\"First Year Incharge\\" (firstyearincharge) signed in successfully as DEAN, DEAN, DEAN, FACULTY, ACADEMIC_ADMIN, ACADEMIC_ADMIN, ACADEMIC_ADMIN"}	2026-10-13 06:59:56.872
+cmv6bzx96000fdv6osoaaubu2	cmv6bio1q0000wlgnrfs3tz71	LOGOUT	User	cmv6bio1q0000wlgnrfs3tz71	\N	\N	SUCCESS	{}	2026-10-13 07:00:11.418
+cmv6cadq40001136a0inikh6j	cmuzp7hsc000bbynpr08m4i25	FAILED_LOGIN	User	cmuzp7hsc000bbynpr08m4i25	::1	Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.19041.6456	FAILURE	{"device": "Windows • Web Browser (Desktop)", "locked": false, "description": "Failed login attempt (Incorrect password) for user: admin", "failedAttempts": 1}	2026-10-13 07:08:19.325
+cmv6cae3p0003136a3yykfdw3	cmv6bio1q0000wlgnrfs3tz71	LOGIN	User	cmv6bio1q0000wlgnrfs3tz71	::1	Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.19041.6456	SUCCESS	{"roles": ["DEAN", "DEAN", "DEAN", "FACULTY", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN"], "device": "Windows • Web Browser (Desktop)", "description": "User \\"First Year Incharge\\" (firstyearincharge) signed in successfully as DEAN, DEAN, DEAN, FACULTY, ACADEMIC_ADMIN, ACADEMIC_ADMIN, ACADEMIC_ADMIN"}	2026-10-13 07:08:19.813
+cmv6cb1fz0005136a42hq62eo	cmuzp7hsc000bbynpr08m4i25	LOGIN	User	cmuzp7hsc000bbynpr08m4i25	::1	Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.19041.6456	SUCCESS	{"roles": ["SUPER_ADMIN"], "device": "Windows • Web Browser (Desktop)", "description": "User \\"GVPIHLR Super Administrator\\" (admin) signed in successfully as SUPER_ADMIN"}	2026-10-13 07:08:50.064
+cmv6cb24a0007136ap1i6g5se	cmv6bio1q0000wlgnrfs3tz71	LOGIN	User	cmv6bio1q0000wlgnrfs3tz71	::1	Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.19041.6456	SUCCESS	{"roles": ["DEAN", "DEAN", "DEAN", "FACULTY", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN"], "device": "Windows • Web Browser (Desktop)", "description": "User \\"First Year Incharge\\" (firstyearincharge) signed in successfully as DEAN, DEAN, DEAN, FACULTY, ACADEMIC_ADMIN, ACADEMIC_ADMIN, ACADEMIC_ADMIN"}	2026-10-13 07:08:50.938
 \.
 
 
@@ -91722,9 +91731,9 @@ cmuzu9oof003iydphgyvr3cii	BSK	bsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeem
 cmuzu9oox004rydph03f490gx	GSK	gsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. G Santosh Kumar	+91 9440112233	t	f	2026-10-08 18:00:33.331	0	\N	2026-10-08 17:57:16.737	2026-10-12 14:52:18.442	\N
 cmv0jr1am002pmzmyhq3k4q28	26UECHE0001	26ueche0001@student.gvpihlr.edu.in	$2a$10$HZMHHs5f2Zp0J2Ce0aM8FOjzTBDfg6R6cKGzdtKRsz0d3zm3o4CYO	ADIRAJU SRI NAGA PRADYUMNA	8019888678	t	f	2026-10-12 14:58:16.588	0	\N	2026-10-09 05:50:36.599	2026-10-12 14:58:16.589	\N
 cmv5cxakt000110wnsmb2rfxg	office	office@gvpihlr.edu.in	$2a$12$eHRDQeKY5VRYfvRvea56qe.3rUAtZNlnupZqsbbT635dtHW221Z1C	GVPIHLR Central Academic Office	+91 891 2739507	t	f	2026-10-13 04:49:30.789	0	\N	2026-10-12 14:38:22.157	2026-10-13 04:49:30.79	\N
-cmuzp7hsc000bbynpr08m4i25	admin	admin@gvpihlr.edu.in	$2a$12$olLcQ23IA0/wz/9ao901q.un91tdowzuc1DUEvtNvPsUZ2sGYuR5q	GVPIHLR Super Administrator	+91 9876543210	t	f	2026-10-13 05:29:28.203	0	\N	2026-10-08 15:35:36.396	2026-10-13 05:29:28.204	\N
-cmv6bio250001wlgnf01b2c0s	incharge	incharge@gvpihlr.edu.in	$2a$12$DACBbHg15IyRSP8lHGwRAe1l4CbSFlZuQ.03oE3eOaTalwW7Q/Ltu	First Year Incharge	+91 9876543211	t	f	2026-10-13 06:55:09.373	0	\N	2026-10-13 06:46:46.35	2026-10-13 06:55:09.374	\N
-cmv6bio1q0000wlgnrfs3tz71	firstyearincharge	firstyearincharge@gvpihlr.edu.in	$2a$12$DACBbHg15IyRSP8lHGwRAe1l4CbSFlZuQ.03oE3eOaTalwW7Q/Ltu	First Year Incharge	+91 9876543211	t	f	2026-10-13 06:55:17.799	0	\N	2026-10-13 06:46:46.335	2026-10-13 06:55:17.801	\N
+cmv6bio250001wlgnf01b2c0s	incharge	incharge@gvpihlr.edu.in	$2a$12$DACBbHg15IyRSP8lHGwRAe1l4CbSFlZuQ.03oE3eOaTalwW7Q/Ltu	First Year Incharge	+91 9876543211	t	f	2026-10-13 06:55:09.373	1	\N	2026-10-13 06:46:46.35	2026-10-13 06:59:31.725	\N
+cmuzp7hsc000bbynpr08m4i25	admin	admin@gvpihlr.edu.in	$2a$12$olLcQ23IA0/wz/9ao901q.un91tdowzuc1DUEvtNvPsUZ2sGYuR5q	GVPIHLR Super Administrator	+91 9876543210	t	f	2026-10-13 07:08:50.046	0	\N	2026-10-08 15:35:36.396	2026-10-13 07:08:50.048	\N
+cmv6bio1q0000wlgnrfs3tz71	firstyearincharge	firstyearincharge@gvpihlr.edu.in	$2a$12$DACBbHg15IyRSP8lHGwRAe1l4CbSFlZuQ.03oE3eOaTalwW7Q/Ltu	First Year Incharge	+91 9876543211	t	f	2026-10-13 07:08:50.923	0	\N	2026-10-13 06:46:46.335	2026-10-13 07:08:50.924	\N
 \.
 
 
@@ -94046,5 +94055,5 @@ ALTER TABLE ONLY public."UserRole"
 -- PostgreSQL database dump complete
 --
 
-\unrestrict oCoMM8PL0eBrRBmwf7X3M0IhxeNswdCfrkNkdbwve2HdkP9QsFe9vOStmRxg69T
+\unrestrict JrIlBe2i6JeIxd4tHcdEWkPMi1pee5B0s5yrv9TwImyq9tHCNpIOO76mD2WOLpR
 

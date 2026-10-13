@@ -329,6 +329,14 @@ export default function Header({ user }: HeaderProps) {
                   <span>University Reports</span>
                 </Link>
                 <Link
+                  href="/admin/day-analytics"
+                  onClick={closeMobile}
+                  className="w-full flex items-center gap-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100"
+                >
+                  <BarChart3 className="w-4 h-4 text-emerald-600" />
+                  <span>Day-Wise Analytics</span>
+                </Link>
+                <Link
                   href="/admin/audit-logs"
                   onClick={closeMobile}
                   className="w-full flex items-center gap-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100"
@@ -356,6 +364,14 @@ export default function Header({ user }: HeaderProps) {
                 >
                   <BarChart3 className="w-4 h-4 text-purple-600" />
                   <span>Attendance Reports</span>
+                </Link>
+                <Link
+                  href="/admin/day-analytics"
+                  onClick={closeMobile}
+                  className="w-full flex items-center gap-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100"
+                >
+                  <BarChart3 className="w-4 h-4 text-emerald-600" />
+                  <span>Day-Wise Analytics</span>
                 </Link>
                 <Link
                   href="/admin/students"

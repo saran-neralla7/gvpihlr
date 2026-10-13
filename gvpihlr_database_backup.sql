@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict INVdKPJrYbv8adKqtTuH6RWDPiBIGkyrxrqzeIFjSHocyvRxidWSUQj2nvUTfqc
+\restrict y7YcQIKbl6ymI6cdMOXBSt4cFXs6asYIEaYPbHYH7MSzZwrJcyTYghipFRTYjDE
 
 -- Dumped from database version 16.15
 -- Dumped by pg_dump version 16.15
@@ -85736,6 +85736,7 @@ cmv6cfth60009136antg6xu5f	cmv6bio1q0000wlgnrfs3tz71	LOGIN	User	cmv6bio1q0000wlgn
 cmv6cwfna0001jveufb6t7t98	cmv6bio1q0000wlgnrfs3tz71	LOGIN	User	cmv6bio1q0000wlgnrfs3tz71	::1	Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.19041.6456	SUCCESS	{"roles": ["DEAN", "DEAN", "DEAN", "FACULTY", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN"], "device": "Windows • Web Browser (Desktop)", "description": "User \\"First Year Incharge\\" (firstyearincharge) signed in successfully as DEAN, DEAN, DEAN, FACULTY, ACADEMIC_ADMIN, ACADEMIC_ADMIN, ACADEMIC_ADMIN"}	2026-10-13 07:25:28.246
 cmv6cy55q0003jveugnxw6dm7	cmv6bio1q0000wlgnrfs3tz71	LOGOUT	User	cmv6bio1q0000wlgnrfs3tz71	\N	\N	SUCCESS	{}	2026-10-13 07:26:47.966
 cmv6cy9zb0005jveu2m2mgdju	cmuzp7hsc000bbynpr08m4i25	LOGIN	User	cmuzp7hsc000bbynpr08m4i25	::1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36	SUCCESS	{"roles": ["SUPER_ADMIN"], "device": "Windows • Google Chrome (Desktop)", "description": "User \\"GVPIHLR Super Administrator\\" (admin) signed in successfully as SUPER_ADMIN"}	2026-10-13 07:26:54.215
+cmv6ftip80001r9v8homn6qux	cmuzp7hsc000bbynpr08m4i25	LOGIN	User	cmuzp7hsc000bbynpr08m4i25	2409:40f0:40c3:731c:1943:e3f2:6823:6cc2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36	SUCCESS	{"roles": ["SUPER_ADMIN"], "device": "macOS • Google Chrome (Desktop)", "description": "User \\"GVPIHLR Super Administrator\\" (admin) signed in successfully as SUPER_ADMIN"}	2026-10-13 08:47:11.084
 \.
 
 
@@ -91737,7 +91738,7 @@ cmv0jr1am002pmzmyhq3k4q28	26UECHE0001	26ueche0001@student.gvpihlr.edu.in	$2a$10$
 cmv5cxakt000110wnsmb2rfxg	office	office@gvpihlr.edu.in	$2a$12$eHRDQeKY5VRYfvRvea56qe.3rUAtZNlnupZqsbbT635dtHW221Z1C	GVPIHLR Central Academic Office	+91 891 2739507	t	f	2026-10-13 04:49:30.789	0	\N	2026-10-12 14:38:22.157	2026-10-13 04:49:30.79	\N
 cmv6bio250001wlgnf01b2c0s	incharge	incharge@gvpihlr.edu.in	$2a$12$DACBbHg15IyRSP8lHGwRAe1l4CbSFlZuQ.03oE3eOaTalwW7Q/Ltu	First Year Incharge	+91 9876543211	t	f	2026-10-13 06:55:09.373	1	\N	2026-10-13 06:46:46.35	2026-10-13 06:59:31.725	\N
 cmv6bio1q0000wlgnrfs3tz71	firstyearincharge	firstyearincharge@gvpihlr.edu.in	$2a$12$DACBbHg15IyRSP8lHGwRAe1l4CbSFlZuQ.03oE3eOaTalwW7Q/Ltu	First Year Incharge	+91 9876543211	t	f	2026-10-13 07:25:28.241	0	\N	2026-10-13 06:46:46.335	2026-10-13 07:25:28.242	\N
-cmuzp7hsc000bbynpr08m4i25	admin	admin@gvpihlr.edu.in	$2a$12$olLcQ23IA0/wz/9ao901q.un91tdowzuc1DUEvtNvPsUZ2sGYuR5q	GVPIHLR Super Administrator	+91 9876543210	t	f	2026-10-13 07:26:54.212	0	\N	2026-10-08 15:35:36.396	2026-10-13 07:26:54.213	\N
+cmuzp7hsc000bbynpr08m4i25	admin	admin@gvpihlr.edu.in	$2a$12$olLcQ23IA0/wz/9ao901q.un91tdowzuc1DUEvtNvPsUZ2sGYuR5q	GVPIHLR Super Administrator	+91 9876543210	t	f	2026-10-13 08:47:11.078	0	\N	2026-10-08 15:35:36.396	2026-10-13 08:47:11.08	\N
 \.
 
 
@@ -94059,5 +94060,5 @@ ALTER TABLE ONLY public."UserRole"
 -- PostgreSQL database dump complete
 --
 
-\unrestrict INVdKPJrYbv8adKqtTuH6RWDPiBIGkyrxrqzeIFjSHocyvRxidWSUQj2nvUTfqc
+\unrestrict y7YcQIKbl6ymI6cdMOXBSt4cFXs6asYIEaYPbHYH7MSzZwrJcyTYghipFRTYjDE
 

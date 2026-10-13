@@ -31,6 +31,7 @@ import SubjectWiseReportTable, {
 import MonthlyAttendanceView from "./MonthlyAttendanceView";
 import AllSectionsPrintReports from "./AllSectionsPrintReports";
 import type { AllSectionsReportResponse } from "@/lib/reportsActions";
+import InstitutionalDatePicker from "@/components/InstitutionalDatePicker";
 
 interface SchoolOption {
   id: string;
@@ -1189,73 +1190,79 @@ export default function ReportsClient({
       {/* =========================================================================
           ONE-CLICK ALL SECTIONS PRINT COMPILATION BANNER (Portrait A4)
           ========================================================================= */}
-      <div className="bg-gradient-to-r from-[#0B2545] via-[#133663] to-[#1D4ED8] text-white rounded-3xl p-5 sm:p-6 shadow-md flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 no-print border border-blue-900/30">
-        <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-[10px] font-black uppercase tracking-wider text-blue-200">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>Official University Examination &amp; Executive Registers (Portrait A4)</span>
+      <div className="relative z-20 bg-gradient-to-r from-[#0B2545] via-[#12335E] to-[#1D4ED8] text-white rounded-3xl p-5 sm:p-6 shadow-md no-print border border-blue-900/40 space-y-4">
+        {/* Top Row: Title, Badge and Description */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-white/10 pb-3">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-white/15 text-[10px] font-black uppercase tracking-wider text-blue-200">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>Official University Examination &amp; Executive Registers (Portrait A4)</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              Consolidated Attendance for All Sections in 1 Click
+            </h3>
+            <p className="text-xs text-blue-100 max-w-3xl font-medium leading-relaxed">
+              Instantly compile, view, and print institutional attendance across all sections in crisp Portrait A4 format with high-clarity typography (numbers &ge; 10pt) and official university signature blocks.
+            </p>
           </div>
-          <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
-            Consolidated Attendance for All Sections in 1 Click
-          </h3>
-          <p className="text-xs text-blue-100 max-w-2xl font-medium leading-relaxed">
-            Instantly compile, view, and print attendance for all first-year sections under one master university register. Formatted with high-clarity typography (numbers &ge; 10pt), clean portrait A4 pagination, and official university signature blocks.
-          </p>
         </div>
 
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full lg:w-auto">
-          {/* Quick Date Range on Banner */}
-          <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 rounded-2xl px-3 py-2 text-xs text-white">
-            <Calendar className="w-4 h-4 text-blue-200" />
-            <span className="text-[10px] uppercase font-bold text-blue-200">Window:</span>
-            <input
-              type="date"
+        {/* Bottom Row: Website Institutional Date Pickers + Action Buttons (No Overflow) */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-1">
+          {/* Custom Website Institutional Date Pickers */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-200 mr-1">
+              Attendance Window:
+            </span>
+            <InstitutionalDatePicker
+              label="From:"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="bg-transparent text-white font-bold focus:outline-none text-xs [color-scheme:dark]"
-              title="Attendance Window Start Date"
+              onChange={(d) => setStartDate(d)}
+              variant="dark"
             />
-            <span className="text-white/60 font-bold">to</span>
-            <input
-              type="date"
+            <span className="text-blue-200 text-xs font-bold px-1">to</span>
+            <InstitutionalDatePicker
+              label="To:"
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="bg-transparent text-white font-bold focus:outline-none text-xs [color-scheme:dark]"
-              title="Attendance Window End Date"
+              onChange={(d) => setEndDate(d)}
+              variant="dark"
             />
           </div>
 
-          {/* Button 1: Consolidated All Sections */}
-          <button
-            type="button"
-            disabled={isLoadingAllSections}
-            onClick={() => handleOpenAllSectionsPrint("consolidated")}
-            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white text-slate-900 hover:bg-blue-50 text-xs font-black transition shadow-sm hover:shadow active:scale-[0.98] disabled:opacity-50"
-            title="Generate &amp; Print Consolidated Attendance of All Sections in 1 Click (Portrait A4)"
-          >
-            <Printer className="w-4 h-4 text-blue-800" />
-            <span>
-              {isLoadingAllSections && allSectionsMode === "consolidated"
-                ? "Compiling All Sections..."
-                : "Print All Sections Consolidated"}
-            </span>
-          </button>
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Button 1: Consolidated All Sections */}
+            <button
+              type="button"
+              disabled={isLoadingAllSections}
+              onClick={() => handleOpenAllSectionsPrint("consolidated")}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white text-slate-900 hover:bg-blue-50 text-xs font-black transition shadow-sm hover:shadow active:scale-[0.98] disabled:opacity-50"
+              title="Generate &amp; Print Consolidated Attendance of All Sections in 1 Click (Portrait A4)"
+            >
+              <Printer className="w-4 h-4 text-blue-800" />
+              <span>
+                {isLoadingAllSections && allSectionsMode === "consolidated"
+                  ? "Compiling All Sections..."
+                  : "Print All Sections Consolidated"}
+              </span>
+            </button>
 
-          {/* Button 2: Subject-Wise All Sections */}
-          <button
-            type="button"
-            disabled={isLoadingAllSections}
-            onClick={() => handleOpenAllSectionsPrint("subject_wise")}
-            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-blue-500 hover:bg-blue-400 text-white text-xs font-black transition shadow-sm hover:shadow active:scale-[0.98] disabled:opacity-50 border border-blue-400/40"
-            title="Generate &amp; Print Subject-Wise Consolidated Attendance of All Sections in 1 Click (Portrait A4)"
-          >
-            <LayoutGrid className="w-4 h-4 text-white" />
-            <span>
-              {isLoadingAllSections && allSectionsMode === "subject_wise"
-                ? "Compiling All Sections..."
-                : "Print All Sections Subject-Wise"}
-            </span>
-          </button>
+            {/* Button 2: Subject-Wise All Sections */}
+            <button
+              type="button"
+              disabled={isLoadingAllSections}
+              onClick={() => handleOpenAllSectionsPrint("subject_wise")}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-blue-500 hover:bg-blue-400 text-white text-xs font-black transition shadow-sm hover:shadow active:scale-[0.98] disabled:opacity-50 border border-blue-400/40"
+              title="Generate &amp; Print Subject-Wise Consolidated Attendance of All Sections in 1 Click (Portrait A4)"
+            >
+              <LayoutGrid className="w-4 h-4 text-white" />
+              <span>
+                {isLoadingAllSections && allSectionsMode === "subject_wise"
+                  ? "Compiling All Sections..."
+                  : "Print All Sections Subject-Wise"}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1484,21 +1491,22 @@ export default function ReportsClient({
                 <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1.5">
                   Date Window
                 </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="date"
+                <div className="flex flex-wrap items-center gap-2">
+                  <InstitutionalDatePicker
+                    label="From:"
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(d) => setStartDate(d)}
+                    variant="light"
                   />
-                  <span className="text-slate-400 text-xs">to</span>
-                  <input
-                    type="date"
+                  <span className="text-slate-400 text-xs font-bold">to</span>
+                  <InstitutionalDatePicker
+                    label="To:"
                     value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(d) => setEndDate(d)}
+                    variant="light"
                   />
                   <button
+                    type="button"
                     onClick={handleApplyDates}
                     className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs flex-shrink-0"
                   >
@@ -2341,29 +2349,13 @@ export default function ReportsClient({
           {/* Controls Card */}
           <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs space-y-4 no-print">
             <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
-              {/* Quick Date Presets */}
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-                <span className="text-[11px] text-slate-400 font-bold uppercase">Quick Dates:</span>
-                <button
-                  onClick={() => {
-                    setStartDate("2026-09-22");
-                    setEndDate("2026-10-07");
-                    fetchReport(selectedSectionId, selectedSubjectId, "2026-09-22", "2026-10-07");
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-[11px] font-bold"
-                >
-                  All Ingested (22 Sep - 07 Oct)
-                </button>
-                <button
-                  onClick={() => {
-                    setStartDate("2026-10-01");
-                    setEndDate("2026-10-07");
-                    fetchReport(selectedSectionId, selectedSubjectId, "2026-10-01", "2026-10-07");
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px]"
-                >
-                  Oct 01 - Oct 07
-                </button>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                  Daily Attendance Matrix Register
+                </span>
+                <span className="text-[11px] text-slate-400 font-semibold">
+                  (Multi-period daily matrix with totals)
+                </span>
               </div>
 
               {/* Action Buttons */}
@@ -2441,11 +2433,11 @@ export default function ReportsClient({
                 <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1.5">
                   Start Date (From)
                 </label>
-                <input
-                  type="date"
+                <InstitutionalDatePicker
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(d) => setStartDate(d)}
+                  variant="light"
+                  className="w-full"
                 />
               </div>
 
@@ -2455,13 +2447,14 @@ export default function ReportsClient({
                   End Date (To)
                 </label>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="date"
+                  <InstitutionalDatePicker
                     value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(d) => setEndDate(d)}
+                    variant="light"
+                    className="w-full"
                   />
                   <button
+                    type="button"
                     onClick={handleApplyDates}
                     className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs flex-shrink-0"
                   >

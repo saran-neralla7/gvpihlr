@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { AllSectionsReportResponse, AllSectionsReportItem } from "@/lib/reportsActions";
+import InstitutionalDatePicker from "@/components/InstitutionalDatePicker";
 
 interface AllSectionsPrintReportsProps {
   data: AllSectionsReportResponse;
@@ -307,32 +308,29 @@ export default function AllSectionsPrintReports({
             </div>
 
             {/* Date Range: From Date & To Date */}
-            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1 shadow-xs">
-              <Calendar className="w-3.5 h-3.5 text-blue-600" />
-              <label className="text-[10px] font-bold text-slate-500">From:</label>
-              <input
-                type="date"
+            <div className="flex items-center gap-1.5">
+              <InstitutionalDatePicker
+                label="From:"
                 value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                className="text-xs font-bold text-slate-800 focus:outline-none bg-transparent"
+                onChange={(d) => setFromDate(d)}
+                variant="light"
               />
               <span className="text-slate-400 font-bold text-xs">—</span>
-              <label className="text-[10px] font-bold text-slate-500">To:</label>
-              <input
-                type="date"
+              <InstitutionalDatePicker
+                label="To:"
                 value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                className="text-xs font-bold text-slate-800 focus:outline-none bg-transparent"
+                onChange={(d) => setToDate(d)}
+                variant="light"
               />
               <button
                 type="button"
                 disabled={isRefreshing}
                 onClick={handleRefreshReportData}
-                className="ml-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition shadow-xs flex items-center gap-1 disabled:opacity-50"
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1 disabled:opacity-50"
               >
                 {isRefreshing ? (
                   <>
-                    <span className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
                     <span>Loading...</span>
                   </>
                 ) : (

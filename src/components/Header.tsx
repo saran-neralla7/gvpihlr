@@ -21,6 +21,7 @@ import {
   Home,
   Users,
   Calendar,
+  CreditCard,
 } from "lucide-react";
 
 interface HeaderProps {
@@ -273,6 +274,14 @@ export default function Header({ user }: HeaderProps) {
                   <span>Manage Students</span>
                 </Link>
                 <Link
+                  href="/admin/id-cards"
+                  onClick={closeMobile}
+                  className="w-full flex items-center gap-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100"
+                >
+                  <CreditCard className="w-4 h-4 text-rose-600" />
+                  <span>Student ID Cards</span>
+                </Link>
+                <Link
                   href="/admin/faculty"
                   onClick={closeMobile}
                   className="w-full flex items-center gap-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100"
@@ -348,6 +357,14 @@ export default function Header({ user }: HeaderProps) {
                 >
                   <GraduationCap className="w-4 h-4 text-blue-600" />
                   <span>Manage Students</span>
+                </Link>
+                <Link
+                  href="/admin/id-cards"
+                  onClick={closeMobile}
+                  className="w-full flex items-center gap-2 p-2 rounded-lg text-slate-700 hover:bg-slate-100"
+                >
+                  <CreditCard className="w-4 h-4 text-rose-600" />
+                  <span>Student ID Cards</span>
                 </Link>
                 <Link
                   href="/admin/faculty"

@@ -10,6 +10,7 @@ import {
   Bookmark,
   Database,
   Shield,
+  CreditCard,
 } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -43,6 +44,14 @@ export default async function DashboardPage() {
         badgeColor: "bg-blue-600",
         icon: GraduationCap,
         link: "/admin/students",
+        officeAllowed: true,
+      },
+      {
+        title: "ID Cards",
+        description: "Official student identity cards generator. Preview sample ID card, single roll search, or bulk print.",
+        badgeColor: "bg-rose-600",
+        icon: CreditCard,
+        link: "/admin/id-cards",
         officeAllowed: true,
       },
       {

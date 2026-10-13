@@ -18,6 +18,7 @@ import {
   Database,
   ArrowRight,
   Sparkles,
+  CreditCard,
 } from "lucide-react";
 
 export default async function AdminHubPage() {
@@ -54,6 +55,15 @@ export default async function AdminHubPage() {
       iconColor: "text-blue-600 bg-blue-50",
       link: "/admin/students",
       officeAllowed: true,
+    },
+    {
+      title: "ID Cards",
+      description: "Official student identity cards generator. Preview sample ID card, single student search by roll number, or bulk print by school & program.",
+      icon: CreditCard,
+      iconColor: "text-rose-600 bg-rose-50",
+      link: "/admin/id-cards",
+      officeAllowed: true,
+      badge: "Official PVC Generator",
     },
     {
       title: "Manage Faculty",

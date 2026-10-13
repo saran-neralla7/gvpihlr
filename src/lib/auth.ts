@@ -17,6 +17,7 @@ export interface SessionPayload {
   studentId?: string | null;
   departmentId?: string | null;
   schoolId?: string | null;
+  allowedSchoolIds?: string[];
   exp: number;
 }
 

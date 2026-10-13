@@ -25,8 +25,9 @@ export default async function AdminHubPage() {
   const session = await getCurrentSession();
   const isSuperAdminUser = session?.roles.includes("SUPER_ADMIN");
   const isOfficeUser = session?.roles.includes("OFFICE");
+  const isAcademicAdminUser = session?.roles.includes("ACADEMIC_ADMIN") || session?.roles.includes("DEAN");
 
-  if (!session || (!isSuperAdminUser && !isOfficeUser)) {
+  if (!session || (!isSuperAdminUser && !isOfficeUser && !isAcademicAdminUser)) {
     redirect("/dashboard");
   }
 
@@ -139,7 +140,7 @@ export default async function AdminHubPage() {
     },
   ];
 
-  const adminCards = isSuperAdminUser
+  const adminCards = (isSuperAdminUser || isAcademicAdminUser)
     ? allAdminCards
     : allAdminCards.filter((c) => c.officeAllowed);
 

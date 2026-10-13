@@ -18,7 +18,10 @@ export default async function FacultyClassesPage() {
     redirect("/student");
   }
 
-  const isSuperAdmin = session.roles.includes("SUPER_ADMIN");
+  const isSuperAdmin =
+    session.roles.includes("SUPER_ADMIN") ||
+    session.roles.includes("ACADEMIC_ADMIN") ||
+    session.roles.includes("DEAN");
   const { assignments, academicYear, error } = await getFacultyClasses();
 
   return (

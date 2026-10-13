@@ -10,8 +10,9 @@ export default async function AdminFacultyPage() {
   const session = await getCurrentSession();
   const isSuperAdminUser = session?.roles.includes("SUPER_ADMIN");
   const isOfficeUser = session?.roles.includes("OFFICE");
+  const isAcademicAdminUser = session?.roles.includes("ACADEMIC_ADMIN") || session?.roles.includes("DEAN");
 
-  if (!session || (!isSuperAdminUser && !isOfficeUser)) {
+  if (!session || (!isSuperAdminUser && !isOfficeUser && !isAcademicAdminUser)) {
     redirect("/dashboard");
   }
 
@@ -32,7 +33,7 @@ export default async function AdminFacultyPage() {
     <FacultyManagerClient
       faculty={faculty}
       departments={departments}
-      canDelete={isSuperAdminUser}
+      canDelete={isSuperAdminUser || isAcademicAdminUser}
     />
   );
 }

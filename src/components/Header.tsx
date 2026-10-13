@@ -52,13 +52,18 @@ export default function Header({ user }: HeaderProps) {
 
   const isSuperAdmin = user?.roles.includes("SUPER_ADMIN");
   const isOfficeUser = user?.roles.includes("OFFICE") && !isSuperAdmin;
+  const isAcademicAdmin =
+    (user?.roles.includes("ACADEMIC_ADMIN") || user?.roles.includes("DEAN")) &&
+    !isSuperAdmin &&
+    !isOfficeUser;
   const isFacultyUser =
-    user?.roles.includes("FACULTY") && !isSuperAdmin && !isOfficeUser;
+    user?.roles.includes("FACULTY") && !isSuperAdmin && !isOfficeUser && !isAcademicAdmin;
   const isStudentUser =
     user?.roles.includes("STUDENT") &&
     !isSuperAdmin &&
     !user?.roles.includes("FACULTY") &&
-    !isOfficeUser;
+    !isOfficeUser &&
+    !isAcademicAdmin;
 
   // Determine user pill display text
   let userPillText = user?.username || "Guest";
@@ -66,6 +71,8 @@ export default function Header({ user }: HeaderProps) {
     userPillText = "admin";
   } else if (isOfficeUser) {
     userPillText = "office";
+  } else if (isAcademicAdmin) {
+    userPillText = "1st Year Incharge";
   } else if (isFacultyUser) {
     // If faculty, display initials/short name like GKC or KR
     const initials = user?.fullName
@@ -247,7 +254,7 @@ export default function Header({ user }: HeaderProps) {
           </div>
 
           <div className="space-y-1 text-xs font-semibold">
-            {isSuperAdmin && (
+            {(isSuperAdmin || isAcademicAdmin) && (
               <>
                 <Link
                   href="/dashboard"

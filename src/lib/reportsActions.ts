@@ -32,6 +32,15 @@ export async function getSectionStudentAttendanceReport(filter: ReportFilter) {
 
   if (!section) return { success: false, error: "Section not found" };
 
+  if (
+    session.allowedSchoolIds &&
+    session.allowedSchoolIds.length > 0 &&
+    section.program?.schoolId &&
+    !session.allowedSchoolIds.includes(section.program.schoolId)
+  ) {
+    return { success: false, error: "Access denied to sections outside your assigned schools" };
+  }
+
   // Fetch all sessions conducted for this section
   const sessionWhere: any = {
     sectionId: filter.sectionId,

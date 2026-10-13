@@ -31,12 +31,13 @@ export default async function DashboardPage() {
 
   const isSuperAdmin = session.roles.includes("SUPER_ADMIN");
   const isOfficeUser = session.roles.includes("OFFICE");
-  const isFacultyUser = session.roles.includes("FACULTY") && !isSuperAdmin && !isOfficeUser;
+  const isAcademicAdmin = session.roles.includes("ACADEMIC_ADMIN") || session.roles.includes("DEAN");
+  const isFacultyUser = session.roles.includes("FACULTY") && !isSuperAdmin && !isOfficeUser && !isAcademicAdmin;
 
   // =========================================================================
-  // VIEW A: SUPER ADMIN & OFFICE DASHBOARD
+  // VIEW A: SUPER ADMIN, OFFICE & ACADEMIC INCHARGE DASHBOARD
   // =========================================================================
-  if (isSuperAdmin || isOfficeUser) {
+  if (isSuperAdmin || isOfficeUser || isAcademicAdmin) {
     const allAdminCards = [
       {
         title: "Students",
@@ -120,9 +121,17 @@ export default async function DashboardPage() {
       },
     ];
 
-    const adminCards = isSuperAdmin
+    const adminCards = (isSuperAdmin || isAcademicAdmin)
       ? allAdminCards
       : allAdminCards.filter((c) => c.officeAllowed);
+
+    const greetingName = isSuperAdmin
+      ? "admin"
+      : isOfficeUser
+      ? "office"
+      : isAcademicAdmin
+      ? "1st Year Incharge"
+      : session.username;
 
     return (
       <div className="space-y-6">
@@ -132,7 +141,7 @@ export default async function DashboardPage() {
             Campus Management System
           </h2>
           <p className="text-sm sm:text-base text-slate-600 font-medium">
-            Welcome back, <strong className="text-blue-600 font-bold">admin</strong>. University Governance &amp; Attendance Command Center.
+            Welcome back, <strong className="text-blue-600 font-bold">{greetingName}</strong>. University Governance &amp; Attendance Command Center.
           </p>
         </div>
 

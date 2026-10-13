@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict mC1csXrxn1GBZ2kphxeOkSNBlQSH8WRW7u5CkPe6SbhH74n5dTp3m2342ILxGHE
+\restrict oCoMM8PL0eBrRBmwf7X3M0IhxeNswdCfrkNkdbwve2HdkP9QsFe9vOStmRxg69T
 
 -- Dumped from database version 16.15
 -- Dumped by pg_dump version 16.15
@@ -18,173 +18,6 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
-ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_userId_fkey";
-ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_schoolId_fkey";
-ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_roleId_fkey";
-ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_programId_fkey";
-ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_departmentId_fkey";
-ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_sectionId_fkey";
-ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_labBatchId_fkey";
-ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_facultyId_fkey";
-ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_assignmentId_fkey";
-ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_academicYearId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Subject" DROP CONSTRAINT IF EXISTS "Subject_departmentId_fkey";
-ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_subjectId_fkey";
-ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_regulationId_fkey";
-ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_programId_fkey";
-ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_academicYearId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Student" DROP CONSTRAINT IF EXISTS "Student_userId_fkey";
-ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_studentId_fkey";
-ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_sectionId_fkey";
-ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_programId_fkey";
-ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_academicYearId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Section" DROP CONSTRAINT IF EXISTS "Section_programId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Section" DROP CONSTRAINT IF EXISTS "Section_academicYearId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Program" DROP CONSTRAINT IF EXISTS "Program_schoolId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Program" DROP CONSTRAINT IF EXISTS "Program_regulationId_fkey";
-ALTER TABLE IF EXISTS ONLY public."LabBatch" DROP CONSTRAINT IF EXISTS "LabBatch_sectionId_fkey";
-ALTER TABLE IF EXISTS ONLY public."LabBatchStudent" DROP CONSTRAINT IF EXISTS "LabBatchStudent_studentId_fkey";
-ALTER TABLE IF EXISTS ONLY public."LabBatchStudent" DROP CONSTRAINT IF EXISTS "LabBatchStudent_labBatchId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Faculty" DROP CONSTRAINT IF EXISTS "Faculty_userId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Faculty" DROP CONSTRAINT IF EXISTS "Faculty_departmentId_fkey";
-ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_subjectOfferingId_fkey";
-ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_sectionId_fkey";
-ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_facultyId_fkey";
-ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_academicYearId_fkey";
-ALTER TABLE IF EXISTS ONLY public."Department" DROP CONSTRAINT IF EXISTS "Department_schoolId_fkey";
-ALTER TABLE IF EXISTS ONLY public."AuditLog" DROP CONSTRAINT IF EXISTS "AuditLog_userId_fkey";
-ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_sectionId_fkey";
-ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_recordedById_fkey";
-ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_labBatchId_fkey";
-ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_facultyId_fkey";
-ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_assignmentId_fkey";
-ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_academicYearId_fkey";
-ALTER TABLE IF EXISTS ONLY public."AttendanceRecord" DROP CONSTRAINT IF EXISTS "AttendanceRecord_studentId_fkey";
-ALTER TABLE IF EXISTS ONLY public."AttendanceRecord" DROP CONSTRAINT IF EXISTS "AttendanceRecord_sessionId_fkey";
-ALTER TABLE IF EXISTS ONLY public."AttendanceAuditLog" DROP CONSTRAINT IF EXISTS "AttendanceAuditLog_sessionId_fkey";
-ALTER TABLE IF EXISTS ONLY public."AttendanceAuditLog" DROP CONSTRAINT IF EXISTS "AttendanceAuditLog_changedById_fkey";
-DROP INDEX IF EXISTS public."User_username_key";
-DROP INDEX IF EXISTS public."User_email_key";
-DROP INDEX IF EXISTS public."UserRole_userId_roleId_schoolId_departmentId_programId_key";
-DROP INDEX IF EXISTS public."UserRole_userId_idx";
-DROP INDEX IF EXISTS public."UserRole_roleId_idx";
-DROP INDEX IF EXISTS public."TimetableEntry_sectionId_dayOfWeek_idx";
-DROP INDEX IF EXISTS public."TimetableEntry_facultyId_dayOfWeek_idx";
-DROP INDEX IF EXISTS public."Subject_departmentId_idx";
-DROP INDEX IF EXISTS public."Subject_code_key";
-DROP INDEX IF EXISTS public."Subject_code_idx";
-DROP INDEX IF EXISTS public."SubjectOffering_subjectId_idx";
-DROP INDEX IF EXISTS public."SubjectOffering_regulationId_idx";
-DROP INDEX IF EXISTS public."SubjectOffering_programId_year_semester_idx";
-DROP INDEX IF EXISTS public."SubjectOffering_academicYearId_programId_subjectId_year_sem_key";
-DROP INDEX IF EXISTS public."SubjectOffering_academicYearId_idx";
-DROP INDEX IF EXISTS public."Student_userId_key";
-DROP INDEX IF EXISTS public."Student_status_idx";
-DROP INDEX IF EXISTS public."Student_rollNumber_key";
-DROP INDEX IF EXISTS public."Student_rollNumber_idx";
-DROP INDEX IF EXISTS public."Student_registerNumber_key";
-DROP INDEX IF EXISTS public."StudentEnrollment_studentId_idx";
-DROP INDEX IF EXISTS public."StudentEnrollment_studentId_academicYearId_semester_key";
-DROP INDEX IF EXISTS public."StudentEnrollment_sectionId_idx";
-DROP INDEX IF EXISTS public."StudentEnrollment_programId_year_semester_idx";
-DROP INDEX IF EXISTS public."StudentEnrollment_academicYearId_idx";
-DROP INDEX IF EXISTS public."Section_year_semester_idx";
-DROP INDEX IF EXISTS public."Section_programId_idx";
-DROP INDEX IF EXISTS public."Section_academicYearId_programId_year_semester_name_key";
-DROP INDEX IF EXISTS public."Section_academicYearId_idx";
-DROP INDEX IF EXISTS public."School_code_key";
-DROP INDEX IF EXISTS public."School_code_idx";
-DROP INDEX IF EXISTS public."Role_name_key";
-DROP INDEX IF EXISTS public."Regulation_code_key";
-DROP INDEX IF EXISTS public."Regulation_code_idx";
-DROP INDEX IF EXISTS public."Program_schoolId_idx";
-DROP INDEX IF EXISTS public."Program_regulationId_idx";
-DROP INDEX IF EXISTS public."Program_code_key";
-DROP INDEX IF EXISTS public."Program_code_idx";
-DROP INDEX IF EXISTS public."LabBatch_sectionId_idx";
-DROP INDEX IF EXISTS public."LabBatch_sectionId_batchNumber_key";
-DROP INDEX IF EXISTS public."LabBatchStudent_studentId_idx";
-DROP INDEX IF EXISTS public."LabBatchStudent_labBatchId_studentId_key";
-DROP INDEX IF EXISTS public."LabBatchStudent_labBatchId_idx";
-DROP INDEX IF EXISTS public."Faculty_userId_key";
-DROP INDEX IF EXISTS public."Faculty_shortName_idx";
-DROP INDEX IF EXISTS public."Faculty_employeeId_key";
-DROP INDEX IF EXISTS public."Faculty_employeeId_idx";
-DROP INDEX IF EXISTS public."Faculty_departmentId_idx";
-DROP INDEX IF EXISTS public."FacultySubjectAssignment_subjectOfferingId_idx";
-DROP INDEX IF EXISTS public."FacultySubjectAssignment_sectionId_idx";
-DROP INDEX IF EXISTS public."FacultySubjectAssignment_facultyId_idx";
-DROP INDEX IF EXISTS public."FacultySubjectAssignment_academicYearId_idx";
-DROP INDEX IF EXISTS public."FacultySubjectAssignment_academicYearId_facultyId_subjectOf_key";
-DROP INDEX IF EXISTS public."Department_schoolId_idx";
-DROP INDEX IF EXISTS public."Department_code_key";
-DROP INDEX IF EXISTS public."Department_code_idx";
-DROP INDEX IF EXISTS public."AuditLog_userId_idx";
-DROP INDEX IF EXISTS public."AuditLog_timestamp_idx";
-DROP INDEX IF EXISTS public."AuditLog_resource_resourceId_idx";
-DROP INDEX IF EXISTS public."AuditLog_action_idx";
-DROP INDEX IF EXISTS public."AttendanceSession_sectionId_sessionDate_idx";
-DROP INDEX IF EXISTS public."AttendanceSession_facultyId_sessionDate_idx";
-DROP INDEX IF EXISTS public."AttendanceSession_assignmentId_idx";
-DROP INDEX IF EXISTS public."AttendanceSession_academicYearId_sectionId_assignmentId_ses_key";
-DROP INDEX IF EXISTS public."AttendanceSession_academicYearId_idx";
-DROP INDEX IF EXISTS public."AttendanceRecord_studentId_status_idx";
-DROP INDEX IF EXISTS public."AttendanceRecord_sessionId_studentId_key";
-DROP INDEX IF EXISTS public."AttendanceRecord_sessionId_idx";
-DROP INDEX IF EXISTS public."AttendanceAuditLog_studentId_idx";
-DROP INDEX IF EXISTS public."AttendanceAuditLog_sessionId_idx";
-DROP INDEX IF EXISTS public."AttendanceAuditLog_changedById_idx";
-DROP INDEX IF EXISTS public."AcademicYear_isCurrent_idx";
-DROP INDEX IF EXISTS public."AcademicYear_code_key";
-ALTER TABLE IF EXISTS ONLY public."User" DROP CONSTRAINT IF EXISTS "User_pkey";
-ALTER TABLE IF EXISTS ONLY public."UserRole" DROP CONSTRAINT IF EXISTS "UserRole_pkey";
-ALTER TABLE IF EXISTS ONLY public."TimetableEntry" DROP CONSTRAINT IF EXISTS "TimetableEntry_pkey";
-ALTER TABLE IF EXISTS ONLY public."Subject" DROP CONSTRAINT IF EXISTS "Subject_pkey";
-ALTER TABLE IF EXISTS ONLY public."SubjectOffering" DROP CONSTRAINT IF EXISTS "SubjectOffering_pkey";
-ALTER TABLE IF EXISTS ONLY public."Student" DROP CONSTRAINT IF EXISTS "Student_pkey";
-ALTER TABLE IF EXISTS ONLY public."StudentEnrollment" DROP CONSTRAINT IF EXISTS "StudentEnrollment_pkey";
-ALTER TABLE IF EXISTS ONLY public."Section" DROP CONSTRAINT IF EXISTS "Section_pkey";
-ALTER TABLE IF EXISTS ONLY public."School" DROP CONSTRAINT IF EXISTS "School_pkey";
-ALTER TABLE IF EXISTS ONLY public."Role" DROP CONSTRAINT IF EXISTS "Role_pkey";
-ALTER TABLE IF EXISTS ONLY public."Regulation" DROP CONSTRAINT IF EXISTS "Regulation_pkey";
-ALTER TABLE IF EXISTS ONLY public."Program" DROP CONSTRAINT IF EXISTS "Program_pkey";
-ALTER TABLE IF EXISTS ONLY public."LabBatch" DROP CONSTRAINT IF EXISTS "LabBatch_pkey";
-ALTER TABLE IF EXISTS ONLY public."LabBatchStudent" DROP CONSTRAINT IF EXISTS "LabBatchStudent_pkey";
-ALTER TABLE IF EXISTS ONLY public."Faculty" DROP CONSTRAINT IF EXISTS "Faculty_pkey";
-ALTER TABLE IF EXISTS ONLY public."FacultySubjectAssignment" DROP CONSTRAINT IF EXISTS "FacultySubjectAssignment_pkey";
-ALTER TABLE IF EXISTS ONLY public."Department" DROP CONSTRAINT IF EXISTS "Department_pkey";
-ALTER TABLE IF EXISTS ONLY public."AuditLog" DROP CONSTRAINT IF EXISTS "AuditLog_pkey";
-ALTER TABLE IF EXISTS ONLY public."AttendanceSession" DROP CONSTRAINT IF EXISTS "AttendanceSession_pkey";
-ALTER TABLE IF EXISTS ONLY public."AttendanceRecord" DROP CONSTRAINT IF EXISTS "AttendanceRecord_pkey";
-ALTER TABLE IF EXISTS ONLY public."AttendanceAuditLog" DROP CONSTRAINT IF EXISTS "AttendanceAuditLog_pkey";
-ALTER TABLE IF EXISTS ONLY public."AcademicYear" DROP CONSTRAINT IF EXISTS "AcademicYear_pkey";
-DROP TABLE IF EXISTS public."UserRole";
-DROP TABLE IF EXISTS public."User";
-DROP TABLE IF EXISTS public."TimetableEntry";
-DROP TABLE IF EXISTS public."SubjectOffering";
-DROP TABLE IF EXISTS public."Subject";
-DROP TABLE IF EXISTS public."StudentEnrollment";
-DROP TABLE IF EXISTS public."Student";
-DROP TABLE IF EXISTS public."Section";
-DROP TABLE IF EXISTS public."School";
-DROP TABLE IF EXISTS public."Role";
-DROP TABLE IF EXISTS public."Regulation";
-DROP TABLE IF EXISTS public."Program";
-DROP TABLE IF EXISTS public."LabBatchStudent";
-DROP TABLE IF EXISTS public."LabBatch";
-DROP TABLE IF EXISTS public."FacultySubjectAssignment";
-DROP TABLE IF EXISTS public."Faculty";
-DROP TABLE IF EXISTS public."Department";
-DROP TABLE IF EXISTS public."AuditLog";
-DROP TABLE IF EXISTS public."AttendanceSession";
-DROP TABLE IF EXISTS public."AttendanceRecord";
-DROP TABLE IF EXISTS public."AttendanceAuditLog";
-DROP TABLE IF EXISTS public."AcademicYear";
-DROP TYPE IF EXISTS public."SubjectType";
-DROP TYPE IF EXISTS public."StudentStatus";
-DROP TYPE IF EXISTS public."SessionType";
-DROP TYPE IF EXISTS public."RoleType";
-DROP TYPE IF EXISTS public."AttendanceStatus";
 --
 -- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: pg_database_owner
 --
@@ -85887,6 +85720,9 @@ cmv67c1e00007irlcryk3hpt1	cmv5cxakt000110wnsmb2rfxg	LOGOUT	User	cmv5cxakt000110w
 cmv67cb800009irlcrfpb0w0h	cmuzp7hsc000bbynpr08m4i25	LOGIN	User	cmuzp7hsc000bbynpr08m4i25	::1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36	SUCCESS	{"roles": ["SUPER_ADMIN"], "device": "Windows • Google Chrome (Desktop)", "description": "User \\"GVPIHLR Super Administrator\\" (admin) signed in successfully as SUPER_ADMIN"}	2026-10-13 04:49:51.312
 cmv68p4ow0001144frr2xgwgg	cmuzp7hsc000bbynpr08m4i25	LOGOUT	User	cmuzp7hsc000bbynpr08m4i25	\N	\N	SUCCESS	{}	2026-10-13 05:27:48.992
 cmv68r9970003144fcyyjxm04	cmuzp7hsc000bbynpr08m4i25	LOGIN	User	cmuzp7hsc000bbynpr08m4i25	::1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36	SUCCESS	{"roles": ["SUPER_ADMIN"], "device": "Windows • Google Chrome (Desktop)", "description": "User \\"GVPIHLR Super Administrator\\" (admin) signed in successfully as SUPER_ADMIN"}	2026-10-13 05:29:28.22
+cmv6btb4r0001dv6o3old3of5	cmv6bio1q0000wlgnrfs3tz71	LOGIN	User	cmv6bio1q0000wlgnrfs3tz71	::1	Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.19041.6456	SUCCESS	{"roles": ["DEAN", "DEAN", "DEAN", "FACULTY", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN"], "device": "Windows • Web Browser (Desktop)", "description": "User \\"First Year Incharge\\" (firstyearincharge) signed in successfully as DEAN, DEAN, DEAN, FACULTY, ACADEMIC_ADMIN, ACADEMIC_ADMIN, ACADEMIC_ADMIN"}	2026-10-13 06:55:02.812
+cmv6btg7j0003dv6o9w7551y7	cmv6bio250001wlgnf01b2c0s	LOGIN	User	cmv6bio250001wlgnf01b2c0s	::1	Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.19041.6456	SUCCESS	{"roles": ["DEAN", "DEAN", "DEAN", "FACULTY", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN"], "device": "Windows • Web Browser (Desktop)", "description": "User \\"First Year Incharge\\" (incharge) signed in successfully as DEAN, DEAN, DEAN, FACULTY, ACADEMIC_ADMIN, ACADEMIC_ADMIN, ACADEMIC_ADMIN"}	2026-10-13 06:55:09.391
+cmv6btmpj0005dv6oubjqhpeu	cmv6bio1q0000wlgnrfs3tz71	LOGIN	User	cmv6bio1q0000wlgnrfs3tz71	::1	Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.19041.6456	SUCCESS	{"roles": ["DEAN", "DEAN", "DEAN", "FACULTY", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN", "ACADEMIC_ADMIN"], "device": "Windows • Web Browser (Desktop)", "description": "User \\"First Year Incharge\\" (firstyearincharge) signed in successfully as DEAN, DEAN, DEAN, FACULTY, ACADEMIC_ADMIN, ACADEMIC_ADMIN, ACADEMIC_ADMIN"}	2026-10-13 06:55:17.816
 \.
 
 
@@ -85994,6 +85830,8 @@ cmuzu9ore00dwydphdzdynqdz	cmuzu9ore00dsydph0i05x8t6	GVPIHLR-NVSK	NVSK	Assistant 
 cmuzu9org00e1ydph8dfzfdtb	cmuzu9orf00dxydphmg1iayhn	GVPIHLR-PSSA	PSSA	Assistant Professor	Ph.D / M.Tech	cmuzu9ogs000pydphal3o60px	\N	t	2026-10-08 17:57:16.828	2026-10-08 17:59:14.784	\N
 cmuzu9orh00e6ydphwswc87v0	cmuzu9org00e2ydphu05asr0i	GVPIHLR-VVVSN	VVVSN	Assistant Professor	Ph.D / M.Tech	cmuzu9ogs000pydphal3o60px	\N	t	2026-10-08 17:57:16.829	2026-10-08 17:59:14.785	\N
 cmuzu9oq60091ydphj2suogg8	cmuzu9oq5008xydph5s3lk30w	GVPIHLR-IRS	IRS	Assistant Professor - SG	Ph.D / M.Tech	cmuzu9ogt000tydphzkxjiy1r	\N	t	2026-10-08 17:57:16.782	2026-10-08 17:59:14.748	\N
+cmv6bio270003wlgn7pl9nji9	cmv6bio1q0000wlgnrfs3tz71	GVPIHLR-FYI-001	FYI	First Year Incharge / Professor	\N	cmuzu9ogs000nydph6e8x5r63	\N	t	2026-10-13 06:46:46.351	2026-10-13 06:46:46.351	\N
+cmv6bio2c0005wlgn6acplm3z	cmv6bio250001wlgnf01b2c0s	GVPIHLR-FYI-002	FYI-ALIAS	First Year Incharge / Professor	\N	cmuzu9ogs000nydph6e8x5r63	\N	t	2026-10-13 06:46:46.356	2026-10-13 06:46:46.356	\N
 \.
 
 
@@ -91885,6 +91723,8 @@ cmuzu9oox004rydph03f490gx	GSK	gsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeem
 cmv0jr1am002pmzmyhq3k4q28	26UECHE0001	26ueche0001@student.gvpihlr.edu.in	$2a$10$HZMHHs5f2Zp0J2Ce0aM8FOjzTBDfg6R6cKGzdtKRsz0d3zm3o4CYO	ADIRAJU SRI NAGA PRADYUMNA	8019888678	t	f	2026-10-12 14:58:16.588	0	\N	2026-10-09 05:50:36.599	2026-10-12 14:58:16.589	\N
 cmv5cxakt000110wnsmb2rfxg	office	office@gvpihlr.edu.in	$2a$12$eHRDQeKY5VRYfvRvea56qe.3rUAtZNlnupZqsbbT635dtHW221Z1C	GVPIHLR Central Academic Office	+91 891 2739507	t	f	2026-10-13 04:49:30.789	0	\N	2026-10-12 14:38:22.157	2026-10-13 04:49:30.79	\N
 cmuzp7hsc000bbynpr08m4i25	admin	admin@gvpihlr.edu.in	$2a$12$olLcQ23IA0/wz/9ao901q.un91tdowzuc1DUEvtNvPsUZ2sGYuR5q	GVPIHLR Super Administrator	+91 9876543210	t	f	2026-10-13 05:29:28.203	0	\N	2026-10-08 15:35:36.396	2026-10-13 05:29:28.204	\N
+cmv6bio250001wlgnf01b2c0s	incharge	incharge@gvpihlr.edu.in	$2a$12$DACBbHg15IyRSP8lHGwRAe1l4CbSFlZuQ.03oE3eOaTalwW7Q/Ltu	First Year Incharge	+91 9876543211	t	f	2026-10-13 06:55:09.373	0	\N	2026-10-13 06:46:46.35	2026-10-13 06:55:09.374	\N
+cmv6bio1q0000wlgnrfs3tz71	firstyearincharge	firstyearincharge@gvpihlr.edu.in	$2a$12$DACBbHg15IyRSP8lHGwRAe1l4CbSFlZuQ.03oE3eOaTalwW7Q/Ltu	First Year Incharge	+91 9876543211	t	f	2026-10-13 06:55:17.799	0	\N	2026-10-13 06:46:46.335	2026-10-13 06:55:17.801	\N
 \.
 
 
@@ -93138,6 +92978,20 @@ cmv0lfkf8071810e0amqfu59b	cmv0lfkf5070f10e02dl3oadh	cmuzp7hn90005bynp42pbkgxh	\N
 cmv0lfkge07dg10e0la8pxtpa	cmv0lfkgc07d010e0uug9oy7h	cmuzp7hn90005bynp42pbkgxh	\N	\N	cmuzuc7j5001r80ktgbhr8k92	2026-10-09 06:37:40.815
 cmv0lfkgf07e210e0gbtddmrm	cmv0lfkgd07d910e0u3wd3ztc	cmuzp7hn90005bynp42pbkgxh	\N	\N	cmuzuc7j5001r80ktgbhr8k92	2026-10-09 06:37:40.815
 cmv5cxmpg0003k3hx3f2a13ss	cmv5cxakt000110wnsmb2rfxg	cmuzp7hnd000abynpvwgf06k3	\N	\N	\N	2026-10-12 14:38:37.876
+cmv6bio2g0007wlgndf1nrjib	cmv6bio1q0000wlgnrfs3tz71	cmuzp7hnb0007bynpyw0p6bb1	cmuzu9oge0002ydphghgaadg6	\N	\N	2026-10-13 06:46:46.36
+cmv6bio2h0009wlgn5v0lo6jw	cmv6bio1q0000wlgnrfs3tz71	cmuzp7hn60002bynp2eci90t2	cmuzu9oge0002ydphghgaadg6	\N	\N	2026-10-13 06:46:46.362
+cmv6bio2i000bwlgngyo2fu7j	cmv6bio1q0000wlgnrfs3tz71	cmuzp7hnb0007bynpyw0p6bb1	cmuzu9ogg0003ydphf96cgbgs	\N	\N	2026-10-13 06:46:46.362
+cmv6bio2i000dwlgnjasvk085	cmv6bio1q0000wlgnrfs3tz71	cmuzp7hn60002bynp2eci90t2	cmuzu9ogg0003ydphf96cgbgs	\N	\N	2026-10-13 06:46:46.363
+cmv6bio2j000fwlgn6wwwpv4u	cmv6bio1q0000wlgnrfs3tz71	cmuzp7hnb0007bynpyw0p6bb1	cmuzu9ogg0004ydph6vagboyw	\N	\N	2026-10-13 06:46:46.363
+cmv6bio2j000hwlgnujkzbhk1	cmv6bio1q0000wlgnrfs3tz71	cmuzp7hn60002bynp2eci90t2	cmuzu9ogg0004ydph6vagboyw	\N	\N	2026-10-13 06:46:46.364
+cmv6bio2k000jwlgnnabbs38a	cmv6bio1q0000wlgnrfs3tz71	cmuzp7hn80004bynp6zohw7t1	\N	\N	\N	2026-10-13 06:46:46.364
+cmv6bio2l000lwlgn16dq4ous	cmv6bio250001wlgnf01b2c0s	cmuzp7hnb0007bynpyw0p6bb1	cmuzu9oge0002ydphghgaadg6	\N	\N	2026-10-13 06:46:46.365
+cmv6bio2l000nwlgnenube91t	cmv6bio250001wlgnf01b2c0s	cmuzp7hn60002bynp2eci90t2	cmuzu9oge0002ydphghgaadg6	\N	\N	2026-10-13 06:46:46.365
+cmv6bio2l000pwlgny98j7rad	cmv6bio250001wlgnf01b2c0s	cmuzp7hnb0007bynpyw0p6bb1	cmuzu9ogg0003ydphf96cgbgs	\N	\N	2026-10-13 06:46:46.366
+cmv6bio2m000rwlgnqr6l72ek	cmv6bio250001wlgnf01b2c0s	cmuzp7hn60002bynp2eci90t2	cmuzu9ogg0003ydphf96cgbgs	\N	\N	2026-10-13 06:46:46.366
+cmv6bio2m000twlgn92zpmxi3	cmv6bio250001wlgnf01b2c0s	cmuzp7hnb0007bynpyw0p6bb1	cmuzu9ogg0004ydph6vagboyw	\N	\N	2026-10-13 06:46:46.366
+cmv6bio2m000vwlgne2cbgow2	cmv6bio250001wlgnf01b2c0s	cmuzp7hn60002bynp2eci90t2	cmuzu9ogg0004ydph6vagboyw	\N	\N	2026-10-13 06:46:46.367
+cmv6bio2n000xwlgnmxpymarx	cmv6bio250001wlgnf01b2c0s	cmuzp7hn80004bynp6zohw7t1	\N	\N	\N	2026-10-13 06:46:46.367
 \.
 
 
@@ -94192,5 +94046,5 @@ ALTER TABLE ONLY public."UserRole"
 -- PostgreSQL database dump complete
 --
 
-\unrestrict mC1csXrxn1GBZ2kphxeOkSNBlQSH8WRW7u5CkPe6SbhH74n5dTp3m2342ILxGHE
+\unrestrict oCoMM8PL0eBrRBmwf7X3M0IhxeNswdCfrkNkdbwve2HdkP9QsFe9vOStmRxg69T
 

@@ -29,22 +29,32 @@ export default async function AdminTimetablePage() {
   const session = await getCurrentSession();
   const isSuperAdminUser = session?.roles.includes("SUPER_ADMIN");
   const isOfficeUser = session?.roles.includes("OFFICE");
+  const isAcademicAdminUser = session?.roles.includes("ACADEMIC_ADMIN") || session?.roles.includes("DEAN");
 
-  if (!session || (!isSuperAdminUser && !isOfficeUser)) {
+  if (!session || (!isSuperAdminUser && !isOfficeUser && !isAcademicAdminUser)) {
     redirect("/dashboard");
   }
+
+  const hasSchoolScope = !!(session.allowedSchoolIds && session.allowedSchoolIds.length > 0);
+  const scopedSchoolIds = session.allowedSchoolIds || [];
 
   // Load active sections and their timetable entries
   const [sections, timetableEntries] = await Promise.all([
     prisma.section.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        ...(hasSchoolScope ? { program: { schoolId: { in: scopedSchoolIds } } } : {}),
+      },
       include: {
         program: true,
       },
       orderBy: [{ program: { name: "asc" } }, { name: "asc" }],
     }),
     prisma.timetableEntry.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        ...(hasSchoolScope ? { section: { program: { schoolId: { in: scopedSchoolIds } } } } : {}),
+      },
       include: {
         assignment: {
           include: {

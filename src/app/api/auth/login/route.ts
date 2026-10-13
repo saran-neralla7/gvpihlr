@@ -110,6 +110,9 @@ export async function POST(req: Request) {
     });
 
     const roleNames = user.userRoles.map((ur) => ur.role.name);
+    const allowedSchoolIds = Array.from(
+      new Set(user.userRoles.map((ur) => ur.schoolId).filter((id): id is string => Boolean(id)))
+    );
 
     const sessionPayload: SessionPayload = {
       userId: user.id,
@@ -118,6 +121,7 @@ export async function POST(req: Request) {
       roles: roleNames,
       facultyId: user.facultyProfile?.id || null,
       studentId: user.studentProfile?.id || null,
+      allowedSchoolIds: allowedSchoolIds.length > 0 ? allowedSchoolIds : undefined,
       exp: Math.floor(Date.now() / 1000) + 12 * 3600, // 12 hours
     };
 

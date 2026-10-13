@@ -10,13 +10,27 @@ export default async function AdminStudentsPage() {
   const session = await getCurrentSession();
   const isSuperAdminUser = session?.roles.includes("SUPER_ADMIN");
   const isOfficeUser = session?.roles.includes("OFFICE");
+  const isAcademicAdminUser = session?.roles.includes("ACADEMIC_ADMIN") || session?.roles.includes("DEAN");
 
-  if (!session || (!isSuperAdminUser && !isOfficeUser)) {
+  if (!session || (!isSuperAdminUser && !isOfficeUser && !isAcademicAdminUser)) {
     redirect("/dashboard");
   }
 
+  const hasSchoolScope = !!(session.allowedSchoolIds && session.allowedSchoolIds.length > 0);
+  const scopedSchoolIds = session.allowedSchoolIds || [];
+
   const [students, departments, programs, sections, schools] = await Promise.all([
     prisma.student.findMany({
+      where: hasSchoolScope
+        ? {
+            enrollments: {
+              some: {
+                isCurrent: true,
+                program: { schoolId: { in: scopedSchoolIds } },
+              },
+            },
+          }
+        : undefined,
       include: {
         user: true,
         enrollments: {
@@ -35,10 +49,12 @@ export default async function AdminStudentsPage() {
       orderBy: { name: "asc" },
     }),
     prisma.program.findMany({
+      where: hasSchoolScope ? { schoolId: { in: scopedSchoolIds } } : undefined,
       include: { school: true },
       orderBy: { name: "asc" },
     }),
     prisma.section.findMany({
+      where: hasSchoolScope ? { program: { schoolId: { in: scopedSchoolIds } } } : undefined,
       include: {
         program: {
           include: { school: true },
@@ -47,6 +63,7 @@ export default async function AdminStudentsPage() {
       orderBy: [{ program: { code: "asc" } }, { name: "asc" }],
     }),
     prisma.school.findMany({
+      where: hasSchoolScope ? { id: { in: scopedSchoolIds } } : undefined,
       orderBy: { name: "asc" },
     }),
   ]);
@@ -58,7 +75,7 @@ export default async function AdminStudentsPage() {
       programs={programs}
       sections={sections}
       schools={schools}
-      canDelete={isSuperAdminUser}
+      canDelete={isSuperAdminUser || isAcademicAdminUser}
     />
   );
 }

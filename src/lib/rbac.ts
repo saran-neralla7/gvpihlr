@@ -4,7 +4,20 @@ import prisma from "./prisma";
 
 export function isSuperAdmin(session: SessionPayload | null): boolean {
   if (!session) return false;
-  return session.roles.includes(RoleType.SUPER_ADMIN);
+  return (
+    session.roles.includes(RoleType.SUPER_ADMIN) ||
+    session.roles.includes(RoleType.ACADEMIC_ADMIN)
+  );
+}
+
+export function isAcademicAdmin(session: SessionPayload | null): boolean {
+  if (!session) return false;
+  return (
+    session.roles.includes(RoleType.SUPER_ADMIN) ||
+    session.roles.includes(RoleType.OFFICE) ||
+    session.roles.includes(RoleType.ACADEMIC_ADMIN) ||
+    session.roles.includes(RoleType.DEAN)
+  );
 }
 
 export function isFaculty(session: SessionPayload | null): boolean {
@@ -17,6 +30,7 @@ export function isDeanOrDirector(session: SessionPayload | null): boolean {
   return (
     session.roles.includes(RoleType.DEAN) ||
     session.roles.includes(RoleType.DIRECTOR) ||
+    session.roles.includes(RoleType.ACADEMIC_ADMIN) ||
     isSuperAdmin(session)
   );
 }

@@ -20,15 +20,19 @@ export default async function ReportsPage() {
 
   const isSuperAdmin =
     session.roles.includes("SUPER_ADMIN") ||
-    session.roles.includes("OFFICE");
+    session.roles.includes("OFFICE") ||
+    session.roles.includes("ACADEMIC_ADMIN") ||
+    session.roles.includes("DEAN");
 
   // Load active academic year
   const currentAY = await prisma.academicYear.findFirst({
     where: { isCurrent: true, isActive: true },
   });
 
+  const hasSchoolScope = !!(session.allowedSchoolIds && session.allowedSchoolIds.length > 0);
+
   // Load all active sections with program and school
-  const [sections, schools, programs] = await Promise.all([
+  const [allSections, allSchools, allPrograms] = await Promise.all([
     prisma.section.findMany({
       where: {
         academicYearId: currentAY?.id,
@@ -54,6 +58,18 @@ export default async function ReportsPage() {
       orderBy: { name: "asc" },
     }),
   ]);
+
+  const sections = hasSchoolScope
+    ? allSections.filter((s) => s.program?.schoolId && session.allowedSchoolIds!.includes(s.program.schoolId))
+    : allSections;
+
+  const schools = hasSchoolScope
+    ? allSchools.filter((s) => session.allowedSchoolIds!.includes(s.id))
+    : allSchools;
+
+  const programs = hasSchoolScope
+    ? allPrograms.filter((p) => p.schoolId && session.allowedSchoolIds!.includes(p.schoolId))
+    : allPrograms;
 
   const subjects = await prisma.subject.findMany({
     where: { isActive: true },

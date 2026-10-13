@@ -29,6 +29,14 @@ export async function getFacultyClasses(facultyId?: string) {
     whereClause.facultyId = targetFacultyId;
   }
 
+  if (session.allowedSchoolIds && session.allowedSchoolIds.length > 0) {
+    whereClause.section = {
+      program: {
+        schoolId: { in: session.allowedSchoolIds },
+      },
+    };
+  }
+
   const assignments = await prisma.facultySubjectAssignment.findMany({
     where: whereClause,
     include: {

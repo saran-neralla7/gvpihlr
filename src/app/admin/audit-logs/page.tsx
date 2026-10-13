@@ -8,7 +8,10 @@ export const dynamic = "force-dynamic";
 
 export default async function AuditLogsPage() {
   const session = await getCurrentSession();
-  const isSuperAdmin = session?.roles.includes("SUPER_ADMIN");
+  const isSuperAdmin =
+    session?.roles.includes("SUPER_ADMIN") ||
+    session?.roles.includes("ACADEMIC_ADMIN") ||
+    session?.roles.includes("DEAN");
 
   if (!session || !isSuperAdmin) {
     redirect("/dashboard");

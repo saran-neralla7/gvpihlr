@@ -29,10 +29,16 @@ export async function GET(req: Request) {
     const startDate = rawStart && rawStart.trim() !== "" ? rawStart.trim() : undefined;
     const rawEnd = searchParams.get("endDate");
     const endDate = rawEnd && rawEnd.trim() !== "" ? rawEnd.trim() : undefined;
+    const rawSchool = searchParams.get("schoolId");
+    const schoolId = rawSchool && rawSchool !== "ALL" && rawSchool.trim() !== "" ? rawSchool.trim() : undefined;
+    const rawProgram = searchParams.get("programId");
+    const programId = rawProgram && rawProgram !== "ALL" && rawProgram.trim() !== "" ? rawProgram.trim() : undefined;
 
     const report = await getAllSectionsAttendanceReport({
       startDate,
       endDate,
+      schoolId,
+      programId,
     });
 
     if (!report.success) {

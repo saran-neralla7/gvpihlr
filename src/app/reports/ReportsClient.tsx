@@ -1204,6 +1204,27 @@ export default function ReportsClient({
         </div>
 
         <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full lg:w-auto">
+          {/* Quick Date Range on Banner */}
+          <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 rounded-2xl px-3 py-2 text-xs text-white">
+            <Calendar className="w-4 h-4 text-blue-200" />
+            <span className="text-[10px] uppercase font-bold text-blue-200">Window:</span>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="bg-transparent text-white font-bold focus:outline-none text-xs [color-scheme:dark]"
+              title="Attendance Window Start Date"
+            />
+            <span className="text-white/60 font-bold">to</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="bg-transparent text-white font-bold focus:outline-none text-xs [color-scheme:dark]"
+              title="Attendance Window End Date"
+            />
+          </div>
+
           {/* Button 1: Consolidated All Sections */}
           <button
             type="button"
@@ -2185,7 +2206,7 @@ export default function ReportsClient({
                     <th className="border border-slate-200 px-3 py-2.5 text-center font-bold w-28">
                       Percentage
                     </th>
-                    <th className="border border-slate-200 px-4 py-2.5 text-center font-bold w-36">
+                    <th className="border border-slate-200 px-4 py-2.5 text-center font-bold w-36 print:hidden">
                       Eligibility Status
                     </th>
                   </tr>
@@ -2239,7 +2260,7 @@ export default function ReportsClient({
                               <span className="text-slate-400">—</span>
                             )}
                           </td>
-                          <td className="border border-slate-200 px-4 py-2 text-center">
+                          <td className="border border-slate-200 px-4 py-2 text-center print:hidden">
                             {isZeroConducted ? (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
                                 Not Started

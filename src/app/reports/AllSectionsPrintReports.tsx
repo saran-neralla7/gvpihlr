@@ -1,18 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Printer,
   X,
   FileText,
-  Layers,
-  CheckCircle2,
-  AlertTriangle,
-  Building2,
   Calendar,
   Users,
-  TrendingUp,
   Percent,
+  LayoutGrid,
+  Sparkles,
 } from "lucide-react";
 import type { AllSectionsReportResponse, AllSectionsReportItem } from "@/lib/reportsActions";
 
@@ -27,21 +24,94 @@ const COLLEGE_SUBTITLE =
   "(Deemed to be University under Distinct Category under Section 3 of the UGC Act, 1956) • Visakhapatnam";
 
 export default function AllSectionsPrintReports({
-  data,
+  data: initialData,
   initialMode = "consolidated",
   onClose,
 }: AllSectionsPrintReportsProps) {
+  const [reportData, setReportData] = useState<AllSectionsReportResponse>(initialData);
   const [reportType, setReportType] = useState<"consolidated" | "subject_wise">(initialMode);
+  
+  // Scoped Filters
+  const [selectedSchoolFilter, setSelectedSchoolFilter] = useState<string>("ALL");
+  const [selectedProgramFilter, setSelectedProgramFilter] = useState<string>("ALL");
   const [selectedSectionFilter, setSelectedSectionFilter] = useState<string>("ALL");
+
+  // Date Range state
+  const [fromDate, setFromDate] = useState<string>(
+    initialData.dateRange?.startDate || "2026-09-22"
+  );
+  const [toDate, setToDate] = useState<string>(
+    initialData.dateRange?.endDate || "2026-10-07"
+  );
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+
+  // Fetch updated data when user clicks "Apply Dates"
+  const handleRefreshReportData = async () => {
+    setIsRefreshing(true);
+    try {
+      const params = new URLSearchParams();
+      if (fromDate) params.append("startDate", fromDate);
+      if (toDate) params.append("endDate", toDate);
+      if (selectedSchoolFilter !== "ALL") params.append("schoolId", selectedSchoolFilter);
+      if (selectedProgramFilter !== "ALL") params.append("programId", selectedProgramFilter);
+
+      const res = await fetch(`/api/reports/all-sections?${params.toString()}`);
+      const result = await res.json();
+      if (result && result.success) {
+        setReportData(result);
+      } else {
+        alert("Failed to load reports for the selected dates: " + (result?.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error("Error refreshing reports:", err);
+      alert("Error refreshing reports for selected dates.");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const handlePrint = () => {
     window.print();
   };
 
-  const sectionsToDisplay =
-    selectedSectionFilter === "ALL"
-      ? data.sections
-      : data.sections.filter((s) => s.sectionId === selectedSectionFilter);
+  // Cascaded list of programs based on selected school
+  const filteredProgramsList = useMemo(() => {
+    const progs = reportData.availablePrograms || [];
+    if (selectedSchoolFilter === "ALL") return progs;
+    return progs.filter((p) => p.schoolId === selectedSchoolFilter);
+  }, [reportData.availablePrograms, selectedSchoolFilter]);
+
+  // Sections matching active school, program, and section dropdowns
+  const matchingSections = useMemo(() => {
+    return reportData.sections.filter((sec) => {
+      if (selectedSchoolFilter !== "ALL") {
+        const prog = (reportData.availablePrograms || []).find((p) => p.name === sec.programName || p.code === sec.programCode);
+        if (prog && prog.schoolId !== selectedSchoolFilter) return false;
+      }
+      if (selectedProgramFilter !== "ALL") {
+        const prog = (reportData.availablePrograms || []).find((p) => p.id === selectedProgramFilter);
+        if (prog && prog.name !== sec.programName) return false;
+      }
+      return true;
+    });
+  }, [reportData.sections, selectedSchoolFilter, selectedProgramFilter, reportData.availablePrograms]);
+
+  // Final list of sections to display (respecting single-section preview if chosen)
+  const sectionsToDisplay = useMemo(() => {
+    if (selectedSectionFilter === "ALL") return matchingSections;
+    return matchingSections.filter((s) => s.sectionId === selectedSectionFilter);
+  }, [matchingSections, selectedSectionFilter]);
+
+  // Overall statistics for sections in current view
+  const totalEnrolledInView = useMemo(() => {
+    return matchingSections.reduce((acc, s) => acc + s.totalStudents, 0);
+  }, [matchingSections]);
+
+  const averageAttendanceInView = useMemo(() => {
+    if (matchingSections.length === 0) return 0;
+    const sum = matchingSections.reduce((acc, s) => acc + s.averageAttendance, 0);
+    return parseFloat((sum / matchingSections.length).toFixed(1));
+  }, [matchingSections]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-150">
@@ -92,9 +162,9 @@ export default function AllSectionsPrintReports({
       `}</style>
 
       {/* Main Modal Wrapper (Screen View) */}
-      <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-6xl max-h-[94vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
+      <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-7xl max-h-[96vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
         {/* Modal Top Control Bar (Screen only) */}
-        <div className="p-4 sm:p-6 bg-gradient-to-r from-[#0F2C59] via-[#163A70] to-[#0B2545] text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4 no-print">
+        <div className="p-4 sm:p-5 bg-gradient-to-r from-[#0F2C59] via-[#163A70] to-[#0B2545] text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4 no-print">
           <div>
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-black uppercase tracking-wider">
@@ -103,12 +173,21 @@ export default function AllSectionsPrintReports({
               <span className="text-xs font-bold text-blue-200">
                 Academic Year 2026-2027
               </span>
+              {reportData.isSuperAdmin ? (
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 text-[10px] font-bold border border-emerald-400/30">
+                  Admin (All Programs)
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 text-[10px] font-bold border border-amber-400/30">
+                  First Year Incharge Scope
+                </span>
+              )}
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white mt-1">
               All Sections Consolidated Attendance Report
             </h2>
             <p className="text-xs text-slate-200 font-medium">
-              Compiles all {data.sections.length} active sections in high-clarity Portrait A4 format for executive review and university printing.
+              Compiles active sections in high-clarity Portrait A4 format for executive review and university printing.
             </p>
           </div>
 
@@ -162,29 +241,111 @@ export default function AllSectionsPrintReports({
           </div>
         </div>
 
-        {/* Filter bar (Screen only) */}
+        {/* Filter bar (Screen only) with Live Date Selection & School/Program Scoping */}
         <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 no-print text-xs">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-500 uppercase text-[11px]">Preview Section:</span>
-            <select
-              value={selectedSectionFilter}
-              onChange={(e) => setSelectedSectionFilter(e.target.value)}
-              className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white font-bold text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="ALL">All {data.sections.length} Sections (Full Compilation)</option>
-              {data.sections.map((s) => (
-                <option key={s.sectionId} value={s.sectionId}>
-                  {s.schoolCode} - {s.displayName} ({s.totalStudents} Students)
+          <div className="flex flex-wrap items-center gap-3">
+            {/* School Filter */}
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-slate-500 uppercase text-[10px]">School:</span>
+              <select
+                value={selectedSchoolFilter}
+                onChange={(e) => {
+                  setSelectedSchoolFilter(e.target.value);
+                  setSelectedProgramFilter("ALL");
+                  setSelectedSectionFilter("ALL");
+                }}
+                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white font-bold text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-[210px] truncate"
+              >
+                <option value="ALL">
+                  {reportData.isSuperAdmin ? "All Schools (University)" : "All Assigned Schools"}
                 </option>
-              ))}
-            </select>
+                {reportData.availableSchools?.map((sc) => (
+                  <option key={sc.id} value={sc.id}>
+                    {sc.name} ({sc.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Program Filter */}
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-slate-500 uppercase text-[10px]">Program:</span>
+              <select
+                value={selectedProgramFilter}
+                onChange={(e) => {
+                  setSelectedProgramFilter(e.target.value);
+                  setSelectedSectionFilter("ALL");
+                }}
+                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white font-bold text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-[230px] truncate"
+              >
+                <option value="ALL">
+                  {reportData.isSuperAdmin ? "All Programs" : "All Assigned Programs"}
+                </option>
+                {filteredProgramsList.map((pr) => (
+                  <option key={pr.id} value={pr.id}>
+                    {pr.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Section Filter */}
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-slate-500 uppercase text-[10px]">Section:</span>
+              <select
+                value={selectedSectionFilter}
+                onChange={(e) => setSelectedSectionFilter(e.target.value)}
+                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white font-bold text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-[190px] truncate"
+              >
+                <option value="ALL">All {matchingSections.length} Sections</option>
+                {matchingSections.map((s) => (
+                  <option key={s.sectionId} value={s.sectionId}>
+                    {s.schoolCode} - {s.displayName} ({s.totalStudents} Students)
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Date Range: From Date & To Date */}
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1 shadow-xs">
+              <Calendar className="w-3.5 h-3.5 text-blue-600" />
+              <label className="text-[10px] font-bold text-slate-500">From:</label>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="text-xs font-bold text-slate-800 focus:outline-none bg-transparent"
+              />
+              <span className="text-slate-400 font-bold text-xs">—</span>
+              <label className="text-[10px] font-bold text-slate-500">To:</label>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="text-xs font-bold text-slate-800 focus:outline-none bg-transparent"
+              />
+              <button
+                type="button"
+                disabled={isRefreshing}
+                onClick={handleRefreshReportData}
+                className="ml-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition shadow-xs flex items-center gap-1 disabled:opacity-50"
+              >
+                {isRefreshing ? (
+                  <>
+                    <span className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    <span>Loading...</span>
+                  </>
+                ) : (
+                  <span>Apply Dates</span>
+                )}
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4 text-slate-600 font-semibold">
-            <span>Total Sections: <strong>{data.summary.totalSections}</strong></span>
-            <span>Total Enrolled: <strong>{data.summary.totalStudents.toLocaleString()}</strong></span>
-            <span>Overall Rate: <strong>{data.summary.overallAverageAttendance}%</strong></span>
-            <span>Defaulters (&lt;75%): <strong className="text-rose-600">{data.summary.totalDefaulters}</strong></span>
+          <div className="flex items-center gap-3 text-slate-600 font-semibold text-xs">
+            <span>Sections: <strong>{matchingSections.length}</strong></span>
+            <span>Enrolled: <strong>{totalEnrolledInView.toLocaleString()}</strong></span>
+            <span>Avg Attendance: <strong>{averageAttendanceInView}%</strong></span>
           </div>
         </div>
 
@@ -195,7 +356,7 @@ export default function AllSectionsPrintReports({
               ========================================================================= */}
           {selectedSectionFilter === "ALL" && (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 max-w-[210mm] mx-auto mb-8 avoid-break text-black print:border-none print:shadow-none print:p-0 print:mb-0">
-              {/* Institutional Header */}
+              {/* Institutional Header with Logo in Same Row */}
               <div className="border-b-2 border-slate-900 pb-3 mb-4 text-center">
                 <div className="flex items-center justify-center gap-3 mb-1.5">
                   <img
@@ -221,34 +382,38 @@ export default function AllSectionsPrintReports({
                   </h2>
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] font-bold text-slate-700 mt-2 px-1">
-                  <span>Academic Year: <strong>2026-2027 (ODD SEMESTER)</strong></span>
-                  <span>Batch: <strong>2026-2030 (Year 1)</strong></span>
+                <div className="flex items-center justify-between text-[10pt] font-bold text-slate-800 mt-2 px-1 border-t border-slate-200 pt-1.5">
+                  <span>Academic Year: <strong>2026-2027</strong></span>
+                  <span className="bg-slate-100 px-3 py-0.5 rounded border border-slate-300 text-slate-900 font-black">
+                    Attendance Window: <strong>{fromDate} to {toDate}</strong>
+                  </span>
                   <span>Printed: <strong>{new Date().toLocaleDateString("en-GB")}</strong></span>
                 </div>
               </div>
 
-              {/* Master KPI Banner */}
+              {/* Master KPI Banner (Clean institutional metrics) */}
               <div className="grid grid-cols-4 gap-2.5 mb-5 text-center">
                 <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
-                  <div className="text-[9.5pt] font-bold text-slate-600 uppercase">Total Sections</div>
-                  <div className="text-[14pt] font-black text-slate-900">{data.summary.totalSections}</div>
+                  <div className="text-[10pt] font-bold text-slate-600 uppercase">Total Sections</div>
+                  <div className="text-[14pt] font-black text-slate-900">{matchingSections.length}</div>
                 </div>
                 <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
-                  <div className="text-[9.5pt] font-bold text-slate-600 uppercase">Total Students</div>
-                  <div className="text-[14pt] font-black text-slate-900">{data.summary.totalStudents.toLocaleString()}</div>
+                  <div className="text-[10pt] font-bold text-slate-600 uppercase">Total Students</div>
+                  <div className="text-[14pt] font-black text-slate-900">{totalEnrolledInView.toLocaleString()}</div>
                 </div>
                 <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
-                  <div className="text-[9.5pt] font-bold text-slate-600 uppercase">Average Attendance</div>
-                  <div className="text-[14pt] font-black text-emerald-800">{data.summary.overallAverageAttendance}%</div>
+                  <div className="text-[10pt] font-bold text-slate-600 uppercase">Average Attendance</div>
+                  <div className="text-[14pt] font-black text-emerald-800">{averageAttendanceInView}%</div>
                 </div>
-                <div className="p-2.5 border border-slate-300 rounded-lg bg-rose-50">
-                  <div className="text-[9.5pt] font-bold text-rose-800 uppercase">Total Defaulters</div>
-                  <div className="text-[14pt] font-black text-rose-700">{data.summary.totalDefaulters}</div>
+                <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
+                  <div className="text-[10pt] font-bold text-slate-600 uppercase">Total Sessions Held</div>
+                  <div className="text-[14pt] font-black text-blue-900">
+                    {matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)}
+                  </div>
                 </div>
               </div>
 
-              {/* Summary Table of All Sections */}
+              {/* Summary Table of All Sections (NO Status / Eligible / Defaulter columns) */}
               <div className="mb-6">
                 <h3 className="text-[10.5pt] font-black text-slate-900 uppercase mb-2">
                   Section-Wise Attendance Roster Summary
@@ -259,49 +424,40 @@ export default function AllSectionsPrintReports({
                       <th className="p-1.5 border border-slate-800 text-center w-8">#</th>
                       <th className="p-1.5 border border-slate-800 w-16 text-center">School</th>
                       <th className="p-1.5 border border-slate-800">Program &amp; Section Name</th>
-                      <th className="p-1.5 border border-slate-800 text-center w-16">Enrolled</th>
-                      <th className="p-1.5 border border-slate-800 text-center w-16">Held</th>
-                      <th className="p-1.5 border border-slate-800 text-center w-20">Attended %</th>
-                      <th className="p-1.5 border border-slate-800 text-center w-20">Eligible (≥75%)</th>
-                      <th className="p-1.5 border border-slate-800 text-center w-20 text-rose-800">Defaulters</th>
+                      <th className="p-1.5 border border-slate-800 text-center w-24">Enrolled</th>
+                      <th className="p-1.5 border border-slate-800 text-center w-24">Held</th>
+                      <th className="p-1.5 border border-slate-800 text-center w-28">Attended %</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {data.sections.map((sec, idx) => {
-                      const eligibleCount = sec.totalStudents - sec.defaultersCount;
-                      return (
-                        <tr key={sec.sectionId} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{idx + 1}</td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-black">{sec.schoolCode}</td>
-                          <td className="p-1.5 border border-slate-800 text-[10pt] font-bold">{sec.displayName}</td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{sec.totalStudents}</td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{sec.totalSessionsConducted}</td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10.5pt] font-black">{sec.averageAttendance}%</td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold text-emerald-800">{eligibleCount}</td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold text-rose-800">{sec.defaultersCount}</td>
-                        </tr>
-                      );
-                    })}
+                    {matchingSections.map((sec, idx) => (
+                      <tr key={sec.sectionId} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                        <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{idx + 1}</td>
+                        <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-black">{sec.schoolCode}</td>
+                        <td className="p-1.5 border border-slate-800 text-[10pt] font-bold">{sec.displayName}</td>
+                        <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{sec.totalStudents}</td>
+                        <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{sec.totalSessionsConducted}</td>
+                        <td className="p-1.5 border border-slate-800 text-center text-[10.5pt] font-black">{sec.averageAttendance}%</td>
+                      </tr>
+                    ))}
                   </tbody>
                   <tfoot>
                     <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
                       <td colSpan={3} className="p-1.5 border border-slate-800 text-right uppercase">
                         University Grand Total
                       </td>
-                      <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">{data.summary.totalStudents}</td>
-                      <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">—</td>
-                      <td className="p-1.5 border border-slate-800 text-center text-[11pt]">{data.summary.overallAverageAttendance}%</td>
-                      <td className="p-1.5 border border-slate-800 text-center text-[10.5pt] text-emerald-900">
-                        {data.summary.totalStudents - data.summary.totalDefaulters}
+                      <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">{totalEnrolledInView}</td>
+                      <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
+                        {matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)}
                       </td>
-                      <td className="p-1.5 border border-slate-800 text-center text-[10.5pt] text-rose-900">{data.summary.totalDefaulters}</td>
+                      <td className="p-1.5 border border-slate-800 text-center text-[11pt]">{averageAttendanceInView}%</td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
 
               {/* Signature Row */}
-              <div className="pt-6 border-t border-slate-300 grid grid-cols-4 gap-4 text-center text-[9.5pt] font-black text-slate-800">
+              <div className="pt-6 border-t border-slate-300 grid grid-cols-4 gap-4 text-center text-[10pt] font-black text-slate-800">
                 <div className="pt-8 border-t border-slate-800">Class Incharge</div>
                 <div className="pt-8 border-t border-slate-800">Head of Department</div>
                 <div className="pt-8 border-t border-slate-800">First Year Incharge</div>
@@ -313,13 +469,13 @@ export default function AllSectionsPrintReports({
           {/* =========================================================================
               SECTION-BY-SECTION DETAILED SHEETS (Each section on its own Portrait A4)
               ========================================================================= */}
-          {sectionsToDisplay.map((sec, secIdx) => {
+          {sectionsToDisplay.map((sec) => {
             return (
               <div
                 key={sec.sectionId}
                 className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 max-w-[210mm] mx-auto mb-8 page-break-section text-black print:border-none print:shadow-none print:p-0 print:mb-0"
               >
-                {/* Header per Section */}
+                {/* Header per Section with Logo */}
                 <div className="border-b-2 border-slate-900 pb-2.5 mb-3 text-center">
                   <div className="flex items-center justify-center gap-3 mb-1">
                     <img
@@ -345,8 +501,8 @@ export default function AllSectionsPrintReports({
                     </h3>
                   </div>
 
-                  {/* Section Metadata */}
-                  <div className="grid grid-cols-3 text-[9.5pt] font-bold text-slate-800 mt-2 px-1 text-left bg-slate-50 p-1.5 rounded border border-slate-200">
+                  {/* Section Metadata including Attendance Period */}
+                  <div className="grid grid-cols-3 text-[9.5pt] font-bold text-slate-800 mt-2 px-1 text-left bg-slate-50 p-2 rounded border border-slate-200 gap-y-1">
                     <div>
                       School: <strong>{sec.schoolName} ({sec.schoolCode})</strong>
                     </div>
@@ -360,49 +516,42 @@ export default function AllSectionsPrintReports({
                       Academic Year: <strong>2026-2027 (Year {sec.year}, Sem {sec.semester})</strong>
                     </div>
                     <div className="text-center">
-                      Total Classes Conducted: <strong>{sec.totalSessionsConducted} Sessions</strong>
+                      Period: <strong>{fromDate} to {toDate}</strong>
                     </div>
                     <div className="text-right">
-                      Average Attendance: <strong>{sec.averageAttendance}%</strong>
+                      Conducted: <strong>{sec.totalSessionsConducted} Sessions ({sec.averageAttendance}%)</strong>
                     </div>
                   </div>
                 </div>
 
                 {/* =========================================================================
-                    VIEW 1: CONSOLIDATED ROSTER (Portrait A4 Table)
+                    VIEW 1: CONSOLIDATED ROSTER (Portrait A4 Table - NO Status Column)
                     ========================================================================= */}
                 {reportType === "consolidated" ? (
                   <div>
-                    <table className="w-full text-[9.5pt] border-collapse border border-slate-800 text-left">
+                    <table className="w-full border-collapse border border-slate-800 text-left">
                       <thead>
-                        <tr className="bg-slate-200 text-slate-900 font-black">
+                        <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
                           <th className="p-1 border border-slate-800 text-center w-8">#</th>
-                          <th className="p-1 border border-slate-800 w-28 font-mono">Roll Number</th>
+                          <th className="p-1 border border-slate-800 w-32 font-mono">Roll Number</th>
                           <th className="p-1 border border-slate-800">Student Name</th>
-                          <th className="p-1 border border-slate-800 text-center w-16">Total Held</th>
-                          <th className="p-1 border border-slate-800 text-center w-16">Attended</th>
-                          <th className="p-1 border border-slate-800 text-center w-16">Absent</th>
-                          <th className="p-1 border border-slate-800 text-center w-18">Attendance %</th>
-                          <th className="p-1 border border-slate-800 text-center w-24">Status</th>
+                          <th className="p-1 border border-slate-800 text-center w-20">Total Held</th>
+                          <th className="p-1 border border-slate-800 text-center w-20">Attended</th>
+                          <th className="p-1 border border-slate-800 text-center w-20">Absent</th>
+                          <th className="p-1 border border-slate-800 text-center w-24">Attendance %</th>
                         </tr>
                       </thead>
                       <tbody>
                         {sec.students.map((st, i) => (
                           <tr
                             key={st.studentId}
-                            className={
-                              st.isDefaulter
-                                ? "bg-rose-50/70 font-semibold text-rose-900"
-                                : i % 2 === 0
-                                ? "bg-white font-medium"
-                                : "bg-slate-50 font-medium"
-                            }
+                            className={i % 2 === 0 ? "bg-white font-medium" : "bg-slate-50 font-medium"}
                           >
                             <td className="p-1 border border-slate-800 text-center text-[10pt] font-bold">{i + 1}</td>
                             <td className="p-1 border border-slate-800 font-mono font-bold text-[10pt] tracking-tight">
                               {st.rollNumber}
                             </td>
-                            <td className="p-1 border border-slate-800 font-bold text-[10pt] truncate max-w-[200px]">
+                            <td className="p-1 border border-slate-800 font-bold text-[10pt] truncate max-w-[220px]">
                               {st.fullName}
                             </td>
                             <td className="p-1 border border-slate-800 text-center text-[10pt] font-bold">
@@ -417,33 +566,23 @@ export default function AllSectionsPrintReports({
                             <td className="p-1 border border-slate-800 text-center text-[10.5pt] font-black">
                               {st.percentage !== null ? `${st.percentage}%` : "—"}
                             </td>
-                            <td className="p-1 border border-slate-800 text-center text-[9pt] font-black">
-                              {st.isDefaulter ? (
-                                <span className="text-rose-700">DEFAULTER (&lt;75%)</span>
-                              ) : (
-                                <span className="text-emerald-800">ELIGIBLE</span>
-                              )}
-                            </td>
                           </tr>
                         ))}
                       </tbody>
                       <tfoot>
-                        <tr className="bg-slate-200 text-slate-900 font-black text-[9.5pt]">
+                        <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
                           <td colSpan={3} className="p-1.5 border border-slate-800 text-right uppercase">
                             Section Total ({sec.totalStudents} Students)
                           </td>
-                          <td className="p-1.5 border border-slate-800 text-center">{sec.totalSessionsConducted}</td>
-                          <td className="p-1.5 border border-slate-800 text-center">
+                          <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">{sec.totalSessionsConducted}</td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
                             {sec.students.reduce((acc, s) => acc + s.attendedClasses, 0)}
                           </td>
-                          <td className="p-1.5 border border-slate-800 text-center">
+                          <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
                             {sec.students.reduce((acc, s) => acc + s.absentClasses, 0)}
                           </td>
-                          <td className="p-1.5 border border-slate-800 text-center font-black">
+                          <td className="p-1.5 border border-slate-800 text-center font-black text-[11pt]">
                             {sec.averageAttendance}%
-                          </td>
-                          <td className="p-1.5 border border-slate-800 text-center text-rose-800">
-                            {sec.defaultersCount} Defaulters
                           </td>
                         </tr>
                       </tfoot>
@@ -451,7 +590,7 @@ export default function AllSectionsPrintReports({
                   </div>
                 ) : (
                   /* =========================================================================
-                      VIEW 2: SUBJECT-WISE CONSOLIDATED ROSTER (Portrait A4 Table)
+                      VIEW 2: SUBJECT-WISE CONSOLIDATED ROSTER (Portrait A4 Table - NO Status Column)
                       ========================================================================= */
                   <div>
                     {/* Subject Legend Bar */}
@@ -476,29 +615,22 @@ export default function AllSectionsPrintReports({
                               <div className="text-[9pt] text-slate-600 font-normal">({col.conducted})</div>
                             </th>
                           ))}
-                          <th className="p-1 border border-slate-800 text-center w-12">Held</th>
-                          <th className="p-1 border border-slate-800 text-center w-12">Attended</th>
-                          <th className="p-1 border border-slate-800 text-center w-14">%</th>
-                          <th className="p-1 border border-slate-800 text-center w-16">Status</th>
+                          <th className="p-1 border border-slate-800 text-center w-14">Held</th>
+                          <th className="p-1 border border-slate-800 text-center w-14">Attended</th>
+                          <th className="p-1 border border-slate-800 text-center w-16">%</th>
                         </tr>
                       </thead>
                       <tbody>
                         {sec.students.map((st, i) => (
                           <tr
                             key={st.studentId}
-                            className={
-                              st.isDefaulter
-                                ? "bg-rose-50/70 font-semibold text-rose-900"
-                                : i % 2 === 0
-                                ? "bg-white font-medium"
-                                : "bg-slate-50 font-medium"
-                            }
+                            className={i % 2 === 0 ? "bg-white font-medium" : "bg-slate-50 font-medium"}
                           >
                             <td className="p-1 border border-slate-800 text-center text-[10pt] font-bold">{i + 1}</td>
                             <td className="p-1 border border-slate-800 font-mono font-bold text-[10pt]">
                               {st.rollNumber}
                             </td>
-                            <td className="p-1 border border-slate-800 font-bold text-[10pt] truncate max-w-[140px]">
+                            <td className="p-1 border border-slate-800 font-bold text-[10pt] truncate max-w-[150px]">
                               {st.fullName}
                             </td>
                             {sec.subjectColumns.map((col) => {
@@ -518,13 +650,6 @@ export default function AllSectionsPrintReports({
                             <td className="p-1 border border-slate-800 text-center font-black text-[10.5pt]">
                               {st.percentage !== null ? `${st.percentage}%` : "—"}
                             </td>
-                            <td className="p-1 border border-slate-800 text-center text-[9pt] font-black">
-                              {st.isDefaulter ? (
-                                <span className="text-rose-700">DEF</span>
-                              ) : (
-                                <span className="text-emerald-800">OK</span>
-                              )}
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -533,7 +658,7 @@ export default function AllSectionsPrintReports({
                 )}
 
                 {/* Section Signature Block */}
-                <div className="mt-4 pt-4 border-t border-slate-300 grid grid-cols-3 gap-4 text-center text-[9pt] font-black text-slate-800 avoid-break">
+                <div className="mt-4 pt-4 border-t border-slate-300 grid grid-cols-3 gap-4 text-center text-[10pt] font-black text-slate-800 avoid-break">
                   <div className="pt-6 border-t border-slate-800">Class Incharge</div>
                   <div className="pt-6 border-t border-slate-800">Head of Department / 1st Year Incharge</div>
                   <div className="pt-6 border-t border-slate-800">Registrar-I/C</div>

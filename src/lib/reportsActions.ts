@@ -377,6 +377,13 @@ export interface AllSectionsReportItem {
   }[];
 }
 
+export interface AllSectionsReportFilter {
+  startDate?: string;
+  endDate?: string;
+  schoolId?: string;
+  programId?: string;
+}
+
 export interface AllSectionsReportResponse {
   success: boolean;
   error?: string;
@@ -392,16 +399,18 @@ export interface AllSectionsReportResponse {
     totalSessionsConducted: number;
   };
   sections: AllSectionsReportItem[];
+  availableSchools?: { id: string; name: string; code: string }[];
+  availablePrograms?: { id: string; name: string; code: string; schoolId: string }[];
+  isSuperAdmin?: boolean;
 }
 
 /**
  * Fetch and compile attendance data across ALL sections in scope in one click.
  * Supports consolidated student reports and subject-wise reports.
  */
-export async function getAllSectionsAttendanceReport(filter?: {
-  startDate?: string;
-  endDate?: string;
-}): Promise<AllSectionsReportResponse> {
+export async function getAllSectionsAttendanceReport(
+  filter?: AllSectionsReportFilter
+): Promise<AllSectionsReportResponse> {
   const session = await getCurrentSession();
   if (!session) {
     return {
@@ -419,22 +428,60 @@ export async function getAllSectionsAttendanceReport(filter?: {
     };
   }
 
-  const hasSchoolScope = !!(
+  const isSuperAdmin = session.roles.includes("SUPER_ADMIN") || session.roles.includes("OFFICE");
+  const hasSchoolScope = !isSuperAdmin && !!(
     session.allowedSchoolIds && session.allowedSchoolIds.length > 0
   );
-  const scopedSchoolIds = session.allowedSchoolIds || [];
+  const scopedSchoolIds = hasSchoolScope ? (session.allowedSchoolIds || []) : [];
 
   const currentYear = await prisma.academicYear.findFirst({
     where: { isCurrent: true, isActive: true },
   });
 
+  // Query schools and programs matching user's permissions
+  const [allSchools, allPrograms] = await Promise.all([
+    prisma.school.findMany({
+      where: hasSchoolScope ? { id: { in: scopedSchoolIds } } : undefined,
+      select: { id: true, name: true, code: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.program.findMany({
+      where: hasSchoolScope ? { schoolId: { in: scopedSchoolIds } } : undefined,
+      select: { id: true, name: true, code: true, schoolId: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
+
+  // Determine school filter condition
+  let effectiveSchoolFilter: any = undefined;
+  if (filter?.schoolId && filter.schoolId !== "ALL") {
+    if (hasSchoolScope) {
+      if (scopedSchoolIds.includes(filter.schoolId)) {
+        effectiveSchoolFilter = { schoolId: filter.schoolId };
+      } else {
+        effectiveSchoolFilter = { schoolId: { in: scopedSchoolIds } };
+      }
+    } else {
+      effectiveSchoolFilter = { schoolId: filter.schoolId };
+    }
+  } else if (hasSchoolScope) {
+    effectiveSchoolFilter = { schoolId: { in: scopedSchoolIds } };
+  }
+
+  // Determine program filter condition
+  let effectiveProgramFilter: any = undefined;
+  if (filter?.programId && filter.programId !== "ALL") {
+    effectiveProgramFilter = { id: filter.programId };
+  }
+
   const sections = await prisma.section.findMany({
     where: {
       isActive: true,
       ...(currentYear ? { academicYearId: currentYear.id } : {}),
-      ...(hasSchoolScope
-        ? { program: { schoolId: { in: scopedSchoolIds } } }
-        : {}),
+      program: {
+        ...(effectiveSchoolFilter ? effectiveSchoolFilter : {}),
+        ...(effectiveProgramFilter ? effectiveProgramFilter : {}),
+      },
     },
     include: {
       program: { include: { school: true } },
@@ -682,5 +729,8 @@ export async function getAllSectionsAttendanceReport(filter?: {
       totalSessionsConducted: allSessions.length,
     },
     sections: sectionResults,
+    availableSchools: allSchools,
+    availablePrograms: allPrograms,
+    isSuperAdmin,
   };
 }

@@ -20,16 +20,14 @@ export default async function ReportsPage() {
 
   const isSuperAdmin =
     session.roles.includes("SUPER_ADMIN") ||
-    session.roles.includes("OFFICE") ||
-    session.roles.includes("ACADEMIC_ADMIN") ||
-    session.roles.includes("DEAN");
+    session.roles.includes("OFFICE");
+
+  const hasSchoolScope = !isSuperAdmin && !!(session.allowedSchoolIds && session.allowedSchoolIds.length > 0);
 
   // Load active academic year
   const currentAY = await prisma.academicYear.findFirst({
     where: { isCurrent: true, isActive: true },
   });
-
-  const hasSchoolScope = !!(session.allowedSchoolIds && session.allowedSchoolIds.length > 0);
 
   // Load all active sections with program and school
   const [allSections, allSchools, allPrograms] = await Promise.all([

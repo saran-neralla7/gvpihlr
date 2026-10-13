@@ -87,14 +87,19 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col items-center justify-center py-6 sm:py-12">
-      {/* Title as in official portal screenshot */}
-      <div className="text-center mb-8 sm:mb-12">
-        <h2 className="text-2xl sm:text-4xl font-extrabold text-[#0B2545] tracking-tight uppercase">
-          CAMPUS MANAGEMENT SYSTEM
-        </h2>
-        <p className="text-sm sm:text-base text-slate-600 mt-2 font-medium">
-          Gayatri Vidya Parishad Institute of Higher Learning & Research (GVPIHLR)
+      {/* Institutional Title & Subtitle matching user specification */}
+      <div className="text-center mb-8 sm:mb-12 max-w-4xl px-4 space-y-2">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#0B2545] tracking-tight uppercase">
+          GAYATRI VIDYA PARISHAD INSTITUTE OF HIGHER LEARNING AND RESEARCH
+        </h1>
+        <p className="text-base sm:text-xl font-bold text-slate-700 tracking-wide">
+          (Deemed to be University under Distinct Category under Section 3 of the UGC Act, 1956)
         </p>
+        <div className="pt-2">
+          <span className="inline-block px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-xs sm:text-sm font-extrabold text-blue-950 uppercase tracking-wider shadow-2xs">
+            CAMPUS MANAGEMENT SYSTEM
+          </span>
+        </div>
       </div>
 
       {/* Dual Portal Selection Cards (Matching Screenshot) */}

@@ -125,7 +125,7 @@ export default function StudentAttendanceTranscript({
                 GAYATRI VIDYA PARISHAD INSTITUTE OF HIGHER LEARNING AND RESEARCH
               </h1>
               <p className="text-[11px] sm:text-xs font-semibold text-slate-600">
-                (Deemed to be University under Section 3 of the UGC Act, 1956)
+                (Deemed to be University under Distinct Category under Section 3 of the UGC Act, 1956)
               </p>
               <p className="text-[10px] sm:text-[11px] font-medium text-slate-500">
                 School of Medical Education &amp; Engineering Sciences • Visakhapatnam - 530048, AP, India

@@ -47,7 +47,7 @@ export default async function RootLayout({
           </main>
           <footer className="w-full bg-white/80 backdrop-blur-xs border-t border-slate-200 py-4 text-center text-xs text-slate-500">
             <p>© {new Date().getFullYear()} Gayatri Vidya Parishad Institute of Higher Learning and Research (GVPIHLR). All Rights Reserved.</p>
-            <p className="mt-1 font-medium text-slate-400">Deemed to be University under Section 3 of the UGC Act, 1956</p>
+            <p className="mt-1 font-medium text-slate-400">(Deemed to be University under Distinct Category under Section 3 of the UGC Act, 1956)</p>
           </footer>
         </div>
       </body>

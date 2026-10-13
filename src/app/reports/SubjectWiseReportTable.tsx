@@ -104,31 +104,44 @@ export default function SubjectWiseReportTable({
 
       {/* Printable Report Document Card */}
       <div className="bg-white border border-slate-300/80 rounded-3xl p-3 sm:p-5 shadow-xs print-container space-y-5 max-w-full overflow-hidden">
-        {/* Official Institutional Header */}
-        <div className="text-center space-y-1 pb-4 border-b border-slate-200">
-          <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 uppercase">
-            GAYATRI VIDYA PARISHAD INSTITUTE OF HIGHER LEARNING AND RESEARCH
-          </h1>
-          <h2 className="text-xs sm:text-sm font-semibold text-slate-600">
-            (Deemed to be University under Section 3 of the UGC Act, 1956) • Visakhapatnam
-          </h2>
-          <div className="inline-block mt-1 px-4 py-1 rounded-full bg-blue-50 border border-blue-200">
-            <h3 className="text-xs sm:text-sm font-black text-blue-900 tracking-wide uppercase">
-              Subject-Wise Consolidated Class Attendance Register
-            </h3>
+        {/* Official Institutional Header with Logo in Same Row */}
+        <div className="flex items-center justify-between gap-4 pb-4 border-b border-slate-200">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center">
+            <img
+              src="/gvpihlr.png"
+              alt="GVPIHLR University Crest"
+              className="max-h-16 max-w-16 sm:max-h-20 sm:max-w-20 object-contain"
+            />
           </div>
-          <div className="text-[11px] text-slate-600 font-semibold space-y-0.5 pt-2">
-            <div>
-              Program: <strong>{programName}</strong> | Academic Year: <strong>2026-2027</strong> | Batch: <strong>2026-2030</strong>
+
+          <div className="text-center flex-1 space-y-1">
+            <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 uppercase">
+              GAYATRI VIDYA PARISHAD INSTITUTE OF HIGHER LEARNING AND RESEARCH
+            </h1>
+            <h2 className="text-xs sm:text-sm font-semibold text-slate-600">
+              (Deemed to be University under Distinct Category under Section 3 of the UGC Act, 1956) • Visakhapatnam
+            </h2>
+            <div className="inline-block mt-1 px-4 py-1 rounded-full bg-blue-50 border border-blue-200">
+              <h3 className="text-xs sm:text-sm font-black text-blue-900 tracking-wide uppercase">
+                Subject-Wise Consolidated Class Attendance Register
+              </h3>
             </div>
-            <div>
-              Year: <strong>{year}</strong> | Semester: <strong>{semester}</strong> | Section:{" "}
-              <strong>{sectionName}</strong> | Period: <strong>{startDate}</strong> to <strong>{endDate}</strong> ({totalSessionsConducted} Total Sessions)
+            <div className="text-[11px] text-slate-600 font-semibold space-y-0.5 pt-2">
+              <div>
+                Program: <strong>{programName}</strong> | Academic Year: <strong>2026-2027</strong> | Batch: <strong>2026-2030</strong>
+              </div>
+              <div>
+                Year: <strong>{year}</strong> | Semester: <strong>{semester}</strong> | Section:{" "}
+                <strong>{sectionName}</strong> | Period: <strong>{startDate}</strong> to <strong>{endDate}</strong> ({totalSessionsConducted} Total Sessions)
+              </div>
             </div>
           </div>
+
+          {/* Balancing element so header text stays centered */}
+          <div className="w-16 sm:w-20 flex-shrink-0 hidden sm:block print:block" />
         </div>
 
-        {/* Contained Overflow Table - Fit all subjects in single screen without horizontal scroll */}
+        {/* Contained Table - Fit all subjects in single screen without horizontal scroll */}
         <div className="w-full max-w-full overflow-hidden rounded-2xl border border-slate-300/90 shadow-2xs">
           <table className="w-full border-collapse border-slate-300 text-[11px] print-table">
             <thead>
@@ -136,7 +149,7 @@ export default function SubjectWiseReportTable({
                 {/* S.No */}
                 <th
                   rowSpan={2}
-                  className="border border-slate-300 px-1 py-1.5 text-center font-bold text-slate-800 w-8 print:w-8 print:px-1 print:py-1 print:text-[8px]"
+                  className="border border-slate-300 px-1 py-1.5 text-center font-bold text-slate-800 w-8 print:w-8 print:px-1 print:py-1 print:text-[10px]"
                 >
                   #
                 </th>
@@ -144,7 +157,7 @@ export default function SubjectWiseReportTable({
                 {/* Roll Number */}
                 <th
                   rowSpan={2}
-                  className="border border-slate-300 px-1.5 py-1.5 text-left font-bold text-slate-800 w-28 whitespace-nowrap print:w-24 print:px-1.5 print:py-1 print:text-[8px]"
+                  className="border border-slate-300 px-1.5 py-1.5 text-left font-bold text-slate-800 w-28 whitespace-nowrap print:w-24 print:px-1.5 print:py-1 print:text-[10px]"
                 >
                   Roll Number
                 </th>
@@ -152,7 +165,7 @@ export default function SubjectWiseReportTable({
                 {/* Student Name */}
                 <th
                   rowSpan={2}
-                  className="border border-slate-300 px-1.5 py-1.5 text-left font-bold text-slate-800 print:w-36 print:px-1.5 print:py-1 print:text-[8px]"
+                  className="border border-slate-300 px-1.5 py-1.5 text-left font-bold text-slate-800 print:w-36 print:px-1.5 print:py-1 print:text-[10px]"
                 >
                   Student Name
                 </th>
@@ -163,10 +176,10 @@ export default function SubjectWiseReportTable({
                     key={col.id}
                     className="border border-slate-300 px-1 py-1 text-center bg-blue-50/50 print:px-1 print:py-1 print:bg-slate-50"
                   >
-                    <div className="font-extrabold text-slate-900 tracking-tight text-[11px] sm:text-xs leading-tight print:text-[8px] print:leading-tight">
+                    <div className="font-extrabold text-slate-900 tracking-tight text-[11px] sm:text-xs leading-tight print:text-[10px] print:leading-tight">
                       {col.shortName || col.code}
                     </div>
-                    <div className="text-[9px] font-bold text-blue-700 mt-0.5 print:text-[7px] print:text-slate-700">
+                    <div className="text-[9px] font-bold text-blue-700 mt-0.5 print:text-[10px] print:text-slate-700">
                       ({col.conducted})
                     </div>
                   </th>
@@ -184,7 +197,7 @@ export default function SubjectWiseReportTable({
                 {/* Total Attended - ALWAYS Visible in print and screen */}
                 <th
                   rowSpan={2}
-                  className="border border-slate-300 px-1 py-1 text-center font-bold text-blue-900 bg-blue-100/60 w-14 print:w-14 print:px-1 print:py-1 print:bg-slate-100 print:text-black print:text-[8px]"
+                  className="border border-slate-300 px-1 py-1 text-center font-bold text-blue-900 bg-blue-100/60 w-14 print:w-14 print:px-1 print:py-1 print:bg-slate-100 print:text-black print:text-[11px]"
                 >
                   <div className="text-[10px] sm:text-[11px]">Attended</div>
                 </th>
@@ -192,7 +205,7 @@ export default function SubjectWiseReportTable({
                 {/* Overall Attendance Percentage - ALWAYS Visible in print and screen */}
                 <th
                   rowSpan={2}
-                  className="border border-slate-300 px-1 py-1 text-center font-bold text-slate-900 bg-slate-100 w-14 print:w-14 print:px-1 print:py-1 print:text-[8px]"
+                  className="border border-slate-300 px-1 py-1 text-center font-bold text-slate-900 bg-slate-100 w-14 print:w-14 print:px-1 print:py-1 print:text-[11px]"
                 >
                   <div className="text-[10px] sm:text-[11px]">%</div>
                 </th>
@@ -229,12 +242,12 @@ export default function SubjectWiseReportTable({
                       }`}
                     >
                       {/* S.No */}
-                      <td className="border border-slate-300 px-1 py-1 text-center text-slate-500 font-mono text-[10px] print:w-8 print:px-1 print:py-1 print:text-[8px]">
+                      <td className="border border-slate-300 px-1 py-1 text-center text-slate-500 font-mono text-[10px] print:w-8 print:px-1 print:py-1 print:text-[10px]">
                         {idx + 1}
                       </td>
 
                       {/* Roll Number */}
-                      <td className="border border-slate-300 px-1.5 py-1 font-mono font-bold text-slate-900 whitespace-nowrap text-[11px] print:w-24 print:px-1.5 print:py-1 print:text-[8px]">
+                      <td className="border border-slate-300 px-1.5 py-1 font-mono font-bold text-slate-900 whitespace-nowrap text-[11px] print:w-24 print:px-1.5 print:py-1 print:text-[10px]">
                         <Link
                           href={`/admin/students/${student.studentId}`}
                           className="hover:text-blue-600 hover:underline"
@@ -244,7 +257,7 @@ export default function SubjectWiseReportTable({
                       </td>
 
                       {/* Student Name */}
-                      <td className="border border-slate-300 px-1.5 py-1 font-semibold text-slate-800 text-[11px] print:min-w-0 print:w-36 print:px-1.5 print:py-1 print:text-[8px]">
+                      <td className="border border-slate-300 px-1.5 py-1 font-semibold text-slate-800 text-[11px] print:min-w-0 print:w-36 print:px-1.5 print:py-1 print:text-[10px]">
                         <Link
                           href={`/admin/students/${student.studentId}`}
                           className="block truncate max-w-[120px] sm:max-w-[150px] hover:text-blue-600 hover:underline"
@@ -266,15 +279,15 @@ export default function SubjectWiseReportTable({
                         return (
                           <td
                             key={col.id}
-                            className="border border-slate-300 px-1 py-1 text-center print:px-1 print:py-1 print:text-[8px]"
+                            className="border border-slate-300 px-1 py-1 text-center print:px-1 print:py-1 print:text-[10px]"
                           >
                             {conducted > 0 ? (
                               <div className="flex flex-col items-center justify-center leading-tight">
-                                <span className="font-bold text-slate-900 text-[11px] print:text-[8px]">
+                                <span className="font-bold text-slate-900 text-[11px] print:text-[11px]">
                                   {attended}
                                 </span>
                                 <span
-                                  className={`text-[8.5px] sm:text-[9px] font-semibold print:text-[7px] ${
+                                  className={`text-[9px] font-semibold print:text-[10px] ${
                                     pct !== null && pct < 75
                                       ? "text-rose-600 print:text-rose-700"
                                       : "text-slate-400 print:text-slate-600"
@@ -296,14 +309,14 @@ export default function SubjectWiseReportTable({
                       </td>
 
                       {/* Total Attended - ALWAYS Visible in print and screen */}
-                      <td className="border border-slate-300 px-1 py-1 text-center font-mono font-extrabold text-blue-700 bg-blue-50/30 text-[11px] print:w-14 print:px-1 print:py-1 print:text-black print:text-[8px] print:bg-slate-50">
+                      <td className="border border-slate-300 px-1 py-1 text-center font-mono font-extrabold text-blue-700 bg-blue-50/30 text-[11px] print:w-14 print:px-1 print:py-1 print:text-black print:text-[11px] print:bg-slate-50">
                         {student.attendedClasses}
                       </td>
 
                       {/* Attendance Percentage - ALWAYS Visible in print and screen */}
-                      <td className="border border-slate-300 px-1 py-1 text-center font-mono font-black text-[11px] print:w-14 print:px-1 print:py-1 print:text-[8px]">
+                      <td className="border border-slate-300 px-1 py-1 text-center font-mono font-black text-[11px] print:w-14 print:px-1 print:py-1 print:text-[11px]">
                         <span
-                          className={`px-1 py-0.5 rounded text-[10px] sm:text-[11px] print:p-0 print:text-[8px] ${
+                          className={`px-1 py-0.5 rounded text-[10px] sm:text-[11px] print:p-0 print:text-[11px] ${
                             isDefaulter
                               ? "bg-rose-100 text-rose-800 font-black print:text-rose-700"
                               : "text-emerald-700 font-bold print:text-emerald-800"

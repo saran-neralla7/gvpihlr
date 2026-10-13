@@ -89,7 +89,7 @@ interface StudentReportItem {
 }
 
 const COLLEGE_NAME = "GAYATRI VIDYA PARISHAD INSTITUTE OF HIGHER LEARNING AND RESEARCH";
-const COLLEGE_SUBTITLE = "(Deemed to be University under Section 3 of the UGC Act, 1956) • Visakhapatnam";
+const COLLEGE_SUBTITLE = "(Deemed to be University under Distinct Category under Section 3 of the UGC Act, 1956) • Visakhapatnam";
 
 export default function ReportsClient({
   sections,
@@ -403,6 +403,53 @@ export default function ReportsClient({
   const selectedSubjectObj = useMemo(() => {
     return availableSubjects.find((s) => s.id === selectedSubjectId);
   }, [availableSubjects, selectedSubjectId]);
+
+  // Group sessions into 2 days per sheet for print pagination
+  const printDayBatches = useMemo(() => {
+    if (!sessions || sessions.length === 0) return [];
+
+    const dateMap = new Map<string, SessionItem[]>();
+    sessions.forEach((s) => {
+      const key = s.sessionDate || s.formattedDate;
+      if (!dateMap.has(key)) {
+        dateMap.set(key, []);
+      }
+      dateMap.get(key)!.push(s);
+    });
+
+    const uniqueDateEntries = Array.from(dateMap.entries());
+    const DAYS_PER_SHEET = 2;
+    const batches: {
+      batchNum: number;
+      totalBatches: number;
+      dateRangeLabel: string;
+      days: { dateKey: string; formattedDate: string; sessions: SessionItem[] }[];
+      allSessionsInBatch: SessionItem[];
+    }[] = [];
+
+    const total = Math.ceil(uniqueDateEntries.length / DAYS_PER_SHEET);
+
+    for (let i = 0; i < uniqueDateEntries.length; i += DAYS_PER_SHEET) {
+      const chunk = uniqueDateEntries.slice(i, i + DAYS_PER_SHEET);
+      const days = chunk.map(([dateKey, sessList]) => ({
+        dateKey,
+        formattedDate: sessList[0]?.formattedDate || dateKey,
+        sessions: sessList,
+      }));
+      const allSessionsInBatch = days.flatMap((d) => d.sessions);
+      const dateRangeLabel = days.map((d) => d.formattedDate).join(" & ");
+
+      batches.push({
+        batchNum: Math.floor(i / DAYS_PER_SHEET) + 1,
+        totalBatches: total,
+        dateRangeLabel,
+        days,
+        allSessionsInBatch,
+      });
+    }
+
+    return batches;
+  }, [sessions]);
 
   // =========================================================================
   // EXPORT: SUBJECT-WISE CONSOLIDATED CSV
@@ -858,13 +905,23 @@ export default function ReportsClient({
           .print-table {
             border-collapse: collapse !important;
             width: 100% !important;
-            font-size: 8px !important;
+            font-size: 10.5px !important;
           }
           .print-table th,
           .print-table td {
-            border: 1px solid #666 !important;
-            padding: 2px 3px !important;
+            border: 1px solid #475569 !important;
+            padding: 3px 4px !important;
             text-align: center !important;
+            font-size: 10px !important;
+          }
+          .daily-matrix-page,
+          .print-page-break {
+            break-after: page !important;
+            page-break-after: always !important;
+          }
+          tr {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
           }
         }
       `}</style>
@@ -1652,34 +1709,46 @@ export default function ReportsClient({
 
           {/* Consolidated Roster Table */}
           <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-4 print-container">
-            {/* Table Institutional Header */}
-            <div className="text-center space-y-1 pb-4 border-b border-slate-200">
-              <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 uppercase">
-                {COLLEGE_NAME}
-              </h1>
-              <h2 className="text-xs sm:text-sm font-semibold text-slate-600">
-                {COLLEGE_SUBTITLE}
-              </h2>
-              <h3 className="text-sm sm:text-base font-black text-slate-900 mt-1">
-                CONSOLIDATED STUDENT ATTENDANCE REPORT
-              </h3>
-              <div className="text-[11px] text-slate-600 font-semibold space-y-0.5 pt-1">
-                <div>
-                  Department: <strong>{reportData.programName}</strong> | Year:{" "}
-                  <strong>{reportData.year || 1}</strong> | Sem:{" "}
-                  <strong>{reportData.semester || 1}</strong> | Section:{" "}
-                  <strong>{reportData.sectionName}</strong>
-                </div>
-                <div>
-                  Subject:{" "}
-                  <strong>
-                    {selectedSubjectObj
-                      ? `${selectedSubjectObj.name} (${selectedSubjectObj.code})`
-                      : "All Subjects (Consolidated)"}
-                  </strong>{" "}
-                  | Total Sessions Conducted: <strong>{reportData.totalSessionsConducted}</strong>
+            {/* Table Institutional Header with Logo in Same Row */}
+            <div className="flex items-center justify-between gap-4 pb-4 border-b border-slate-200">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center">
+                <img
+                  src="/gvpihlr.png"
+                  alt="GVPIHLR University Crest"
+                  className="max-h-16 max-w-16 sm:max-h-20 sm:max-w-20 object-contain"
+                />
+              </div>
+
+              <div className="text-center flex-1 space-y-1">
+                <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 uppercase">
+                  {COLLEGE_NAME}
+                </h1>
+                <h2 className="text-xs sm:text-sm font-semibold text-slate-600">
+                  {COLLEGE_SUBTITLE}
+                </h2>
+                <h3 className="text-sm sm:text-base font-black text-slate-900 mt-1">
+                  CONSOLIDATED STUDENT ATTENDANCE REPORT
+                </h3>
+                <div className="text-[11px] text-slate-600 font-semibold space-y-0.5 pt-1">
+                  <div>
+                    Department: <strong>{reportData.programName}</strong> | Year:{" "}
+                    <strong>{reportData.year || 1}</strong> | Sem:{" "}
+                    <strong>{reportData.semester || 1}</strong> | Section:{" "}
+                    <strong>{reportData.sectionName}</strong>
+                  </div>
+                  <div>
+                    Subject:{" "}
+                    <strong>
+                      {selectedSubjectObj
+                        ? `${selectedSubjectObj.name} (${selectedSubjectObj.code})`
+                        : "All Subjects (Consolidated)"}
+                    </strong>{" "}
+                    | Total Sessions Conducted: <strong>{reportData.totalSessionsConducted}</strong>
+                  </div>
                 </div>
               </div>
+
+              <div className="w-16 sm:w-20 flex-shrink-0 hidden sm:block print:block" />
             </div>
 
             {/* Table */}
@@ -1687,7 +1756,7 @@ export default function ReportsClient({
               <table className="w-full border-collapse border border-slate-200 text-xs print-table">
                 <thead>
                   <tr className="bg-slate-50 text-slate-700 border-b border-slate-200">
-                    <th className="border border-slate-200 px-3 py-2.5 text-center font-bold w-12 print:w-8 print:p-1 print:text-[8px]">
+                    <th className="border border-slate-200 px-3 py-2.5 text-center font-bold w-12 print:w-8 print:p-1 print:text-[10px]">
                       S.No
                     </th>
                     <th className="border border-slate-200 px-4 py-2.5 text-left font-bold w-36">
@@ -2109,33 +2178,45 @@ export default function ReportsClient({
             </div>
           )}
 
-          {/* Printable Daily Attendance Register */}
-          <div className="bg-white border border-slate-300/80 rounded-3xl p-5 sm:p-7 shadow-xs print-container space-y-4 max-w-full overflow-hidden">
-            {/* Institutional Header */}
-            <div className="text-center space-y-1 pb-4 border-b border-slate-200">
-              <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 uppercase">
-                {COLLEGE_NAME}
-              </h1>
-              <h2 className="text-xs sm:text-sm font-semibold text-slate-600">
-                {COLLEGE_SUBTITLE}
-              </h2>
-              <h3 className="text-sm sm:text-base font-black text-slate-900 mt-1">
-                {selectedSubjectId
-                  ? "Subject-Wise Class Daily Attendance Register"
-                  : "Consolidated Class Daily Attendance Register"}
-              </h3>
-              <div className="text-[11px] text-slate-600 font-semibold space-y-0.5 pt-1">
-                <div>
-                  Department: <strong>{reportData.programName}</strong> | Academic Year:{" "}
-                  <strong>2026-2027</strong> | Batch: <strong>2026-2030 Batch</strong>
-                </div>
-                <div>
-                  Year: <strong>{reportData.year || 1}</strong> | Sem:{" "}
-                  <strong>{reportData.semester || 1}</strong> | Section:{" "}
-                  <strong>{reportData.sectionName}</strong> | Dates: <strong>{startDate}</strong> to{" "}
-                  <strong>{endDate}</strong> ({sessions.length} Sessions)
+          {/* Live Daily Attendance Register (Screen Only) */}
+          <div className="bg-white border border-slate-300/80 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4 max-w-full overflow-hidden no-print">
+            {/* Table Institutional Header with Logo in Same Row */}
+            <div className="flex items-center justify-between gap-4 pb-4 border-b border-slate-200">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center">
+                <img
+                  src="/gvpihlr.png"
+                  alt="GVPIHLR University Crest"
+                  className="max-h-16 max-w-16 sm:max-h-20 sm:max-w-20 object-contain"
+                />
+              </div>
+
+              <div className="text-center flex-1 space-y-1">
+                <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 uppercase">
+                  {COLLEGE_NAME}
+                </h1>
+                <h2 className="text-xs sm:text-sm font-semibold text-slate-600">
+                  {COLLEGE_SUBTITLE}
+                </h2>
+                <h3 className="text-sm sm:text-base font-black text-slate-900 mt-1">
+                  {selectedSubjectId
+                    ? "Subject-Wise Class Daily Attendance Register"
+                    : "Consolidated Class Daily Attendance Register"}
+                </h3>
+                <div className="text-[11px] text-slate-600 font-semibold space-y-0.5 pt-1">
+                  <div>
+                    Department: <strong>{reportData.programName}</strong> | Academic Year:{" "}
+                    <strong>2026-2027</strong> | Batch: <strong>2026-2030 Batch</strong>
+                  </div>
+                  <div>
+                    Year: <strong>{reportData.year || 1}</strong> | Sem:{" "}
+                    <strong>{reportData.semester || 1}</strong> | Section:{" "}
+                    <strong>{reportData.sectionName}</strong> | Dates: <strong>{startDate}</strong> to{" "}
+                    <strong>{endDate}</strong> ({sessions.length} Sessions)
+                  </div>
                 </div>
               </div>
+
+              <div className="w-16 sm:w-20 flex-shrink-0 hidden sm:block print:block" />
             </div>
 
             {/* Matrix Register Table - Contained Scroll with Freeze Panes */}
@@ -2352,6 +2433,342 @@ export default function ReportsClient({
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          {/* =========================================================================
+              PRINT-ONLY PAGINATED DAILY ATTENDANCE REGISTER
+              2 Days per page + Final Summary Page (Total Held, Attended, %, Signatures)
+              All numbers formatted >= 10px
+              ========================================================================= */}
+          <div className="hidden print:block space-y-8">
+            {printDayBatches.map((batch) => (
+              <div
+                key={`matrix-batch-${batch.batchNum}`}
+                className="daily-matrix-page print-page-break bg-white p-2 space-y-3"
+              >
+                {/* Institutional Header with Logo in Same Row */}
+                <div className="flex items-center justify-between gap-4 pb-3 border-b-2 border-slate-400">
+                  <div className="w-16 h-16 flex-shrink-0 flex items-center justify-center">
+                    <img
+                      src="/gvpihlr.png"
+                      alt="GVPIHLR University Crest"
+                      className="max-h-16 max-w-16 object-contain"
+                    />
+                  </div>
+
+                  <div className="text-center flex-1 space-y-0.5">
+                    <h1 className="text-sm font-black tracking-tight text-slate-900 uppercase">
+                      {COLLEGE_NAME}
+                    </h1>
+                    <h2 className="text-[11px] font-semibold text-slate-700">
+                      {COLLEGE_SUBTITLE}
+                    </h2>
+                    <div className="inline-block px-3 py-0.5 rounded-full bg-slate-100 border border-slate-300">
+                      <h3 className="text-xs font-black text-slate-900 tracking-wide uppercase">
+                        Daily Attendance Register • Sheet {batch.batchNum} of {batch.totalBatches + 1}
+                      </h3>
+                    </div>
+                    <div className="text-[10px] text-slate-600 font-semibold space-y-0.5 pt-1">
+                      <div>
+                        Department: <strong>{reportData.programName}</strong> | Year:{" "}
+                        <strong>{reportData.year || 1}</strong> | Semester:{" "}
+                        <strong>{reportData.semester || 1}</strong> | Section:{" "}
+                        <strong>{reportData.sectionName}</strong>
+                      </div>
+                      <div>
+                        Sessions Recorded: <strong>{batch.dateRangeLabel}</strong> ({batch.allSessionsInBatch.length} Periods)
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="w-16 flex-shrink-0 text-right text-[10px] text-slate-600 font-bold">
+                    Sheet {batch.batchNum}/{batch.totalBatches + 1}
+                  </div>
+                </div>
+
+                {/* 2-Day Session Matrix Table */}
+                <table className="w-full border-collapse border border-slate-400 text-[10.5px] print-table">
+                  <thead>
+                    {/* Row 1: Roll No, Name, and Date Blocks */}
+                    <tr className="bg-slate-100 border-b border-slate-400">
+                      <th
+                        rowSpan={3}
+                        className="border border-slate-400 px-1 py-1 text-center font-bold text-slate-900 w-8 text-[10px]"
+                      >
+                        #
+                      </th>
+                      <th
+                        rowSpan={3}
+                        className="border border-slate-400 px-2 py-1 text-left font-bold text-slate-900 w-24 text-[10.5px]"
+                      >
+                        Roll No
+                      </th>
+                      <th
+                        rowSpan={3}
+                        className="border border-slate-400 px-2 py-1 text-left font-bold text-slate-900 min-w-[140px] text-[10.5px]"
+                      >
+                        Student Name
+                      </th>
+                      {batch.days.map((day) => (
+                        <th
+                          key={day.dateKey}
+                          colSpan={day.sessions.length}
+                          className="border border-slate-400 px-2 py-1 text-center font-bold text-slate-900 bg-slate-200/90 text-[11px]"
+                        >
+                          {day.formattedDate} ({day.sessions.length} {day.sessions.length === 1 ? "Period" : "Periods"})
+                        </th>
+                      ))}
+                    </tr>
+
+                    {/* Row 2: Period Timings */}
+                    <tr className="bg-slate-50 border-b border-slate-400">
+                      {batch.allSessionsInBatch.map((s) => (
+                        <th
+                          key={`pt-${s.id}`}
+                          className="border border-slate-400 px-1 py-0.5 text-center font-semibold text-[10px] text-slate-700 bg-slate-50"
+                        >
+                          {s.periodTiming}
+                        </th>
+                      ))}
+                    </tr>
+
+                    {/* Row 3: Subject Short Code */}
+                    <tr className="bg-slate-50 border-b border-slate-400">
+                      {batch.allSessionsInBatch.map((s) => (
+                        <th
+                          key={`sc-${s.id}`}
+                          className="border border-slate-400 px-1 py-0.5 text-center font-bold text-[10px] text-blue-900 bg-blue-50/50"
+                          title={s.subjectName}
+                        >
+                          {s.subjectShortName}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {filteredStudents.length > 0 ? (
+                      filteredStudents.map((st, idx) => (
+                        <tr
+                          key={st.studentId}
+                          className={`border-b border-slate-400 ${
+                            idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"
+                          }`}
+                        >
+                          <td className="border border-slate-400 px-1 py-1 text-center font-mono font-semibold text-slate-600 text-[10px]">
+                            {idx + 1}
+                          </td>
+                          <td className="border border-slate-400 px-2 py-1 font-mono font-bold text-slate-900 whitespace-nowrap text-[10.5px]">
+                            {st.rollNumber}
+                          </td>
+                          <td className="border border-slate-400 px-2 py-1 font-bold text-slate-900 uppercase truncate max-w-[170px] text-[10.5px]">
+                            {st.fullName}
+                          </td>
+                          {batch.allSessionsInBatch.map((sess) => {
+                            const status = st.attendanceMap?.[sess.id] || "-";
+                            const isPresent = status === "P";
+                            const isAbsent = status === "A";
+
+                            return (
+                              <td
+                                key={sess.id}
+                                className={`border border-slate-400 px-1 py-1 text-center font-bold text-[10.5px] ${
+                                  isPresent
+                                    ? "text-emerald-800 bg-emerald-50/60"
+                                    : isAbsent
+                                    ? "text-rose-800 bg-rose-50/60"
+                                    : "text-slate-400"
+                                }`}
+                              >
+                                {status}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={batch.allSessionsInBatch.length + 3}
+                          className="text-center py-6 text-slate-400 font-medium border border-slate-400"
+                        >
+                          No student records available for printing.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+
+                {/* Footer on Sheet */}
+                <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold pt-1 border-t border-slate-200">
+                  <span>Gayatri Vidya Parishad Institute of Higher Learning and Research</span>
+                  <span>Daily Matrix Register • Sheet {batch.batchNum} of {batch.totalBatches + 1}</span>
+                </div>
+              </div>
+            ))}
+
+            {/* Final Page: Cumulative Totals & Signatures */}
+            <div className="daily-matrix-page print-page-break bg-white p-2 space-y-4">
+              {/* Institutional Header with Logo in Same Row */}
+              <div className="flex items-center justify-between gap-4 pb-3 border-b-2 border-slate-400">
+                <div className="w-16 h-16 flex-shrink-0 flex items-center justify-center">
+                  <img
+                    src="/gvpihlr.png"
+                    alt="GVPIHLR University Crest"
+                    className="max-h-16 max-w-16 object-contain"
+                  />
+                </div>
+
+                <div className="text-center flex-1 space-y-0.5">
+                  <h1 className="text-sm font-black tracking-tight text-slate-900 uppercase">
+                    {COLLEGE_NAME}
+                  </h1>
+                  <h2 className="text-[11px] font-semibold text-slate-700">
+                    {COLLEGE_SUBTITLE}
+                  </h2>
+                  <div className="inline-block px-3 py-0.5 rounded-full bg-slate-100 border border-slate-300">
+                    <h3 className="text-xs font-black text-slate-900 tracking-wide uppercase">
+                      Cumulative Attendance Summary &amp; Eligibility Register (Final Sheet)
+                    </h3>
+                  </div>
+                  <div className="text-[10px] text-slate-600 font-semibold space-y-0.5 pt-1">
+                    <div>
+                      Department: <strong>{reportData.programName}</strong> | Year:{" "}
+                      <strong>{reportData.year || 1}</strong> | Semester:{" "}
+                      <strong>{reportData.semester || 1}</strong> | Section:{" "}
+                      <strong>{reportData.sectionName}</strong>
+                    </div>
+                    <div>
+                      Cumulative Window: <strong>{startDate}</strong> to <strong>{endDate}</strong> ({sessions.length} Total Conducted Sessions)
+                    </div>
+                  </div>
+                </div>
+
+                <div className="w-16 flex-shrink-0 text-right text-[10px] text-slate-600 font-bold">
+                  Final Sheet ({printDayBatches.length + 1}/{printDayBatches.length + 1})
+                </div>
+              </div>
+
+              {/* Cumulative Summary Table */}
+              <table className="w-full border-collapse border border-slate-400 text-[10.5px] print-table">
+                <thead>
+                  <tr className="bg-slate-100 text-slate-900 border-b border-slate-400 text-[10.5px]">
+                    <th className="border border-slate-400 px-1 py-1.5 text-center font-bold w-10 text-[10px]">
+                      #
+                    </th>
+                    <th className="border border-slate-400 px-3 py-1.5 text-left font-bold w-28 text-[10.5px]">
+                      Roll Number
+                    </th>
+                    <th className="border border-slate-400 px-3 py-1.5 text-left font-bold text-[10.5px]">
+                      Student Name
+                    </th>
+                    <th className="border border-slate-400 px-2 py-1.5 text-center font-bold w-24 text-[10.5px]">
+                      Total Held
+                    </th>
+                    <th className="border border-slate-400 px-2 py-1.5 text-center font-bold text-emerald-900 bg-emerald-50/70 w-28 text-[10.5px]">
+                      Total Attended
+                    </th>
+                    <th className="border border-slate-400 px-2 py-1.5 text-center font-bold text-rose-900 bg-rose-50/70 w-24 text-[10.5px]">
+                      Total Absent
+                    </th>
+                    <th className="border border-slate-400 px-2 py-1.5 text-center font-bold w-28 text-[10.5px]">
+                      Percentage (%)
+                    </th>
+                    <th className="border border-slate-400 px-3 py-1.5 text-center font-bold w-36 text-[10px]">
+                      Eligibility Status
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {filteredStudents.length > 0 ? (
+                    filteredStudents.map((st, idx) => {
+                      const isEligible = st.percentage !== null && st.percentage >= 75.0;
+                      return (
+                        <tr
+                          key={st.studentId}
+                          className={`border-b border-slate-400 ${
+                            idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"
+                          }`}
+                        >
+                          <td className="border border-slate-400 px-1 py-1 text-center font-mono font-semibold text-slate-600 text-[10px]">
+                            {idx + 1}
+                          </td>
+                          <td className="border border-slate-400 px-3 py-1 font-mono font-bold text-slate-900 whitespace-nowrap text-[10.5px]">
+                            {st.rollNumber}
+                          </td>
+                          <td className="border border-slate-400 px-3 py-1 font-bold text-slate-900 uppercase text-[10.5px]">
+                            {st.fullName}
+                          </td>
+                          <td className="border border-slate-400 px-2 py-1 text-center font-bold text-slate-800 text-[10.5px]">
+                            {st.totalClasses}
+                          </td>
+                          <td className="border border-slate-400 px-2 py-1 text-center font-bold text-emerald-800 bg-emerald-50/30 text-[10.5px]">
+                            {st.attendedClasses}
+                          </td>
+                          <td className="border border-slate-400 px-2 py-1 text-center font-bold text-rose-800 bg-rose-50/30 text-[10.5px]">
+                            {st.absentClasses}
+                          </td>
+                          <td
+                            className={`border border-slate-400 px-2 py-1 text-center font-mono font-bold text-[10.5px] ${
+                              st.totalClasses === 0
+                                ? "text-slate-400"
+                                : isEligible
+                                ? "text-emerald-800 bg-emerald-50/50"
+                                : "text-rose-800 bg-rose-50/50"
+                            }`}
+                          >
+                            {st.totalClasses === 0
+                              ? "—"
+                              : st.percentage !== null
+                              ? `${st.percentage.toFixed(2)}%`
+                              : "—"}
+                          </td>
+                          <td className="border border-slate-400 px-3 py-1 text-center font-bold text-[10px]">
+                            {st.totalClasses === 0 ? (
+                              <span className="text-slate-400">Not Started</span>
+                            ) : isEligible ? (
+                              <span className="text-emerald-700">ELIGIBLE</span>
+                            ) : (
+                              <span className="text-rose-700">DEFAULTER (&lt;75%)</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={8} className="text-center py-6 text-slate-400 font-medium border border-slate-400">
+                        No student records available.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+
+              {/* Official Signatures Row */}
+              <table className="w-full border-none mt-10 print-signatures-table">
+                <tbody>
+                  <tr>
+                    <td className="w-1/3 text-center border-none px-4">
+                      <div className="border-t-2 border-slate-700 pt-2 text-[11px] font-bold text-slate-900">
+                        Class Coordinator / Mentor
+                      </div>
+                    </td>
+                    <td className="w-1/3 text-center border-none px-4">
+                      <div className="border-t-2 border-slate-700 pt-2 text-[11px] font-bold text-slate-900">
+                        Head of Department (HOD)
+                      </div>
+                    </td>
+                    <td className="w-1/3 text-center border-none px-4">
+                      <div className="border-t-2 border-slate-700 pt-2 text-[11px] font-bold text-slate-900">
+                        Dean of Academic Affairs
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

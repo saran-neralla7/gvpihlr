@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict xjly2RFV8b6cJQ5do2Fw3hrt92rf0ZQuyIkbRcZa45Eui0lbQbq7UIBToeFcz0m
+\restrict 1vR4RySk0cnK92yBM4MyK1ETgAB7jj9QEGZfxkefLIBvYppYuMGid6vLKzK5caT
 
 -- Dumped from database version 16.15
 -- Dumped by pg_dump version 16.15
@@ -85718,6 +85718,8 @@ cmv67b9xo0003irlcmp8w0zds	cmuzp7hsc000bbynpr08m4i25	LOGOUT	User	cmuzp7hsc000bbyn
 cmv67bved0005irlcmxbuw8m4	cmv5cxakt000110wnsmb2rfxg	LOGIN	User	cmv5cxakt000110wnsmb2rfxg	::1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36	SUCCESS	{"roles": ["OFFICE"], "device": "Windows • Google Chrome (Desktop)", "description": "User \\"GVPIHLR Central Academic Office\\" (office) signed in successfully as OFFICE"}	2026-10-13 04:49:30.806
 cmv67c1e00007irlcryk3hpt1	cmv5cxakt000110wnsmb2rfxg	LOGOUT	User	cmv5cxakt000110wnsmb2rfxg	\N	\N	SUCCESS	{}	2026-10-13 04:49:38.569
 cmv67cb800009irlcrfpb0w0h	cmuzp7hsc000bbynpr08m4i25	LOGIN	User	cmuzp7hsc000bbynpr08m4i25	::1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36	SUCCESS	{"roles": ["SUPER_ADMIN"], "device": "Windows • Google Chrome (Desktop)", "description": "User \\"GVPIHLR Super Administrator\\" (admin) signed in successfully as SUPER_ADMIN"}	2026-10-13 04:49:51.312
+cmv68p4ow0001144frr2xgwgg	cmuzp7hsc000bbynpr08m4i25	LOGOUT	User	cmuzp7hsc000bbynpr08m4i25	\N	\N	SUCCESS	{}	2026-10-13 05:27:48.992
+cmv68r9970003144fcyyjxm04	cmuzp7hsc000bbynpr08m4i25	LOGIN	User	cmuzp7hsc000bbynpr08m4i25	::1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36	SUCCESS	{"roles": ["SUPER_ADMIN"], "device": "Windows • Google Chrome (Desktop)", "description": "User \\"GVPIHLR Super Administrator\\" (admin) signed in successfully as SUPER_ADMIN"}	2026-10-13 05:29:28.22
 \.
 
 
@@ -91715,7 +91717,7 @@ cmuzu9oof003iydphgyvr3cii	BSK	bsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeem
 cmuzu9oox004rydph03f490gx	GSK	gsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. G Santosh Kumar	+91 9440112233	t	f	2026-10-08 18:00:33.331	0	\N	2026-10-08 17:57:16.737	2026-10-12 14:52:18.442	\N
 cmv0jr1am002pmzmyhq3k4q28	26UECHE0001	26ueche0001@student.gvpihlr.edu.in	$2a$10$HZMHHs5f2Zp0J2Ce0aM8FOjzTBDfg6R6cKGzdtKRsz0d3zm3o4CYO	ADIRAJU SRI NAGA PRADYUMNA	8019888678	t	f	2026-10-12 14:58:16.588	0	\N	2026-10-09 05:50:36.599	2026-10-12 14:58:16.589	\N
 cmv5cxakt000110wnsmb2rfxg	office	office@gvpihlr.edu.in	$2a$12$eHRDQeKY5VRYfvRvea56qe.3rUAtZNlnupZqsbbT635dtHW221Z1C	GVPIHLR Central Academic Office	+91 891 2739507	t	f	2026-10-13 04:49:30.789	0	\N	2026-10-12 14:38:22.157	2026-10-13 04:49:30.79	\N
-cmuzp7hsc000bbynpr08m4i25	admin	admin@gvpihlr.edu.in	$2a$12$olLcQ23IA0/wz/9ao901q.un91tdowzuc1DUEvtNvPsUZ2sGYuR5q	GVPIHLR Super Administrator	+91 9876543210	t	f	2026-10-13 04:49:51.296	0	\N	2026-10-08 15:35:36.396	2026-10-13 04:49:51.297	\N
+cmuzp7hsc000bbynpr08m4i25	admin	admin@gvpihlr.edu.in	$2a$12$olLcQ23IA0/wz/9ao901q.un91tdowzuc1DUEvtNvPsUZ2sGYuR5q	GVPIHLR Super Administrator	+91 9876543210	t	f	2026-10-13 05:29:28.203	0	\N	2026-10-08 15:35:36.396	2026-10-13 05:29:28.204	\N
 \.
 
 
@@ -94023,5 +94025,5 @@ ALTER TABLE ONLY public."UserRole"
 -- PostgreSQL database dump complete
 --
 
-\unrestrict xjly2RFV8b6cJQ5do2Fw3hrt92rf0ZQuyIkbRcZa45Eui0lbQbq7UIBToeFcz0m
+\unrestrict 1vR4RySk0cnK92yBM4MyK1ETgAB7jj9QEGZfxkefLIBvYppYuMGid6vLKzK5caT
 

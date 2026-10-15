@@ -326,20 +326,24 @@ const BRANCH_MAP: Record<string, string[]> = {
   "CHEMICAL": ["BTECH-CHEMICAL-ENG_1"],
 };
 
-// 12 Dates starting from 22-Sep-2026
+// 16 Dates from 22-Sep-2026 to 13-Oct-2026
 const DATES = [
-  { sheet: "Timetable_Final_22", date: "2026-09-22", col: 8 },
-  { sheet: "Timetable_Final_23", date: "2026-09-23", col: 9 },
-  { sheet: "Timetable_Final_25", date: "2026-09-25", col: 10 },
-  { sheet: "Timetable_Final_26", date: "2026-09-26", col: 11 },
-  { sheet: "Timetable_Final_28", date: "2026-09-28", col: 12 },
-  { sheet: "Timetable_Final_29", date: "2026-09-29", col: 13 },
-  { sheet: "Timetable_Final_30", date: "2026-09-30", col: 14 },
-  { sheet: "Timetable_Final_01", date: "2026-10-01", col: 15 },
-  { sheet: "Timetable_Final_03", date: "2026-10-03", col: 16 },
-  { sheet: "Timetable_Final_05", date: "2026-10-05", col: 17 },
-  { sheet: "Timetable_Final_06", date: "2026-10-06", col: 18 },
-  { sheet: "Timetable_Final_07", date: "2026-10-07", col: 19 },
+  { sheet: "Copy of Timetable_Final", date: "2026-09-22", col: 11 },
+  { sheet: "Timetable_Final_23", date: "2026-09-23", col: 12 },
+  { sheet: "Timetable_Final_25", date: "2026-09-25", col: 13 },
+  { sheet: "Timetable_Final_26", date: "2026-09-26", col: 14 },
+  { sheet: "Timetable_Final_28", date: "2026-09-28", col: 15 },
+  { sheet: "Timetable_Final_29", date: "2026-09-29", col: 16 },
+  { sheet: "Timetable_Final_30", date: "2026-09-30", col: 17 },
+  { sheet: "Timetable_Final_01", date: "2026-10-01", col: 18 },
+  { sheet: "Timetable_Final_03", date: "2026-10-03", col: 19 },
+  { sheet: "Timetable_Final_05", date: "2026-10-05", col: 20 },
+  { sheet: "Timetable_Final_06", date: "2026-10-06", col: 21 },
+  { sheet: "Timetable_Final_07", date: "2026-10-07", col: 22 },
+  { sheet: "Timetable_Final_08", date: "2026-10-08", col: 23 },
+  { sheet: "Timetable_Final_09", date: "2026-10-09", col: 24 },
+  { sheet: "Timetable_Final_12", date: "2026-10-12", col: 25 },
+  { sheet: "Timetable_Final_13", date: "2026-10-13", col: 26 },
 ];
 
 function resolveSubjectDef(raw: string): SubjectDef | null {
@@ -514,8 +518,8 @@ async function main() {
 
   // 5. Read Attendance File (Roll No -> Map<dateStr, "P" | "A">)
   console.log("📋 Reading Student Attendance File...");
-  const wbAtt = xlsx.readFile("ATTENDANCE (2026-27)  GVPIHLR  09-10-2026.xlsx");
-  const sheetAtt = wbAtt.Sheets[wbAtt.SheetNames[0]];
+  const wbAtt = xlsx.readFile("ATTENDANCE-GVPIHLR.xlsx");
+  const sheetAtt = wbAtt.Sheets["ATTENDANCE (13-10-2026)"] || wbAtt.Sheets[wbAtt.SheetNames[0]];
   const attRows: any[][] = xlsx.utils.sheet_to_json(sheetAtt, { header: 1 });
 
   // studentRoll -> Map<dateStr, "P" | "A">
@@ -537,7 +541,7 @@ async function main() {
       studentDates.set(d.date, mark === "P" ? "P" : "A");
     }
   }
-  console.log(`✅ Loaded attendance records for ${attendanceMap.size} students across 12 dates.\n`);
+  console.log(`✅ Loaded attendance records for ${attendanceMap.size} students across ${DATES.length} dates.\n`);
 
   // 6. Pre-load Enrolled Students per Section
   const sectionEnrollmentsMap = new Map<string, { studentId: string; rollNumber: string }[]>();
@@ -565,8 +569,8 @@ async function main() {
   await prisma.attendanceSession.deleteMany({});
   console.log("✅ Clean state ready.\n");
 
-  console.log("🗓️ Processing 12 Dates of Timetable Schedules & Generating Sessions...");
-  const wbTT = xlsx.readFile("1st Sem TIME TABLE 2026-2027_1.1.2.xlsx");
+  console.log(`🗓️ Processing ${DATES.length} Dates of Timetable Schedules & Generating Sessions...`);
+  const wbTT = xlsx.readFile("1stSemTIME-TABLE 2026-2027_1.1.2.xlsx");
 
   // Quick lookup from section key e.g. "BTECH-CS-AND-ENG_1" -> Section
   const secLookup = new Map<string, any>();

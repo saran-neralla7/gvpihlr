@@ -42,7 +42,7 @@ export default function AllSectionsPrintReports({
     initialData.dateRange?.startDate || "2026-09-22"
   );
   const [toDate, setToDate] = useState<string>(
-    initialData.dateRange?.endDate || "2026-10-07"
+    initialData.dateRange?.endDate || "2026-10-13"
   );
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 

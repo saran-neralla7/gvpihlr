@@ -151,7 +151,7 @@ export default function ReportsClient({
   );
 
   const [startDate, setStartDate] = useState(initialReport.startDate || "2026-09-22");
-  const [endDate, setEndDate] = useState(initialReport.endDate || "2026-10-07");
+  const [endDate, setEndDate] = useState(initialReport.endDate || "2026-10-13");
 
   const [reportData, setReportData] = useState(initialReport);
   const [searchQuery, setSearchQuery] = useState("");
@@ -511,8 +511,8 @@ export default function ReportsClient({
 
   const handleResetDates = () => {
     setStartDate("2026-09-22");
-    setEndDate("2026-10-07");
-    fetchReport(selectedSectionId, selectedSubjectId, "2026-09-22", "2026-10-07");
+    setEndDate("2026-10-13");
+    fetchReport(selectedSectionId, selectedSubjectId, "2026-09-22", "2026-10-13");
   };
 
   const filteredStudents = useMemo(() => {

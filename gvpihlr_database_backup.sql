@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict xht2zSocma67XRTlCCve12OCAZOshEJRZbNZXF4itSwE7UL2OGR4FERfAXeqMfF
+\restrict ArOZhha6MFNjwBMxB1LEfWbrjlCgdOmcVlfgqEMQe3fgjdCataFRc1yOI8botiS
 
 -- Dumped from database version 16.15
 -- Dumped by pg_dump version 16.15
@@ -120937,6 +120937,510 @@ cmv0mpux101lxgu0babqascv8	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpue4001zgu0bsx08nlfu	cm
 --
 
 COPY public."TimetableEntry" (id, "academicYearId", "assignmentId", "sectionId", "facultyId", "labBatchId", "dayOfWeek", "startTime", "endTime", "roomNumber", "isActive") FROM stdin;
+cmv9equz40001phkri1nta6vg	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpukm00k7gu0bvwqbwojq	cmv0jpmfl000rmzmybncitrn3	cmuzu9op5005fydphd5sve6c9	\N	1	09:00	10:00	G-302	t
+cmv9equzl0003phkrcc1w96v9	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujy00i7gu0bsiqrgkgk	cmv0jpmfl000rmzmybncitrn3	cmuzu9or300ciydphg75soxyh	\N	1	10:00	11:00	G-302	t
+cmv9equzm0005phkrvtsshj2i	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuk600ivgu0boo1zqty6	cmv0jpmfl000rmzmybncitrn3	cmuzu9op5005fydphd5sve6c9	\N	1	11:15	12:15	COMP. LAB-3	t
+cmv9equzn0007phkrzmnuh78z	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujw00i3gu0b208819ea	cmv0jpmfl000rmzmybncitrn3	cmuzu9oqf00a5ydph2smdmgbf	\N	1	12:15	13:15	G-302	t
+cmv9equzp0009phkrxh69u1fq	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuk400irgu0b2a4znvz5	cmv0jpmfl000rmzmybncitrn3	cmuzu9op5005fydphd5sve6c9	\N	1	14:15	15:15	G-302	t
+cmv9equzq000bphkr8sdwo9s8	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujw00i3gu0b208819ea	cmv0jpmfl000rmzmybncitrn3	cmuzu9oqf00a5ydph2smdmgbf	\N	1	15:15	16:15	G-302	t
+cmv9equzr000dphkrmg58fxz2	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpulm00mvgu0bjgppv6bh	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9op5005fydphd5sve6c9	\N	1	09:00	10:00	COMP. LAB-3	t
+cmv9equzr000fphkrd9lgyh5v	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpul800m3gu0bf1pfxyfd	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9oqf00a5ydph2smdmgbf	\N	1	10:00	11:00	G-303	t
+cmv9equzs000hphkrgpajvnqp	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpum200o7gu0bjgwk8ape	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9op5005fydphd5sve6c9	\N	1	11:15	12:15	G-303	t
+cmv9equzt000jphkr23yu8c55	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpule00mfgu0b1d7d40py	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9op5005fydphd5sve6c9	\N	1	12:15	13:15	G-303	t
+cmv9equzt000lphkrkxgse5bt	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpul800m3gu0bf1pfxyfd	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9oqf00a5ydph2smdmgbf	\N	1	14:15	15:15	G-303	t
+cmv9equzu000nphkrr6ifk1n8	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpul800m3gu0bf1pfxyfd	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9oqf00a5ydph2smdmgbf	\N	1	15:15	16:15	G-303	t
+cmv9equzv000pphkr9uzr8k9q	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuha00a3gu0bt1vbylmj	cmv0jpmfg000fmzmyqspzihe7	cmuzu9oqf00a5ydph2smdmgbf	\N	1	09:00	10:00	G-304	t
+cmv9equzw000rphkrmxzi4qts	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhb00a7gu0bb8putfwm	cmv0jpmfg000fmzmyqspzihe7	cmuzu9or300ciydphg75soxyh	\N	1	10:00	11:00	G-304	t
+cmv9equzw000tphkri9jj7in1	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhe00afgu0b1dh6tc1q	cmv0jpmfg000fmzmyqspzihe7	cmuzu9op5005fydphd5sve6c9	\N	1	11:15	12:15	G-304	t
+cmv9equzx000vphkrk211kyfw	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhg00angu0bfeb3nskr	cmv0jpmfg000fmzmyqspzihe7	cmuzu9ooh003mydphxxnw12oj	\N	1	12:15	13:15	G-304	t
+cmv9equzy000xphkrzpfyhti8	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhz00c7gu0blsne1nsz	cmv0jpmfg000fmzmyqspzihe7	cmuzu9op5005fydphd5sve6c9	\N	1	14:15	15:15	COMP. LAB-1	t
+cmv9equzy000zphkr4r6gp7pv	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuha00a3gu0bt1vbylmj	cmv0jpmfg000fmzmyqspzihe7	cmuzu9oqf00a5ydph2smdmgbf	\N	1	15:15	16:15	G-304	t
+cmv9equzz0011phkr1s2uiai8	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuir00ejgu0bq4jt4fee	cmv0jpmfj000lmzmywm02pk3z	cmuzu9op5005fydphd5sve6c9	\N	1	09:00	10:00	G-305	t
+cmv9eqv000013phkrcpdfuiip	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuis00engu0bwvmvv4p6	cmv0jpmfj000lmzmywm02pk3z	cmuzu9ooh003mydphxxnw12oj	\N	1	10:00	11:00	G-305	t
+cmv9eqv000015phkrd2r29bta	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuim00e3gu0b9wf4k8ah	cmv0jpmfj000lmzmywm02pk3z	cmuzu9oqf00a5ydph2smdmgbf	\N	1	11:15	12:15	G-305	t
+cmv9eqv010017phkr78tcgsbq	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuin00e7gu0bcprti0yr	cmv0jpmfj000lmzmywm02pk3z	cmuzu9or300ciydphg75soxyh	\N	1	12:15	13:15	G-305	t
+cmv9eqv010019phkrjll07zrf	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuip00efgu0b6ejxp2ah	cmv0jpmfj000lmzmywm02pk3z	cmuzu9op5005fydphd5sve6c9	\N	1	14:15	15:15	A-303,304	t
+cmv9eqv02001bphkr5de4mocn	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuim00e3gu0b9wf4k8ah	cmv0jpmfj000lmzmywm02pk3z	cmuzu9oqf00a5ydph2smdmgbf	\N	1	15:15	16:15	G-305	t
+cmv9eqv02001dphkr6xk05p01	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqt012ngu0bfbeyv112	cmv0jpmfy001lmzmyf0175cba	cmuzu9ooh003mydphxxnw12oj	\N	1	09:00	10:00	G-402	t
+cmv9eqv03001fphkrkew3qbx0	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpura0147gu0bx9djjhmc	cmv0jpmfy001lmzmyf0175cba	cmuzu9op5005fydphd5sve6c9	\N	1	10:00	11:00	G-302	t
+cmv9eqv03001hphkrxpmygvn2	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpur2013fgu0bjzqruwjd	cmv0jpmfy001lmzmyf0175cba	cmuzu9ooh003mydphxxnw12oj	\N	1	11:15	12:15	CHEM. LAB.	t
+cmv9eqv04001jphkrirrvaem0	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqn0123gu0b7a6vqfai	cmv0jpmfy001lmzmyf0175cba	cmuzu9oqf00a5ydph2smdmgbf	\N	1	12:15	13:15	G-402	t
+cmv9eqv04001lphkr2f6rgfpy	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqq012fgu0bsp8jd1gk	cmv0jpmfy001lmzmyf0175cba	cmuzu9op5005fydphd5sve6c9	\N	1	14:15	15:15	COMP. LAB-2	t
+cmv9eqv05001nphkrizjp5170	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqn0123gu0b7a6vqfai	cmv0jpmfy001lmzmyf0175cba	cmuzu9oqf00a5ydph2smdmgbf	\N	1	15:15	16:15	G-402	t
+cmv9eqv05001pphkrt7nau0yu	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpurx0163gu0b65dn4dc8	cmv0jpmg0001rmzmyc93smozj	cmuzu9oqf00a5ydph2smdmgbf	\N	1	09:00	10:00	G-403	t
+cmv9eqv06001rphkrb8d9z3tp	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpusl0187gu0bh6n0syis	cmv0jpmg0001rmzmyc93smozj	cmuzu9op5005fydphd5sve6c9	\N	1	10:00	11:00	G-403	t
+cmv9eqv06001tphkr8d0ia56s	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpus6016zgu0btf0fal6l	cmv0jpmg0001rmzmyc93smozj	cmuzu9opn0073ydphv2a59e4g	\N	1	11:15	12:15	G-403	t
+cmv9eqv07001vphkrxx9t3gfb	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpus3016ngu0b7b0mpfur	cmv0jpmg0001rmzmyc93smozj	cmuzu9ooh003mydphxxnw12oj	\N	1	12:15	13:15	G-403	t
+cmv9eqv07001xphkr8hmsxp2i	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpusc017fgu0bcihbgfo6	cmv0jpmg0001rmzmyc93smozj	cmuzu9ooh003mydphxxnw12oj	\N	1	14:15	15:15	CHEM. LAB.	t
+cmv9eqv08001zphkrn8ma00gc	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpurx0163gu0b65dn4dc8	cmv0jpmg0001rmzmyc93smozj	cmuzu9oqf00a5ydph2smdmgbf	\N	1	15:15	16:15	G-403	t
+cmv9eqv080021phkryrqug8ej	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuv501g7gu0bplr1e9k8	cmv0jpmg40023mzmypoo0djbb	cmuzu9op5005fydphd5sve6c9	\N	1	09:00	10:00	COMP. LAB-1	t
+cmv9eqv090023phkrmln3zl4g	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuug01e3gu0bs8bnocs4	cmv0jpmg40023mzmypoo0djbb	cmuzu9oqf00a5ydph2smdmgbf	\N	1	10:00	11:00	G-404	t
+cmv9eqv090025phkr7onh33of	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuuu01fbgu0bokwb81xn	cmv0jpmg40023mzmypoo0djbb	cmuzu9oq1008mydphm4jlnxo7	\N	1	11:15	12:15	G-404	t
+cmv9eqv090027phkr4rj1ie62	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuug01e3gu0bs8bnocs4	cmv0jpmg40023mzmypoo0djbb	cmuzu9oqf00a5ydph2smdmgbf	\N	1	12:15	13:15	G-404	t
+cmv9eqv0a0029phkr2dt237bv	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuv501g7gu0bplr1e9k8	cmv0jpmg40023mzmypoo0djbb	cmuzu9op5005fydphd5sve6c9	\N	1	14:15	15:15	G-404	t
+cmv9eqv0a002bphkra1ur9ryv	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuux01fjgu0bdpknblsb	cmv0jpmg40023mzmypoo0djbb	cmuzu9oqv00bjydphbbvzpk44	\N	1	15:15	16:15	G-404	t
+cmv9eqv0b002dphkr58mxdmo0	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpumn00q3gu0bbd8lxl5w	cmv0jpmfq0013mzmye9bpndkg	cmuzu9oqf00a5ydph2smdmgbf	\N	1	09:00	10:00	G-405	t
+cmv9eqv0c002fphkrkfs99lfn	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpunf00s7gu0bjeh3xmyf	cmv0jpmfq0013mzmye9bpndkg	cmuzu9op5005fydphd5sve6c9	\N	1	10:00	11:00	G-405	t
+cmv9eqv0c002hphkrfu9u39xq	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpump00q7gu0bxafxwgxd	cmv0jpmfq0013mzmye9bpndkg	cmuzu9or300ciydphg75soxyh	\N	1	11:15	12:15	G-405	t
+cmv9eqv0d002jphkrpekmw8u0	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpund00s3gu0bzoojgigx	cmv0jpmfq0013mzmye9bpndkg	cmuzu9op5005fydphd5sve6c9	\N	1	12:15	13:15	G-403, G-405	t
+cmv9eqv0d002lphkr4qwfld8n	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpump00q7gu0bxafxwgxd	cmv0jpmfq0013mzmye9bpndkg	cmuzu9or300ciydphg75soxyh	\N	1	14:15	15:15	G-405	t
+cmv9eqv0e002nphkrfhg8md4j	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpums00qfgu0bjo3am5ih	cmv0jpmfq0013mzmye9bpndkg	cmuzu9op5005fydphd5sve6c9	\N	1	15:15	16:15	G-405	t
+cmv9eqv0e002pphkrwu6ity3p	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo200u3gu0b7aq8sxfc	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9oqf00a5ydph2smdmgbf	\N	1	09:00	10:00	G-405	t
+cmv9eqv0f002rphkrwgdzevc1	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuor00w7gu0brvf68zic	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9op5005fydphd5sve6c9	\N	1	10:00	11:00	G-405	t
+cmv9eqv0f002tphkryx2dwp8m	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo400u7gu0b2nhcpalo	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9or300ciydphg75soxyh	\N	1	11:15	12:15	G-405	t
+cmv9eqv0g002vphkr6uvdxrql	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuoq00w3gu0bk5lyqum2	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9op5005fydphd5sve6c9	\N	1	12:15	13:15	G-403, G-405	t
+cmv9eqv0g002xphkr2bxkhfnz	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo400u7gu0b2nhcpalo	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9or300ciydphg75soxyh	\N	1	14:15	15:15	G-405	t
+cmv9eqv0h002zphkrrv4470ak	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo700ufgu0b6eadkj3j	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9op5005fydphd5sve6c9	\N	1	15:15	16:15	G-405	t
+cmv9eqv0h0031phkr434xbczn	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvv01ifgu0bbwidpd2y	cmv0jpmg60029mzmy20g7hxvl	cmuzu9op5005fydphd5sve6c9	\N	1	09:00	10:00	G-408	t
+cmv9eqv0i0033phkrro2gcugi	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuw901jjgu0bq68fzlkk	cmv0jpmg60029mzmy20g7hxvl	cmuzu9oqv00bjydphbbvzpk44	\N	1	10:00	11:00	G-408	t
+cmv9eqv0i0035phkr3z05nfba	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuw601jbgu0b0hlvsgk1	cmv0jpmg60029mzmy20g7hxvl	cmuzu9oq1008mydphm4jlnxo7	\N	1	11:15	12:15	G-408	t
+cmv9eqv0i0037phkrimj21a9w	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvr01i3gu0b2g2mel7e	cmv0jpmg60029mzmy20g7hxvl	cmuzu9oqf00a5ydph2smdmgbf	\N	1	12:15	13:15	G-408	t
+cmv9eqv0j0039phkrzm9fleb0	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvx01ingu0bg6ld6mic	cmv0jpmg60029mzmy20g7hxvl	cmuzu9ooh003mydphxxnw12oj	\N	1	14:15	15:15	E-408	t
+cmv9eqv0j003bphkre0ce4472	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuwh01k7gu0bpvs24wes	cmv0jpmg60029mzmy20g7hxvl	cmuzu9op5005fydphd5sve6c9	\N	1	15:15	16:15	G-408	t
+cmv9eqv0k003dphkrwsih0r94	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupv00zngu0b4kxvkufh	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9opy0087ydpho4qo8und	\N	1	09:00	10:00	E-409	t
+cmv9eqv0k003fphkryw6ic6l9	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupd00y3gu0bxeajuxpk	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9oqf00a5ydph2smdmgbf	\N	1	10:00	11:00	E-409	t
+cmv9eqv0l003hphkrknkvbf1d	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuq20107gu0bbipzvgim	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9op5005fydphd5sve6c9	\N	1	11:15	12:15	E-409	t
+cmv9eqv0l003jphkri1kh88kf	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupd00y3gu0bxeajuxpk	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9oqf00a5ydph2smdmgbf	\N	1	12:15	13:15	E-409	t
+cmv9eqv0l003lphkrrfyzg2yj	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupr00zbgu0bam30rzdb	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9oq1008mydphm4jlnxo7	\N	1	14:15	15:15	E-409	t
+cmv9eqv0m003nphkrdti6z3v2	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupk00yngu0bljzfe56d	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9ooh003mydphxxnw12oj	\N	1	15:15	16:15	E-409	t
+cmv9eqv0m003pphkrgbfjni1e	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpugc007bgu0bnfeoot44	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oq1008mydphm4jlnxo7	\N	1	09:00	10:00	E-410	t
+cmv9eqv0n003rphkrg9dxq302	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpufx0063gu0b6fuyue47	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oqf00a5ydph2smdmgbf	\N	1	10:00	11:00	E-410	t
+cmv9eqv0n003tphkrd51etk2e	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpugm0087gu0bzg6x4zcf	cmv0jpmfd0009mzmyli6c12jp	cmuzu9op5005fydphd5sve6c9	\N	1	11:15	12:15	COMP. LAB-1	t
+cmv9eqv0o003vphkrbf73g1yg	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpufx0063gu0b6fuyue47	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oqf00a5ydph2smdmgbf	\N	1	12:15	13:15	E-410	t
+cmv9eqv0o003xphkr1imyfsuc	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpug3006ngu0b7i591w9e	cmv0jpmfd0009mzmyli6c12jp	cmuzu9ooh003mydphxxnw12oj	\N	1	14:15	15:15	COMP. LAB-4	t
+cmv9eqv0o003zphkra07gcfan	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpufx0063gu0b6fuyue47	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oqf00a5ydph2smdmgbf	\N	1	15:15	16:15	E-410	t
+cmv9eqv0p0041phkrds2f4vb5	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuf6003zgu0b90rroi31	cmv0jpmf30003mzmyilhkqgfs	cmuzu9ooh003mydphxxnw12oj	\N	1	09:00	10:00	E-411	t
+cmv9eqv0p0043phkrq2aeajam	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuee0023gu0bc4gefp5y	cmv0jpmf30003mzmyilhkqgfs	cmuzu9oqf00a5ydph2smdmgbf	\N	1	10:00	11:00	E-411	t
+cmv9eqv0q0045phkr8xetmtba	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuf4003vgu0bfhyd2fqw	cmv0jpmf30003mzmyilhkqgfs	cmuzu9ooe003hydphj3yb044c	\N	1	11:15	12:15	E-411	t
+cmv9eqv0q0047phkrzepodtxo	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuf6003zgu0b90rroi31	cmv0jpmf30003mzmyilhkqgfs	cmuzu9ooh003mydphxxnw12oj	\N	1	12:15	13:15	E-411	t
+cmv9eqv0r0049phkrek7e01jt	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuf4003vgu0bfhyd2fqw	cmv0jpmf30003mzmyilhkqgfs	cmuzu9ooe003hydphj3yb044c	\N	1	14:15	15:15	E-411	t
+cmv9eqv0r004bphkr5ra39amb	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuee0023gu0bc4gefp5y	cmv0jpmf30003mzmyilhkqgfs	cmuzu9oqf00a5ydph2smdmgbf	\N	1	15:15	16:15	E-411	t
+cmv9eqv0r004dphkrgn732hgk	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputh01azgu0b7x3cstbl	cmv0jpmg2001xmzmyx16lscnz	cmuzu9opn0073ydphv2a59e4g	\N	1	09:00	10:00	E-412	t
+cmv9eqv0s004fphkrmu4ql59h	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputk01bbgu0bm8dc931s	cmv0jpmg2001xmzmyx16lscnz	cmuzu9oq1008mydphm4jlnxo7	\N	1	10:00	11:00	E-412	t
+cmv9eqv0t004hphkrsjegry91	cmuzp7hsm000ebynpfs5ze3wj	cmv0mput601a3gu0b70lpnwdr	cmv0jpmg2001xmzmyx16lscnz	cmuzu9oqf00a5ydph2smdmgbf	\N	1	11:15	12:15	E-412	t
+cmv9eqv0t004jphkrnn4qrnat	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputd01angu0bq01niudu	cmv0jpmg2001xmzmyx16lscnz	cmuzu9ooh003mydphxxnw12oj	\N	1	12:15	13:15	E-412	t
+cmv9eqv0u004lphkrf0giuyze	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputa01afgu0bl38jb60i	cmv0jpmg2001xmzmyx16lscnz	cmuzu9op5005fydphd5sve6c9	\N	1	14:15	15:15	A-301,302	t
+cmv9eqv0u004nphkrsrmmrkbx	cmuzp7hsm000ebynpfs5ze3wj	cmv0mput601a3gu0b70lpnwdr	cmv0jpmg2001xmzmyx16lscnz	cmuzu9oqf00a5ydph2smdmgbf	\N	1	15:15	16:15	E-412	t
+cmv9eqv0v004pphkrpm5ru9us	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujy00i7gu0bsiqrgkgk	cmv0jpmfl000rmzmybncitrn3	cmuzu9or300ciydphg75soxyh	\N	2	09:00	10:00	G-302	t
+cmv9eqv0w004rphkrlywc8m6g	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujw00i3gu0b208819ea	cmv0jpmfl000rmzmybncitrn3	cmuzu9oqf00a5ydph2smdmgbf	\N	2	10:00	11:00	G-302	t
+cmv9eqv0w004tphkrkirbrhkc	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuk600ivgu0boo1zqty6	cmv0jpmfl000rmzmybncitrn3	cmuzu9op5005fydphd5sve6c9	\N	2	11:15	12:15	G-302	t
+cmv9eqv0x004vphkrrey25rmf	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujw00i3gu0b208819ea	cmv0jpmfl000rmzmybncitrn3	cmuzu9oqf00a5ydph2smdmgbf	\N	2	12:15	13:15	G-302	t
+cmv9eqv0x004xphkr9gfx92ja	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuk000ifgu0beoiya2q6	cmv0jpmfl000rmzmybncitrn3	cmuzu9op5005fydphd5sve6c9	\N	2	14:15	15:15	COMP. LAB-2	t
+cmv9eqv0x004zphkrvtexuqeg	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujw00i3gu0b208819ea	cmv0jpmfl000rmzmybncitrn3	cmuzu9oqf00a5ydph2smdmgbf	\N	2	15:15	16:15	G-302	t
+cmv9eqv0y0051phkrzgjxav3i	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpule00mfgu0b1d7d40py	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9op5005fydphd5sve6c9	\N	2	09:00	10:00	COMP. LAB-2	t
+cmv9eqv0y0053phkrojd06guq	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpul800m3gu0bf1pfxyfd	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9oqf00a5ydph2smdmgbf	\N	2	10:00	11:00	G-303	t
+cmv9eqv0z0055phkrunj7f5nr	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpum200o7gu0bjgwk8ape	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9op5005fydphd5sve6c9	\N	2	11:15	12:15	G-303	t
+cmv9eqv0z0057phkrd58t6wb1	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuli00mngu0bxd41bk89	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9ooh003mydphxxnw12oj	\N	2	12:15	13:15	G-303	t
+cmv9eqv100059phkr9m1piqkp	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpulk00mrgu0bb0oc6fh5	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9op5005fydphd5sve6c9	\N	2	14:15	15:15	G-303	t
+cmv9eqv10005bphkrudexqz4v	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpul800m3gu0bf1pfxyfd	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9oqf00a5ydph2smdmgbf	\N	2	15:15	16:15	G-303	t
+cmv9eqv10005dphkruhziiq5z	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhf00ajgu0bozfhe4kw	cmv0jpmfg000fmzmyqspzihe7	cmuzu9op5005fydphd5sve6c9	\N	2	09:00	10:00	G-304	t
+cmv9eqv11005fphkrcabqbtkx	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhg00angu0bfeb3nskr	cmv0jpmfg000fmzmyqspzihe7	cmuzu9ooh003mydphxxnw12oj	\N	2	10:00	11:00	G-304	t
+cmv9eqv11005hphkrd7x5frva	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhb00a7gu0bb8putfwm	cmv0jpmfg000fmzmyqspzihe7	cmuzu9or300ciydphg75soxyh	\N	2	11:15	12:15	PHY LAB	t
+cmv9eqv12005jphkruvzsx86e	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuha00a3gu0bt1vbylmj	cmv0jpmfg000fmzmyqspzihe7	cmuzu9oqf00a5ydph2smdmgbf	\N	2	12:15	13:15	G-304	t
+cmv9eqv12005lphkrbt26jfc6	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuha00a3gu0bt1vbylmj	cmv0jpmfg000fmzmyqspzihe7	cmuzu9oqf00a5ydph2smdmgbf	\N	2	14:15	15:15	G-304	t
+cmv9eqv13005nphkrmmfkpxhd	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhz00c7gu0blsne1nsz	cmv0jpmfg000fmzmyqspzihe7	cmuzu9op5005fydphd5sve6c9	\N	2	15:15	16:15	G-304	t
+cmv9eqv13005pphkr3axb3761	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuin00e7gu0bcprti0yr	cmv0jpmfj000lmzmywm02pk3z	cmuzu9or300ciydphg75soxyh	\N	2	09:00	10:00	G-305	t
+cmv9eqv13005rphkrosabqe1k	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuip00efgu0b6ejxp2ah	cmv0jpmfj000lmzmywm02pk3z	cmuzu9op5005fydphd5sve6c9	\N	2	10:00	11:00	G-305	t
+cmv9eqv14005tphkr4vec91u4	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuim00e3gu0b9wf4k8ah	cmv0jpmfj000lmzmywm02pk3z	cmuzu9oqf00a5ydph2smdmgbf	\N	2	11:15	12:15	G-305	t
+cmv9eqv14005vphkrt1jrvcci	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuir00ejgu0bq4jt4fee	cmv0jpmfj000lmzmywm02pk3z	cmuzu9op5005fydphd5sve6c9	\N	2	12:15	13:15	G-305	t
+cmv9eqv15005xphkrgg89j1et	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuir00ejgu0bq4jt4fee	cmv0jpmfj000lmzmywm02pk3z	cmuzu9op5005fydphd5sve6c9	\N	2	14:15	15:15	COMP. LAB-3	t
+cmv9eqv15005zphkrvrbtwvjr	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuim00e3gu0b9wf4k8ah	cmv0jpmfj000lmzmywm02pk3z	cmuzu9oqf00a5ydph2smdmgbf	\N	2	15:15	16:15	G-305	t
+cmv9eqv160061phkr3o7ryxhl	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqx012zgu0boo84n4fg	cmv0jpmfy001lmzmyf0175cba	cmuzu9opn0073ydphv2a59e4g	\N	2	09:00	10:00	G-402	t
+cmv9eqv160063phkr4jfdurzs	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqn0123gu0b7a6vqfai	cmv0jpmfy001lmzmyf0175cba	cmuzu9oqf00a5ydph2smdmgbf	\N	2	10:00	11:00	G-402	t
+cmv9eqv160065phkrapggbee5	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpur2013fgu0bjzqruwjd	cmv0jpmfy001lmzmyf0175cba	cmuzu9ooh003mydphxxnw12oj	\N	2	11:15	12:15	CHEM. LAB.	t
+cmv9eqv170067phkrvqcuzsyc	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqn0123gu0b7a6vqfai	cmv0jpmfy001lmzmyf0175cba	cmuzu9oqf00a5ydph2smdmgbf	\N	2	12:15	13:15	G-402	t
+cmv9eqv170069phkrwx83yds6	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpur1013bgu0bwfa2ciwv	cmv0jpmfy001lmzmyf0175cba	cmuzu9oq1008mydphm4jlnxo7	\N	2	14:15	15:15	G-402	t
+cmv9eqv18006bphkrj374hqp2	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqt012ngu0bfbeyv112	cmv0jpmfy001lmzmyf0175cba	cmuzu9ooh003mydphxxnw12oj	\N	2	15:15	16:15	G-402	t
+cmv9eqv18006dphkrnjipgi4z	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpus3016ngu0b7b0mpfur	cmv0jpmg0001rmzmyc93smozj	cmuzu9ooh003mydphxxnw12oj	\N	2	09:00	10:00	G-403	t
+cmv9eqv18006fphkrz5054gny	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpusl0187gu0bh6n0syis	cmv0jpmg0001rmzmyc93smozj	cmuzu9op5005fydphd5sve6c9	\N	2	10:00	11:00	G-403	t
+cmv9eqv19006hphkrefw4gvm6	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpus6016zgu0btf0fal6l	cmv0jpmg0001rmzmyc93smozj	cmuzu9opn0073ydphv2a59e4g	\N	2	11:15	12:15	G-403	t
+cmv9eqv1a006jphkr99ig7r9h	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpurx0163gu0b65dn4dc8	cmv0jpmg0001rmzmyc93smozj	cmuzu9oqf00a5ydph2smdmgbf	\N	2	12:15	13:15	G-403	t
+cmv9eqv1a006lphkrm75ahi4d	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpusc017fgu0bcihbgfo6	cmv0jpmg0001rmzmyc93smozj	cmuzu9ooh003mydphxxnw12oj	\N	2	14:15	15:15	CHEM. LAB.	t
+cmv9eqv1b006nphkrwme69vob	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpurx0163gu0b65dn4dc8	cmv0jpmg0001rmzmyc93smozj	cmuzu9oqf00a5ydph2smdmgbf	\N	2	15:15	16:15	G-403	t
+cmv9eqv1b006pphkrz10ewqks	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuun01engu0bt2btep8d	cmv0jpmg40023mzmypoo0djbb	cmuzu9ooh003mydphxxnw12oj	\N	2	09:00	10:00	COMP. LAB-4	t
+cmv9eqv1c006rphkrnaktvur1	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuug01e3gu0bs8bnocs4	cmv0jpmg40023mzmypoo0djbb	cmuzu9oqf00a5ydph2smdmgbf	\N	2	10:00	11:00	G-404	t
+cmv9eqv1c006tphkria0o2zsj	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuuk01efgu0bniqp52ui	cmv0jpmg40023mzmypoo0djbb	cmuzu9op5005fydphd5sve6c9	\N	2	11:15	12:15	G-404	t
+cmv9eqv1d006vphkr7l0rn2xb	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuux01fjgu0bdpknblsb	cmv0jpmg40023mzmypoo0djbb	cmuzu9oqv00bjydphbbvzpk44	\N	2	12:15	13:15	G-404	t
+cmv9eqv1d006xphkrfshp38j6	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuv501g7gu0bplr1e9k8	cmv0jpmg40023mzmypoo0djbb	cmuzu9op5005fydphd5sve6c9	\N	2	14:15	15:15	G-404	t
+cmv9eqv1e006zphkrvbogxruf	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuug01e3gu0bs8bnocs4	cmv0jpmg40023mzmypoo0djbb	cmuzu9oqf00a5ydph2smdmgbf	\N	2	15:15	16:15	G-404	t
+cmv9eqv1e0071phkrfkcqs8zc	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpumn00q3gu0bbd8lxl5w	cmv0jpmfq0013mzmye9bpndkg	cmuzu9oqf00a5ydph2smdmgbf	\N	2	09:00	10:00	G-405	t
+cmv9eqv1e0073phkrsssg8dzm	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpunf00s7gu0bjeh3xmyf	cmv0jpmfq0013mzmye9bpndkg	cmuzu9op5005fydphd5sve6c9	\N	2	10:00	11:00	G-405	t
+cmv9eqv1f0075phkr37073eg5	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpump00q7gu0bxafxwgxd	cmv0jpmfq0013mzmye9bpndkg	cmuzu9or300ciydphg75soxyh	\N	2	11:15	12:15	G-405	t
+cmv9eqv1f0077phkrt8wfe4zc	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpunf00s7gu0bjeh3xmyf	cmv0jpmfq0013mzmye9bpndkg	cmuzu9op5005fydphd5sve6c9	\N	2	12:15	13:15	G-405	t
+cmv9eqv1g0079phkrb18v3xao	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpumn00q3gu0bbd8lxl5w	cmv0jpmfq0013mzmye9bpndkg	cmuzu9oqf00a5ydph2smdmgbf	\N	2	14:15	15:15	G-405	t
+cmv9eqv1g007bphkrgsitt5t4	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpund00s3gu0bzoojgigx	cmv0jpmfq0013mzmye9bpndkg	cmuzu9op5005fydphd5sve6c9	\N	2	15:15	16:15	G-403, G-405	t
+cmv9eqv1h007dphkrwdzkdlmk	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo200u3gu0b7aq8sxfc	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9oqf00a5ydph2smdmgbf	\N	2	09:00	10:00	G-405	t
+cmv9eqv1h007fphkr6oktlyz1	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuor00w7gu0brvf68zic	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9op5005fydphd5sve6c9	\N	2	10:00	11:00	G-405	t
+cmv9eqv1h007hphkr02n04qf2	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo400u7gu0b2nhcpalo	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9or300ciydphg75soxyh	\N	2	11:15	12:15	G-405	t
+cmv9eqv1i007jphkr386ylajc	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuor00w7gu0brvf68zic	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9op5005fydphd5sve6c9	\N	2	12:15	13:15	G-405	t
+cmv9eqv1i007lphkr81lxdn3i	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo200u3gu0b7aq8sxfc	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9oqf00a5ydph2smdmgbf	\N	2	14:15	15:15	G-405	t
+cmv9eqv1j007nphkr4nv1ma1m	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuoq00w3gu0bk5lyqum2	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9op5005fydphd5sve6c9	\N	2	15:15	16:15	G-403, G-405	t
+cmv9eqv1j007pphkr79icruca	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuwz01lrgu0b0b1mu9h8	cmv0jpmg60029mzmy20g7hxvl	cmuzu9ooh003mydphxxnw12oj	\N	2	09:00	10:00	E-408	t
+cmv9eqv1k007rphkrye7lssgv	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvr01i3gu0b2g2mel7e	cmv0jpmg60029mzmy20g7hxvl	cmuzu9oqf00a5ydph2smdmgbf	\N	2	10:00	11:00	E-408	t
+cmv9eqv1k007tphkr2wnwl3jh	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuw901jjgu0bq68fzlkk	cmv0jpmg60029mzmy20g7hxvl	cmuzu9oqv00bjydphbbvzpk44	\N	2	11:15	12:15	E-408	t
+cmv9eqv1k007vphkr65umdegw	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuw801jfgu0bz5awc3g9	cmv0jpmg60029mzmy20g7hxvl	cmuzu9ooh003mydphxxnw12oj	\N	2	12:15	13:15	E-408	t
+cmv9eqv1l007xphkrzjoond01	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuw901jjgu0bq68fzlkk	cmv0jpmg60029mzmy20g7hxvl	cmuzu9oqv00bjydphbbvzpk44	\N	2	14:15	15:15	E-408	t
+cmv9eqv1l007zphkrxfzv7yj6	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvr01i3gu0b2g2mel7e	cmv0jpmg60029mzmy20g7hxvl	cmuzu9oqf00a5ydph2smdmgbf	\N	2	15:15	16:15	E-408	t
+cmv9eqv1m0081phkr8j1r69jo	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupv00zngu0b4kxvkufh	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9opy0087ydpho4qo8und	\N	2	09:00	10:00	E-409	t
+cmv9eqv1m0083phkrp8itezx8	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupd00y3gu0bxeajuxpk	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9oqf00a5ydph2smdmgbf	\N	2	10:00	11:00	E-409	t
+cmv9eqv1m0085phkrh3rrfdye	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupg00yfgu0bl10h6cs5	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9op5005fydphd5sve6c9	\N	2	11:15	12:15	COMP. LAB-3	t
+cmv9eqv1n0087phkrfj571sbo	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupd00y3gu0bxeajuxpk	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9oqf00a5ydph2smdmgbf	\N	2	12:15	13:15	E-409	t
+cmv9eqv1n0089phkrp977p0ds	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupk00yngu0bljzfe56d	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9ooh003mydphxxnw12oj	\N	2	14:15	15:15	E-409	t
+cmv9eqv1o008bphkrosh07an1	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupk00yngu0bljzfe56d	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9ooh003mydphxxnw12oj	\N	2	15:15	16:15	E-409	t
+cmv9eqv1o008dphkr35iiprty	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpugh007rgu0bew9xky73	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oov004lydphdqksogwy	\N	2	09:00	10:00	E-410	t
+cmv9eqv1p008fphkr47dqkb6p	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpufx0063gu0b6fuyue47	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oqf00a5ydph2smdmgbf	\N	2	10:00	11:00	E-410	t
+cmv9eqv1p008hphkrho8l3tgs	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuge007fgu0bpfjruidi	cmv0jpmfd0009mzmyli6c12jp	cmuzu9ooh003mydphxxnw12oj	\N	2	11:15	12:15	E-410	t
+cmv9eqv1q008jphkrijoz2d4y	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpugh007rgu0bew9xky73	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oov004lydphdqksogwy	\N	2	12:15	13:15	E-410	t
+cmv9eqv1q008lphkrk07klyd6	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuh5009rgu0br03oqtjw	cmv0jpmfd0009mzmyli6c12jp	cmuzu9ooh003mydphxxnw12oj	\N	2	14:15	15:15	E-410	t
+cmv9eqv1r008nphkrhcetn5cw	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuh5009rgu0br03oqtjw	cmv0jpmfd0009mzmyli6c12jp	cmuzu9ooh003mydphxxnw12oj	\N	2	15:15	16:15	E-410	t
+cmv9eqv1r008pphkry4phog9a	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuf80047gu0bxs8a8yrj	cmv0jpmf30003mzmyilhkqgfs	cmuzu9op5005fydphd5sve6c9	\N	2	09:00	10:00	E-411	t
+cmv9eqv1s008rphkrhammufuh	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuee0023gu0bc4gefp5y	cmv0jpmf30003mzmyilhkqgfs	cmuzu9oqf00a5ydph2smdmgbf	\N	2	10:00	11:00	E-411	t
+cmv9eqv1s008tphkrm7eelmv4	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuep002ngu0bub7xvapw	cmv0jpmf30003mzmyilhkqgfs	cmuzu9ooh003mydphxxnw12oj	\N	2	11:15	12:15	COMP. LAB-4	t
+cmv9eqv1t008vphkr9h3y7nik	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuee0023gu0bc4gefp5y	cmv0jpmf30003mzmyilhkqgfs	cmuzu9oqf00a5ydph2smdmgbf	\N	2	12:15	13:15	E-411	t
+cmv9eqv1t008xphkr61wzm6ah	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuem002fgu0ba4y7veei	cmv0jpmf30003mzmyilhkqgfs	cmuzu9op5005fydphd5sve6c9	\N	2	14:15	15:15	E-411	t
+cmv9eqv1u008zphkruqqmh4sk	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuee0023gu0bc4gefp5y	cmv0jpmf30003mzmyilhkqgfs	cmuzu9oqf00a5ydph2smdmgbf	\N	2	15:15	16:15	E-411	t
+cmv9eqv1u0091phkrj1roxzet	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputa01afgu0bl38jb60i	cmv0jpmg2001xmzmyx16lscnz	cmuzu9op5005fydphd5sve6c9	\N	2	09:00	10:00	E-412	t
+cmv9eqv1v0093phkrjhdz30mc	cmuzp7hsm000ebynpfs5ze3wj	cmv0mput601a3gu0b70lpnwdr	cmv0jpmg2001xmzmyx16lscnz	cmuzu9oqf00a5ydph2smdmgbf	\N	2	10:00	11:00	E-412	t
+cmv9eqv1v0095phkrm9oo3hqt	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputh01azgu0b7x3cstbl	cmv0jpmg2001xmzmyx16lscnz	cmuzu9opn0073ydphv2a59e4g	\N	2	11:15	12:15	E-412	t
+cmv9eqv1v0097phkry7cj8wn1	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputv01c7gu0b9uovsc8y	cmv0jpmg2001xmzmyx16lscnz	cmuzu9op5005fydphd5sve6c9	\N	2	12:15	13:15	E-412	t
+cmv9eqv1w0099phkrv38551c9	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputd01angu0bq01niudu	cmv0jpmg2001xmzmyx16lscnz	cmuzu9ooh003mydphxxnw12oj	\N	2	14:15	15:15	E-412	t
+cmv9eqv1w009bphkrjvmy0vnh	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputd01angu0bq01niudu	cmv0jpmg2001xmzmyx16lscnz	cmuzu9ooh003mydphxxnw12oj	\N	2	15:15	16:15	E-412	t
+cmv9eqv1x009dphkrn3yrih7d	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujw00i3gu0b208819ea	cmv0jpmfl000rmzmybncitrn3	cmuzu9oqf00a5ydph2smdmgbf	\N	3	09:00	10:00	G-302	t
+cmv9eqv1x009fphkrw87ogxah	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuk600ivgu0boo1zqty6	cmv0jpmfl000rmzmybncitrn3	cmuzu9op5005fydphd5sve6c9	\N	3	10:00	11:00	G-302	t
+cmv9eqv1y009hphkrformc0ze	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujw00i3gu0b208819ea	cmv0jpmfl000rmzmybncitrn3	cmuzu9oqf00a5ydph2smdmgbf	\N	3	11:15	12:15	G-302	t
+cmv9eqv1y009jphkrtk9ulc62	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpukm00k7gu0bvwqbwojq	cmv0jpmfl000rmzmybncitrn3	cmuzu9op5005fydphd5sve6c9	\N	3	12:15	13:15	G-302	t
+cmv9eqv1z009lphkra7to5kun	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujy00i7gu0bsiqrgkgk	cmv0jpmfl000rmzmybncitrn3	cmuzu9or300ciydphg75soxyh	\N	3	14:15	15:15	G-302	t
+cmv9eqv1z009nphkridhcji8z	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuk300ingu0bx650oxzz	cmv0jpmfl000rmzmybncitrn3	cmuzu9ooh003mydphxxnw12oj	\N	3	15:15	16:15	G-302	t
+cmv9eqv20009pphkrv6ydtdnr	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpul900m7gu0bdoqfq5di	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9or300ciydphg75soxyh	\N	3	09:00	10:00	G-303	t
+cmv9eqv20009rphkrwacu0t2a	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpum200o7gu0bjgwk8ape	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9op5005fydphd5sve6c9	\N	3	10:00	11:00	G-303	t
+cmv9eqv21009tphkr69g0oa5r	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpulm00mvgu0bjgppv6bh	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9op5005fydphd5sve6c9	\N	3	11:15	12:15	G-303	t
+cmv9eqv21009vphkr369ts5fq	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpul800m3gu0bf1pfxyfd	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9oqf00a5ydph2smdmgbf	\N	3	12:15	13:15	G-303	t
+cmv9eqv21009xphkr07rhdn1r	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpul900m7gu0bdoqfq5di	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9or300ciydphg75soxyh	\N	3	14:15	15:15	PHY LAB	t
+cmv9eqv22009zphkrz39h5yeq	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpul800m3gu0bf1pfxyfd	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9oqf00a5ydph2smdmgbf	\N	3	15:15	16:15	G-303	t
+cmv9eqv2200a1phkrtu2d86ty	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuha00a3gu0bt1vbylmj	cmv0jpmfg000fmzmyqspzihe7	cmuzu9oqf00a5ydph2smdmgbf	\N	3	09:00	10:00	G-304	t
+cmv9eqv2300a3phkr5tc9ck58	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhb00a7gu0bb8putfwm	cmv0jpmfg000fmzmyqspzihe7	cmuzu9or300ciydphg75soxyh	\N	3	10:00	11:00	G-304	t
+cmv9eqv2300a5phkr5paa0nie	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhf00ajgu0bozfhe4kw	cmv0jpmfg000fmzmyqspzihe7	cmuzu9op5005fydphd5sve6c9	\N	3	11:15	12:15	G-304	t
+cmv9eqv2400a7phkrqv43cttm	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhz00c7gu0blsne1nsz	cmv0jpmfg000fmzmyqspzihe7	cmuzu9op5005fydphd5sve6c9	\N	3	12:15	13:15	G-304	t
+cmv9eqv2400a9phkrq5mmo85q	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhh00argu0bv122322w	cmv0jpmfg000fmzmyqspzihe7	cmuzu9op5005fydphd5sve6c9	\N	3	14:15	15:15	G-304	t
+cmv9eqv2400abphkr8xsiy0z9	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuha00a3gu0bt1vbylmj	cmv0jpmfg000fmzmyqspzihe7	cmuzu9oqf00a5ydph2smdmgbf	\N	3	15:15	16:15	G-304	t
+cmv9eqv2500adphkr2ewo4auu	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuja00g7gu0b5gfkgxj8	cmv0jpmfj000lmzmywm02pk3z	cmuzu9op5005fydphd5sve6c9	\N	3	09:00	10:00	G-305	t
+cmv9eqv2600afphkrl30a4wh9	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuim00e3gu0b9wf4k8ah	cmv0jpmfj000lmzmywm02pk3z	cmuzu9oqf00a5ydph2smdmgbf	\N	3	10:00	11:00	G-305	t
+cmv9eqv2600ahphkrptsg6gil	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuja00g7gu0b5gfkgxj8	cmv0jpmfj000lmzmywm02pk3z	cmuzu9op5005fydphd5sve6c9	\N	3	11:15	12:15	COMP. LAB-1	t
+cmv9eqv2700ajphkry0hoou4h	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuim00e3gu0b9wf4k8ah	cmv0jpmfj000lmzmywm02pk3z	cmuzu9oqf00a5ydph2smdmgbf	\N	3	12:15	13:15	G-305	t
+cmv9eqv2800alphkrits5pztr	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuim00e3gu0b9wf4k8ah	cmv0jpmfj000lmzmywm02pk3z	cmuzu9oqf00a5ydph2smdmgbf	\N	3	14:15	15:15	G-305	t
+cmv9eqv2800anphkrlez28ffg	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuir00ejgu0bq4jt4fee	cmv0jpmfj000lmzmywm02pk3z	cmuzu9op5005fydphd5sve6c9	\N	3	15:15	16:15	G-305	t
+cmv9eqv2900apphkr98ip2iqq	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqq012fgu0bsp8jd1gk	cmv0jpmfy001lmzmyf0175cba	cmuzu9op5005fydphd5sve6c9	\N	3	09:00	10:00	COMP. LAB-3	t
+cmv9eqv2900arphkrix0xkihk	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqn0123gu0b7a6vqfai	cmv0jpmfy001lmzmyf0175cba	cmuzu9oqf00a5ydph2smdmgbf	\N	3	10:00	11:00	G-402	t
+cmv9eqv2a00atphkrl8hx3yoi	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqt012ngu0bfbeyv112	cmv0jpmfy001lmzmyf0175cba	cmuzu9ooh003mydphxxnw12oj	\N	3	11:15	12:15	COMP. LAB-4	t
+cmv9eqv2a00avphkrceoyxjx9	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqn0123gu0b7a6vqfai	cmv0jpmfy001lmzmyf0175cba	cmuzu9oqf00a5ydph2smdmgbf	\N	3	12:15	13:15	G-402	t
+cmv9eqv2b00axphkrxghr94ng	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqn0123gu0b7a6vqfai	cmv0jpmfy001lmzmyf0175cba	cmuzu9oqf00a5ydph2smdmgbf	\N	3	14:15	15:15	G-402	t
+cmv9eqv2b00azphkr8astfyba	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpura0147gu0bx9djjhmc	cmv0jpmfy001lmzmyf0175cba	cmuzu9op5005fydphd5sve6c9	\N	3	15:15	16:15	G-402	t
+cmv9eqv2c00b1phkr7el2u3uq	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpusb017bgu0bytfcbt1a	cmv0jpmg0001rmzmyc93smozj	cmuzu9oq1008mydphm4jlnxo7	\N	3	09:00	10:00	G-403	t
+cmv9eqv2c00b3phkr1h746vu1	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpus6016zgu0btf0fal6l	cmv0jpmg0001rmzmyc93smozj	cmuzu9opn0073ydphv2a59e4g	\N	3	10:00	11:00	G-403	t
+cmv9eqv2d00b5phkr7r2drjkp	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpurx0163gu0b65dn4dc8	cmv0jpmg0001rmzmyc93smozj	cmuzu9oqf00a5ydph2smdmgbf	\N	3	11:15	12:15	G-403	t
+cmv9eqv2d00b7phkrcvii3tzj	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpus1016fgu0bdvf5edsf	cmv0jpmg0001rmzmyc93smozj	cmuzu9op5005fydphd5sve6c9	\N	3	12:15	13:15	G-403	t
+cmv9eqv2e00b9phkr0h7hgh90	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpusc017fgu0bcihbgfo6	cmv0jpmg0001rmzmyc93smozj	cmuzu9ooh003mydphxxnw12oj	\N	3	14:15	15:15	CHEM. LAB.	t
+cmv9eqv2e00bbphkrv7zvisoy	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpurx0163gu0b65dn4dc8	cmv0jpmg0001rmzmyc93smozj	cmuzu9oqf00a5ydph2smdmgbf	\N	3	15:15	16:15	G-403	t
+cmv9eqv2f00bdphkrjur85vkf	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuux01fjgu0bdpknblsb	cmv0jpmg40023mzmypoo0djbb	cmuzu9oqv00bjydphbbvzpk44	\N	3	09:00	10:00	G-404	t
+cmv9eqv2f00bfphkrov1ibx2r	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuug01e3gu0bs8bnocs4	cmv0jpmg40023mzmypoo0djbb	cmuzu9oqf00a5ydph2smdmgbf	\N	3	10:00	11:00	G-404	t
+cmv9eqv2g00bhphkrcceyzg5x	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuux01fjgu0bdpknblsb	cmv0jpmg40023mzmypoo0djbb	cmuzu9oqv00bjydphbbvzpk44	\N	3	11:15	12:15	G-404	t
+cmv9eqv2g00bjphkrx5rza4g1	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuuw01ffgu0b76kuo8be	cmv0jpmg40023mzmypoo0djbb	cmuzu9ooh003mydphxxnw12oj	\N	3	12:15	13:15	G-404	t
+cmv9eqv2g00blphkr49hvx9kt	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvn01hrgu0bouw31rv2	cmv0jpmg40023mzmypoo0djbb	cmuzu9ooh003mydphxxnw12oj	\N	3	14:15	15:15	G-404	t
+cmv9eqv2h00bnphkrzv96surr	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvn01hrgu0bouw31rv2	cmv0jpmg40023mzmypoo0djbb	cmuzu9ooh003mydphxxnw12oj	\N	3	15:15	16:15	G-404	t
+cmv9eqv2h00bpphkr7g5mnyo6	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpunf00s7gu0bjeh3xmyf	cmv0jpmfq0013mzmye9bpndkg	cmuzu9op5005fydphd5sve6c9	\N	3	09:00	10:00	COMP. LAB-1	t
+cmv9eqv2i00brphkrt4qkkdj6	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpumn00q3gu0bbd8lxl5w	cmv0jpmfq0013mzmye9bpndkg	cmuzu9oqf00a5ydph2smdmgbf	\N	3	10:00	11:00	G-405	t
+cmv9eqv2i00btphkrzsgpl14w	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpumn00q3gu0bbd8lxl5w	cmv0jpmfq0013mzmye9bpndkg	cmuzu9oqf00a5ydph2smdmgbf	\N	3	11:15	12:15	G-405, G-406	t
+cmv9eqv2j00bvphkr6uwmdtkt	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpumv00qngu0butq5hiqe	cmv0jpmfq0013mzmye9bpndkg	cmuzu9ooh003mydphxxnw12oj	\N	3	12:15	13:15	G-405	t
+cmv9eqv2j00bxphkrifjx5hm2	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpums00qfgu0bjo3am5ih	cmv0jpmfq0013mzmye9bpndkg	cmuzu9op5005fydphd5sve6c9	\N	3	14:15	15:15	COMP. LAB-2	t
+cmv9eqv2j00bzphkrn0lnasbj	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpumn00q3gu0bbd8lxl5w	cmv0jpmfq0013mzmye9bpndkg	cmuzu9oqf00a5ydph2smdmgbf	\N	3	15:15	16:15	G-405	t
+cmv9eqv2k00c1phkrgoh429wx	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuor00w7gu0brvf68zic	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9op5005fydphd5sve6c9	\N	3	09:00	10:00	COMP. LAB-1	t
+cmv9eqv2k00c3phkrjcws98w5	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo200u3gu0b7aq8sxfc	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9oqf00a5ydph2smdmgbf	\N	3	10:00	11:00	G-405	t
+cmv9eqv2l00c5phkri2uxjd9l	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo200u3gu0b7aq8sxfc	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9oqf00a5ydph2smdmgbf	\N	3	11:15	12:15	G-405, G-406	t
+cmv9eqv2l00c7phkruh19qpht	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo900ungu0bz0w2yk5n	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9ooh003mydphxxnw12oj	\N	3	12:15	13:15	G-405	t
+cmv9eqv2m00c9phkrcamsr0h4	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo700ufgu0b6eadkj3j	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9op5005fydphd5sve6c9	\N	3	14:15	15:15	COMP. LAB-2	t
+cmv9eqv2m00cbphkrdxvpg94w	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo200u3gu0b7aq8sxfc	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9oqf00a5ydph2smdmgbf	\N	3	15:15	16:15	G-405	t
+cmv9eqv2m00cdphkr5x4sgc1o	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvx01ingu0bg6ld6mic	cmv0jpmg60029mzmy20g7hxvl	cmuzu9ooh003mydphxxnw12oj	\N	3	09:00	10:00	COMP. LAB-4	t
+cmv9eqv2n00cfphkrdo9sw4h2	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvr01i3gu0b2g2mel7e	cmv0jpmg60029mzmy20g7hxvl	cmuzu9oqf00a5ydph2smdmgbf	\N	3	10:00	11:00	E-408	t
+cmv9eqv2o00chphkrf7ck6s0u	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuw801jfgu0bz5awc3g9	cmv0jpmg60029mzmy20g7hxvl	cmuzu9ooh003mydphxxnw12oj	\N	3	11:15	12:15	G-408	t
+cmv9eqv2o00cjphkrjudf6kxq	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuwh01k7gu0bpvs24wes	cmv0jpmg60029mzmy20g7hxvl	cmuzu9op5005fydphd5sve6c9	\N	3	12:15	13:15	G-408	t
+cmv9eqv2p00clphkrfpyoj9rv	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvv01ifgu0bbwidpd2y	cmv0jpmg60029mzmy20g7hxvl	cmuzu9op5005fydphd5sve6c9	\N	3	14:15	15:15	G-408	t
+cmv9eqv2p00cnphkrko85ajrl	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvr01i3gu0b2g2mel7e	cmv0jpmg60029mzmy20g7hxvl	cmuzu9oqf00a5ydph2smdmgbf	\N	3	15:15	16:15	G-408	t
+cmv9eqv2q00cpphkrortp4u4e	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupv00zngu0b4kxvkufh	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9opy0087ydpho4qo8und	\N	3	09:00	10:00	E-409	t
+cmv9eqv2q00crphkrj9c4mfah	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupd00y3gu0bxeajuxpk	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9oqf00a5ydph2smdmgbf	\N	3	10:00	11:00	E-409	t
+cmv9eqv2q00ctphkryg9yazgt	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuq20107gu0bbipzvgim	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9op5005fydphd5sve6c9	\N	3	11:15	12:15	COMP. LAB-3	t
+cmv9eqv2r00cvphkrphsed327	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupd00y3gu0bxeajuxpk	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9oqf00a5ydph2smdmgbf	\N	3	12:15	13:15	E-409	t
+cmv9eqv2r00cxphkr5xyknkqe	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuq20107gu0bbipzvgim	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9op5005fydphd5sve6c9	\N	3	14:15	15:15	E-409	t
+cmv9eqv2s00czphkrt6szev18	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupv00zngu0b4kxvkufh	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9opy0087ydpho4qo8und	\N	3	15:15	16:15	E-409	t
+cmv9eqv2t00d1phkrozunsu4h	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpugm0087gu0bzg6x4zcf	cmv0jpmfd0009mzmyli6c12jp	cmuzu9op5005fydphd5sve6c9	\N	3	09:00	10:00	E-410	t
+cmv9eqv2t00d3phkrviu8yl80	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpugh007rgu0bew9xky73	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oov004lydphdqksogwy	\N	3	10:00	11:00	E-410	t
+cmv9eqv2u00d5phkro8t2cfgn	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpufx0063gu0b6fuyue47	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oqf00a5ydph2smdmgbf	\N	3	11:15	12:15	E-410	t
+cmv9eqv2u00d7phkrlix5wyac	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpugc007bgu0bnfeoot44	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oq1008mydphm4jlnxo7	\N	3	12:15	13:15	E-410	t
+cmv9eqv2v00d9phkrhw2bkyl5	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpug3006ngu0b7i591w9e	cmv0jpmfd0009mzmyli6c12jp	cmuzu9ooh003mydphxxnw12oj	\N	3	14:15	15:15	E-410	t
+cmv9eqv2v00dbphkr0tay7pfu	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpufx0063gu0b6fuyue47	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oqf00a5ydph2smdmgbf	\N	3	15:15	16:15	E-410	t
+cmv9eqv2v00ddphkrrxu85t4v	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuf4003vgu0bfhyd2fqw	cmv0jpmf30003mzmyilhkqgfs	cmuzu9ooe003hydphj3yb044c	\N	3	09:00	10:00	E-411	t
+cmv9eqv2w00dfphkrujfx1yg5	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuey003bgu0bsqop99yk	cmv0jpmf30003mzmyilhkqgfs	cmuzu9oq1008mydphm4jlnxo7	\N	3	10:00	11:00	E-411	t
+cmv9eqv2w00dhphkr02ohh112	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuem002fgu0ba4y7veei	cmv0jpmf30003mzmyilhkqgfs	cmuzu9op5005fydphd5sve6c9	\N	3	11:15	12:15	COMP. LAB-2	t
+cmv9eqv2x00djphkrdw0nskhd	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuee0023gu0bc4gefp5y	cmv0jpmf30003mzmyilhkqgfs	cmuzu9oqf00a5ydph2smdmgbf	\N	3	12:15	13:15	E-411	t
+cmv9eqv2x00dlphkr5oifkqev	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuf80047gu0bxs8a8yrj	cmv0jpmf30003mzmyilhkqgfs	cmuzu9op5005fydphd5sve6c9	\N	3	14:15	15:15	E-411	t
+cmv9eqv2y00dnphkrcovt41bj	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuee0023gu0bc4gefp5y	cmv0jpmf30003mzmyilhkqgfs	cmuzu9oqf00a5ydph2smdmgbf	\N	3	15:15	16:15	E-411	t
+cmv9eqv2y00dpphkrz7aztppx	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputh01azgu0b7x3cstbl	cmv0jpmg2001xmzmyx16lscnz	cmuzu9opn0073ydphv2a59e4g	\N	3	09:00	10:00	E-412	t
+cmv9eqv2y00drphkr1x8jjd5m	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputv01c7gu0b9uovsc8y	cmv0jpmg2001xmzmyx16lscnz	cmuzu9op5005fydphd5sve6c9	\N	3	10:00	11:00	E-412	t
+cmv9eqv2z00dtphkrikkpk883	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputd01angu0bq01niudu	cmv0jpmg2001xmzmyx16lscnz	cmuzu9ooh003mydphxxnw12oj	\N	3	11:15	12:15	E-412	t
+cmv9eqv2z00dvphkrp8tqh1i9	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputa01afgu0bl38jb60i	cmv0jpmg2001xmzmyx16lscnz	cmuzu9op5005fydphd5sve6c9	\N	3	12:15	13:15	E-412	t
+cmv9eqv3000dxphkrnmoifdb7	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputd01angu0bq01niudu	cmv0jpmg2001xmzmyx16lscnz	cmuzu9ooh003mydphxxnw12oj	\N	3	14:15	15:15	COMP. LAB-4	t
+cmv9eqv3000dzphkrmw3fj05t	cmuzp7hsm000ebynpfs5ze3wj	cmv0mput601a3gu0b70lpnwdr	cmv0jpmg2001xmzmyx16lscnz	cmuzu9oqf00a5ydph2smdmgbf	\N	3	15:15	16:15	E-412	t
+cmv9eqv3100e1phkrkx67wx5k	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujw00i3gu0b208819ea	cmv0jpmfl000rmzmybncitrn3	cmuzu9oqf00a5ydph2smdmgbf	\N	4	09:00	10:00	G-302	t
+cmv9eqv3200e3phkrg432eh9d	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuk000ifgu0beoiya2q6	cmv0jpmfl000rmzmybncitrn3	cmuzu9op5005fydphd5sve6c9	\N	4	10:00	11:00	G-302	t
+cmv9eqv3200e5phkrnt98q695	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujy00i7gu0bsiqrgkgk	cmv0jpmfl000rmzmybncitrn3	cmuzu9or300ciydphg75soxyh	\N	4	11:15	12:15	G-302	t
+cmv9eqv3300e7phkrzm6ro13h	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuk600ivgu0boo1zqty6	cmv0jpmfl000rmzmybncitrn3	cmuzu9op5005fydphd5sve6c9	\N	4	12:15	13:15	G-302	t
+cmv9eqv3300e9phkrkz30k9ji	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujy00i7gu0bsiqrgkgk	cmv0jpmfl000rmzmybncitrn3	cmuzu9or300ciydphg75soxyh	\N	4	14:15	15:15	PHY LAB	t
+cmv9eqv3400ebphkr4pzif3zo	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujw00i3gu0b208819ea	cmv0jpmfl000rmzmybncitrn3	cmuzu9oqf00a5ydph2smdmgbf	\N	4	15:15	16:15	G-302	t
+cmv9eqv3400edphkrwgrnn6n6	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpulm00mvgu0bjgppv6bh	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9op5005fydphd5sve6c9	\N	4	09:00	10:00	G-303	t
+cmv9eqv3500efphkrwojtevxj	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpul900m7gu0bdoqfq5di	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9or300ciydphg75soxyh	\N	4	10:00	11:00	G-303	t
+cmv9eqv3500ehphkr82ooekgt	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpum200o7gu0bjgwk8ape	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9op5005fydphd5sve6c9	\N	4	11:15	12:15	COMP. LAB-1	t
+cmv9eqv3600ejphkrr5yw975b	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpul800m3gu0bf1pfxyfd	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9oqf00a5ydph2smdmgbf	\N	4	12:15	13:15	G-303	t
+cmv9eqv3600elphkrwlg036a9	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuli00mngu0bxd41bk89	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9ooh003mydphxxnw12oj	\N	4	14:15	15:15	G-303	t
+cmv9eqv3700enphkrgf5nxtdv	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpul800m3gu0bf1pfxyfd	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9oqf00a5ydph2smdmgbf	\N	4	15:15	16:15	G-303	t
+cmv9eqv3700epphkrihmma11g	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhz00c7gu0blsne1nsz	cmv0jpmfg000fmzmyqspzihe7	cmuzu9op5005fydphd5sve6c9	\N	4	09:00	10:00	G-304	t
+cmv9eqv3800erphkrofm90nuq	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhf00ajgu0bozfhe4kw	cmv0jpmfg000fmzmyqspzihe7	cmuzu9op5005fydphd5sve6c9	\N	4	10:00	11:00	G-304	t
+cmv9eqv3800etphkr4eh65jzn	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuha00a3gu0bt1vbylmj	cmv0jpmfg000fmzmyqspzihe7	cmuzu9oqf00a5ydph2smdmgbf	\N	4	11:15	12:15	G-304	t
+cmv9eqv3800evphkr45wmp1om	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuha00a3gu0bt1vbylmj	cmv0jpmfg000fmzmyqspzihe7	cmuzu9oqf00a5ydph2smdmgbf	\N	4	12:15	13:15	G-304	t
+cmv9eqv3900exphkrc42l810h	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhf00ajgu0bozfhe4kw	cmv0jpmfg000fmzmyqspzihe7	cmuzu9op5005fydphd5sve6c9	\N	4	14:15	15:15	COMP. LAB-3	t
+cmv9eqv3900ezphkr558unm4j	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuha00a3gu0bt1vbylmj	cmv0jpmfg000fmzmyqspzihe7	cmuzu9oqf00a5ydph2smdmgbf	\N	4	15:15	16:15	G-304	t
+cmv9eqv3a00f1phkrc3b6tkot	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuin00e7gu0bcprti0yr	cmv0jpmfj000lmzmywm02pk3z	cmuzu9or300ciydphg75soxyh	\N	4	09:00	10:00	PHY LAB	t
+cmv9eqv3a00f3phkrgkepyr2f	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuim00e3gu0b9wf4k8ah	cmv0jpmfj000lmzmywm02pk3z	cmuzu9oqf00a5ydph2smdmgbf	\N	4	10:00	11:00	G-305	t
+cmv9eqv3b00f5phkrwycmz7sb	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuis00engu0bwvmvv4p6	cmv0jpmfj000lmzmywm02pk3z	cmuzu9ooh003mydphxxnw12oj	\N	4	11:15	12:15	G-305	t
+cmv9eqv3b00f7phkr6un777jp	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuin00e7gu0bcprti0yr	cmv0jpmfj000lmzmywm02pk3z	cmuzu9or300ciydphg75soxyh	\N	4	12:15	13:15	G-305	t
+cmv9eqv3b00f9phkrnixcsqxv	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuja00g7gu0b5gfkgxj8	cmv0jpmfj000lmzmywm02pk3z	cmuzu9op5005fydphd5sve6c9	\N	4	14:15	15:15	G-305	t
+cmv9eqv3c00fbphkrlysrcnep	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuip00efgu0b6ejxp2ah	cmv0jpmfj000lmzmywm02pk3z	cmuzu9op5005fydphd5sve6c9	\N	4	15:15	16:15	G-305	t
+cmv9eqv3c00fdphkrckcr0acg	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqt012ngu0bfbeyv112	cmv0jpmfy001lmzmyf0175cba	cmuzu9ooh003mydphxxnw12oj	\N	4	09:00	10:00	G-402	t
+cmv9eqv3d00ffphkrlsfml1if	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqx012zgu0boo84n4fg	cmv0jpmfy001lmzmyf0175cba	cmuzu9opn0073ydphv2a59e4g	\N	4	10:00	11:00	G-402	t
+cmv9eqv3d00fhphkrgj55aptg	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpur2013fgu0bjzqruwjd	cmv0jpmfy001lmzmyf0175cba	cmuzu9ooh003mydphxxnw12oj	\N	4	11:15	12:15	CHEM. LAB.	t
+cmv9eqv3e00fjphkrzdbsdhz9	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqn0123gu0b7a6vqfai	cmv0jpmfy001lmzmyf0175cba	cmuzu9oqf00a5ydph2smdmgbf	\N	4	12:15	13:15	G-402	t
+cmv9eqv3e00flphkr862xi3x0	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpura0147gu0bx9djjhmc	cmv0jpmfy001lmzmyf0175cba	cmuzu9op5005fydphd5sve6c9	\N	4	14:15	15:15	G-402	t
+cmv9eqv3e00fnphkr6ajtnmy9	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqn0123gu0b7a6vqfai	cmv0jpmfy001lmzmyf0175cba	cmuzu9oqf00a5ydph2smdmgbf	\N	4	15:15	16:15	G-402	t
+cmv9eqv3f00fpphkromrhcv2i	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpus6016zgu0btf0fal6l	cmv0jpmg0001rmzmyc93smozj	cmuzu9opn0073ydphv2a59e4g	\N	4	09:00	10:00	G-403	t
+cmv9eqv3f00frphkrlhlbpo39	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpurx0163gu0b65dn4dc8	cmv0jpmg0001rmzmyc93smozj	cmuzu9oqf00a5ydph2smdmgbf	\N	4	10:00	11:00	G-403	t
+cmv9eqv3g00ftphkrsez9rlkm	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpus3016ngu0b7b0mpfur	cmv0jpmg0001rmzmyc93smozj	cmuzu9ooh003mydphxxnw12oj	\N	4	11:15	12:15	G-403	t
+cmv9eqv3g00fvphkriyo4b5yt	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpusl0187gu0bh6n0syis	cmv0jpmg0001rmzmyc93smozj	cmuzu9op5005fydphd5sve6c9	\N	4	12:15	13:15	G-403	t
+cmv9eqv3g00fxphkrkj93xce6	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpus1016fgu0bdvf5edsf	cmv0jpmg0001rmzmyc93smozj	cmuzu9op5005fydphd5sve6c9	\N	4	14:15	15:15	A-303,304	t
+cmv9eqv3h00fzphkrcalu8dzr	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpurx0163gu0b65dn4dc8	cmv0jpmg0001rmzmyc93smozj	cmuzu9oqf00a5ydph2smdmgbf	\N	4	15:15	16:15	G-403	t
+cmv9eqv3h00g1phkrsbaxx47c	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuuw01ffgu0b76kuo8be	cmv0jpmg40023mzmypoo0djbb	cmuzu9ooh003mydphxxnw12oj	\N	4	09:00	10:00	G-404	t
+cmv9eqv3i00g3phkrxvrfrhox	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuux01fjgu0bdpknblsb	cmv0jpmg40023mzmypoo0djbb	cmuzu9oqv00bjydphbbvzpk44	\N	4	10:00	11:00	G-404	t
+cmv9eqv3i00g5phkr0mlf9bqh	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuug01e3gu0bs8bnocs4	cmv0jpmg40023mzmypoo0djbb	cmuzu9oqf00a5ydph2smdmgbf	\N	4	11:15	12:15	G-404	t
+cmv9eqv3j00g7phkr834mw4zu	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuuu01fbgu0bokwb81xn	cmv0jpmg40023mzmypoo0djbb	cmuzu9oq1008mydphm4jlnxo7	\N	4	12:15	13:15	G-404	t
+cmv9eqv3j00g9phkr4dryxrpt	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuuk01efgu0bniqp52ui	cmv0jpmg40023mzmypoo0djbb	cmuzu9op5005fydphd5sve6c9	\N	4	14:15	15:15	A-301,302	t
+cmv9eqv3j00gbphkr9je1x1rz	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuug01e3gu0bs8bnocs4	cmv0jpmg40023mzmypoo0djbb	cmuzu9oqf00a5ydph2smdmgbf	\N	4	15:15	16:15	G-404	t
+cmv9eqv3k00gdphkrb0859vzd	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpung00sbgu0b08vhrtph	cmv0jpmfq0013mzmye9bpndkg	cmuzu9oq1008mydphm4jlnxo7	\N	4	09:00	10:00	COMP. LAB-3	t
+cmv9eqv3l00gfphkrj7qvwmv9	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpumn00q3gu0bbd8lxl5w	cmv0jpmfq0013mzmye9bpndkg	cmuzu9oqf00a5ydph2smdmgbf	\N	4	10:00	11:00	G-405	t
+cmv9eqv3l00ghphkr4jt3otrd	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpums00qfgu0bjo3am5ih	cmv0jpmfq0013mzmye9bpndkg	cmuzu9op5005fydphd5sve6c9	\N	4	11:15	12:15	G-405	t
+cmv9eqv3m00gjphkrl78wl58o	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpumn00q3gu0bbd8lxl5w	cmv0jpmfq0013mzmye9bpndkg	cmuzu9oqf00a5ydph2smdmgbf	\N	4	12:15	13:15	G-405	t
+cmv9eqv3m00glphkrdok0me0h	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpumw00qrgu0bemln8wqa	cmv0jpmfq0013mzmye9bpndkg	cmuzu9op5005fydphd5sve6c9	\N	4	14:15	15:15	G-405	t
+cmv9eqv3n00gnphkryc98pgt5	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpumn00q3gu0bbd8lxl5w	cmv0jpmfq0013mzmye9bpndkg	cmuzu9oqf00a5ydph2smdmgbf	\N	4	15:15	16:15	G-405	t
+cmv9eqv3n00gpphkrsvsmxfj7	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuot00wbgu0bxrp7a2by	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9oq1008mydphm4jlnxo7	\N	4	09:00	10:00	COMP. LAB-3	t
+cmv9eqv3o00grphkrdjpjaenf	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo200u3gu0b7aq8sxfc	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9oqf00a5ydph2smdmgbf	\N	4	10:00	11:00	G-405	t
+cmv9eqv3o00gtphkr992ki3f7	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo700ufgu0b6eadkj3j	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9op5005fydphd5sve6c9	\N	4	11:15	12:15	G-405	t
+cmv9eqv3p00gvphkrhjmj1v5f	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo200u3gu0b7aq8sxfc	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9oqf00a5ydph2smdmgbf	\N	4	12:15	13:15	G-405	t
+cmv9eqv3p00gxphkrd1tt5i42	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuob00urgu0bp00t68fb	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9op5005fydphd5sve6c9	\N	4	14:15	15:15	G-405	t
+cmv9eqv3p00gzphkr18raj76e	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo200u3gu0b7aq8sxfc	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9oqf00a5ydph2smdmgbf	\N	4	15:15	16:15	G-405	t
+cmv9eqv3q00h1phkrbltuy9r1	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvr01i3gu0b2g2mel7e	cmv0jpmg60029mzmy20g7hxvl	cmuzu9oqf00a5ydph2smdmgbf	\N	4	09:00	10:00	G-408	t
+cmv9eqv3q00h3phkrebwjssik	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuwh01k7gu0bpvs24wes	cmv0jpmg60029mzmy20g7hxvl	cmuzu9op5005fydphd5sve6c9	\N	4	10:00	11:00	G-408	t
+cmv9eqv3r00h5phkrt4euh3vu	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuw801jfgu0bz5awc3g9	cmv0jpmg60029mzmy20g7hxvl	cmuzu9ooh003mydphxxnw12oj	\N	4	11:15	12:15	G-408	t
+cmv9eqv3r00h7phkr2ylfwy6a	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuw901jjgu0bq68fzlkk	cmv0jpmg60029mzmy20g7hxvl	cmuzu9oqv00bjydphbbvzpk44	\N	4	12:15	13:15	G-408	t
+cmv9eqv3r00h9phkrrjdekle7	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvx01ingu0bg6ld6mic	cmv0jpmg60029mzmy20g7hxvl	cmuzu9ooh003mydphxxnw12oj	\N	4	14:15	15:15	E-408	t
+cmv9eqv3s00hbphkrhc2u73xl	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvr01i3gu0b2g2mel7e	cmv0jpmg60029mzmy20g7hxvl	cmuzu9oqf00a5ydph2smdmgbf	\N	4	15:15	16:15	G-408	t
+cmv9eqv3s00hdphkrv272qq3s	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupk00yngu0bljzfe56d	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9ooh003mydphxxnw12oj	\N	4	09:00	10:00	COMP. LAB-4	t
+cmv9eqv3t00hfphkrgzumrbhs	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupd00y3gu0bxeajuxpk	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9oqf00a5ydph2smdmgbf	\N	4	10:00	11:00	E-409	t
+cmv9eqv3t00hhphkr5il0xtzp	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuq20107gu0bbipzvgim	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9op5005fydphd5sve6c9	\N	4	11:15	12:15	E-409	t
+cmv9eqv3u00hjphkr33sfuh6f	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupk00yngu0bljzfe56d	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9ooh003mydphxxnw12oj	\N	4	12:15	13:15	E-409	t
+cmv9eqv3u00hlphkrjvswm9se	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupv00zngu0b4kxvkufh	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9opy0087ydpho4qo8und	\N	4	14:15	15:15	E-409	t
+cmv9eqv3u00hnphkrl1qetizm	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupk00yngu0bljzfe56d	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9ooh003mydphxxnw12oj	\N	4	15:15	16:15	E-409	t
+cmv9eqv3v00hpphkrhyynlu14	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuge007fgu0bpfjruidi	cmv0jpmfd0009mzmyli6c12jp	cmuzu9ooh003mydphxxnw12oj	\N	4	09:00	10:00	E-410	t
+cmv9eqv3v00hrphkr4lp07uox	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpufx0063gu0b6fuyue47	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oqf00a5ydph2smdmgbf	\N	4	10:00	11:00	E-410	t
+cmv9eqv3w00htphkruasoj7m9	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpugm0087gu0bzg6x4zcf	cmv0jpmfd0009mzmyli6c12jp	cmuzu9op5005fydphd5sve6c9	\N	4	11:15	12:15	E-410	t
+cmv9eqv3w00hvphkr1040v1ja	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpug3006ngu0b7i591w9e	cmv0jpmfd0009mzmyli6c12jp	cmuzu9ooh003mydphxxnw12oj	\N	4	12:15	13:15	E-410	t
+cmv9eqv3x00hxphkrxl3pcmof	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpugh007rgu0bew9xky73	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oov004lydphdqksogwy	\N	4	14:15	15:15	E-410	t
+cmv9eqv3x00hzphkrpfb7tz07	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpugc007bgu0bnfeoot44	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oq1008mydphm4jlnxo7	\N	4	15:15	16:15	E-410	t
+cmv9eqv3x00i1phkrouleox0r	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuee0023gu0bc4gefp5y	cmv0jpmf30003mzmyilhkqgfs	cmuzu9oqf00a5ydph2smdmgbf	\N	4	09:00	10:00	E-411	t
+cmv9eqv3y00i3phkr5ovevvbm	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuf4003vgu0bfhyd2fqw	cmv0jpmf30003mzmyilhkqgfs	cmuzu9ooe003hydphj3yb044c	\N	4	10:00	11:00	E-411	t
+cmv9eqv3y00i5phkr6ce9po6m	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuf80047gu0bxs8a8yrj	cmv0jpmf30003mzmyilhkqgfs	cmuzu9op5005fydphd5sve6c9	\N	4	11:15	12:15	E-411	t
+cmv9eqv3z00i7phkrod70rezz	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuf6003zgu0b90rroi31	cmv0jpmf30003mzmyilhkqgfs	cmuzu9ooh003mydphxxnw12oj	\N	4	12:15	13:15	E-411	t
+cmv9eqv3z00i9phkr156j68d4	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuey003bgu0bsqop99yk	cmv0jpmf30003mzmyilhkqgfs	cmuzu9oq1008mydphm4jlnxo7	\N	4	14:15	15:15	E-411	t
+cmv9eqv4000ibphkr2350z0g4	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuep002ngu0bub7xvapw	cmv0jpmf30003mzmyilhkqgfs	cmuzu9ooh003mydphxxnw12oj	\N	4	15:15	16:15	E-411	t
+cmv9eqv4000idphkr469gnc75	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputk01bbgu0bm8dc931s	cmv0jpmg2001xmzmyx16lscnz	cmuzu9oq1008mydphm4jlnxo7	\N	4	09:00	10:00	E-412	t
+cmv9eqv4000ifphkrgnnewuji	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputh01azgu0b7x3cstbl	cmv0jpmg2001xmzmyx16lscnz	cmuzu9opn0073ydphv2a59e4g	\N	4	10:00	11:00	E-412	t
+cmv9eqv4100ihphkr2t26j6vy	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputv01c7gu0b9uovsc8y	cmv0jpmg2001xmzmyx16lscnz	cmuzu9op5005fydphd5sve6c9	\N	4	11:15	12:15	COMP. LAB-3	t
+cmv9eqv4200ijphkrl464o6oz	cmuzp7hsm000ebynpfs5ze3wj	cmv0mput601a3gu0b70lpnwdr	cmv0jpmg2001xmzmyx16lscnz	cmuzu9oqf00a5ydph2smdmgbf	\N	4	12:15	13:15	E-412	t
+cmv9eqv4200ilphkrmng3386o	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputl01bfgu0be16oi6ap	cmv0jpmg2001xmzmyx16lscnz	cmuzu9ooh003mydphxxnw12oj	\N	4	14:15	15:15	CHEM. LAB.	t
+cmv9eqv4300inphkr403wbi51	cmuzp7hsm000ebynpfs5ze3wj	cmv0mput601a3gu0b70lpnwdr	cmv0jpmg2001xmzmyx16lscnz	cmuzu9oqf00a5ydph2smdmgbf	\N	4	15:15	16:15	E-412	t
+cmv9eqv4300ipphkr9e1fu9xp	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujw00i3gu0b208819ea	cmv0jpmfl000rmzmybncitrn3	cmuzu9oqf00a5ydph2smdmgbf	\N	5	09:00	10:00	G-302	t
+cmv9eqv4400irphkr5999mck8	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuk600ivgu0boo1zqty6	cmv0jpmfl000rmzmybncitrn3	cmuzu9op5005fydphd5sve6c9	\N	5	10:00	11:00	G-302	t
+cmv9eqv4400itphkroibc8qop	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuk300ingu0bx650oxzz	cmv0jpmfl000rmzmybncitrn3	cmuzu9ooh003mydphxxnw12oj	\N	5	11:15	12:15	G-302	t
+cmv9eqv4500ivphkr6clh5ehq	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpukm00k7gu0bvwqbwojq	cmv0jpmfl000rmzmybncitrn3	cmuzu9op5005fydphd5sve6c9	\N	5	12:15	13:15	G-302	t
+cmv9eqv4500ixphkrtg1ah2qt	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpukm00k7gu0bvwqbwojq	cmv0jpmfl000rmzmybncitrn3	cmuzu9op5005fydphd5sve6c9	\N	5	14:15	15:15	COMP. LAB-1	t
+cmv9eqv4600izphkr6oq78530	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujw00i3gu0b208819ea	cmv0jpmfl000rmzmybncitrn3	cmuzu9oqf00a5ydph2smdmgbf	\N	5	15:15	16:15	G-302	t
+cmv9eqv4600j1phkr62rohuvn	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpum200o7gu0bjgwk8ape	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9op5005fydphd5sve6c9	\N	5	09:00	10:00	G-303	t
+cmv9eqv4700j3phkr5khb9gho	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpul800m3gu0bf1pfxyfd	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9oqf00a5ydph2smdmgbf	\N	5	10:00	11:00	G-303	t
+cmv9eqv4700j5phkrrvt333fw	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpulm00mvgu0bjgppv6bh	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9op5005fydphd5sve6c9	\N	5	11:15	12:15	G-303	t
+cmv9eqv4800j7phkrtej26e48	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpul900m7gu0bdoqfq5di	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9or300ciydphg75soxyh	\N	5	12:15	13:15	G-303	t
+cmv9eqv4800j9phkrwamalxeg	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpul800m3gu0bf1pfxyfd	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9oqf00a5ydph2smdmgbf	\N	5	14:15	15:15	G-303	t
+cmv9eqv4800jbphkrwgvsd43m	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpule00mfgu0b1d7d40py	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9op5005fydphd5sve6c9	\N	5	15:15	16:15	G-303	t
+cmv9eqv4900jdphkrptpvf0mj	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhz00c7gu0blsne1nsz	cmv0jpmfg000fmzmyqspzihe7	cmuzu9op5005fydphd5sve6c9	\N	5	09:00	10:00	G-304	t
+cmv9eqv4900jfphkrb5wk42v7	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhf00ajgu0bozfhe4kw	cmv0jpmfg000fmzmyqspzihe7	cmuzu9op5005fydphd5sve6c9	\N	5	10:00	11:00	G-304	t
+cmv9eqv4a00jhphkr4x1zhlj5	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhb00a7gu0bb8putfwm	cmv0jpmfg000fmzmyqspzihe7	cmuzu9or300ciydphg75soxyh	\N	5	11:15	12:15	G-304	t
+cmv9eqv4a00jjphkroxor0s6c	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhz00c7gu0blsne1nsz	cmv0jpmfg000fmzmyqspzihe7	cmuzu9op5005fydphd5sve6c9	\N	5	12:15	13:15	G-304	t
+cmv9eqv4b00jlphkrseayqr1b	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhe00afgu0b1dh6tc1q	cmv0jpmfg000fmzmyqspzihe7	cmuzu9op5005fydphd5sve6c9	\N	5	14:15	15:15	COMP. LAB-2	t
+cmv9eqv4b00jnphkr2cyutn1p	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuha00a3gu0bt1vbylmj	cmv0jpmfg000fmzmyqspzihe7	cmuzu9oqf00a5ydph2smdmgbf	\N	5	15:15	16:15	G-304	t
+cmv9eqv4c00jpphkrblvt0zti	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuin00e7gu0bcprti0yr	cmv0jpmfj000lmzmywm02pk3z	cmuzu9or300ciydphg75soxyh	\N	5	09:00	10:00	G-305	t
+cmv9eqv4c00jrphkr9oueg7qd	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuim00e3gu0b9wf4k8ah	cmv0jpmfj000lmzmywm02pk3z	cmuzu9oqf00a5ydph2smdmgbf	\N	5	10:00	11:00	G-305	t
+cmv9eqv4d00jtphkrwgke7zp3	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuim00e3gu0b9wf4k8ah	cmv0jpmfj000lmzmywm02pk3z	cmuzu9oqf00a5ydph2smdmgbf	\N	5	11:15	12:15	G-305	t
+cmv9eqv4d00jvphkrpim4lb2b	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuja00g7gu0b5gfkgxj8	cmv0jpmfj000lmzmywm02pk3z	cmuzu9op5005fydphd5sve6c9	\N	5	12:15	13:15	G-305	t
+cmv9eqv4e00jxphkr1my4g6qh	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuit00ergu0bpngy99d4	cmv0jpmfj000lmzmywm02pk3z	cmuzu9op5005fydphd5sve6c9	\N	5	14:15	15:15	G-305	t
+cmv9eqv4e00jzphkriegla45w	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuim00e3gu0b9wf4k8ah	cmv0jpmfj000lmzmywm02pk3z	cmuzu9oqf00a5ydph2smdmgbf	\N	5	15:15	16:15	G-305	t
+cmv9eqv4f00k1phkr9ag256z1	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqt012ngu0bfbeyv112	cmv0jpmfy001lmzmyf0175cba	cmuzu9ooh003mydphxxnw12oj	\N	5	09:00	10:00	G-402	t
+cmv9eqv4f00k3phkrv7keoyjh	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqn0123gu0b7a6vqfai	cmv0jpmfy001lmzmyf0175cba	cmuzu9oqf00a5ydph2smdmgbf	\N	5	10:00	11:00	G-402	t
+cmv9eqv4f00k5phkrh97iesvq	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqq012fgu0bsp8jd1gk	cmv0jpmfy001lmzmyf0175cba	cmuzu9op5005fydphd5sve6c9	\N	5	11:15	12:15	G-402	t
+cmv9eqv4g00k7phkr7bgiimcs	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqx012zgu0boo84n4fg	cmv0jpmfy001lmzmyf0175cba	cmuzu9opn0073ydphv2a59e4g	\N	5	12:15	13:15	G-402	t
+cmv9eqv4g00k9phkrg9rgjx0m	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpur1013bgu0bwfa2ciwv	cmv0jpmfy001lmzmyf0175cba	cmuzu9oq1008mydphm4jlnxo7	\N	5	14:15	15:15	G-402	t
+cmv9eqv4h00kbphkrq8hejerc	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpura0147gu0bx9djjhmc	cmv0jpmfy001lmzmyf0175cba	cmuzu9op5005fydphd5sve6c9	\N	5	15:15	16:15	G-402	t
+cmv9eqv4i00kdphkrhivarwtx	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpus3016ngu0b7b0mpfur	cmv0jpmg0001rmzmyc93smozj	cmuzu9ooh003mydphxxnw12oj	\N	5	09:00	10:00	G-403	t
+cmv9eqv4i00kfphkrlekzzrr7	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpusb017bgu0bytfcbt1a	cmv0jpmg0001rmzmyc93smozj	cmuzu9oq1008mydphm4jlnxo7	\N	5	10:00	11:00	G-403	t
+cmv9eqv4j00khphkrk37y64x3	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpusc017fgu0bcihbgfo6	cmv0jpmg0001rmzmyc93smozj	cmuzu9ooh003mydphxxnw12oj	\N	5	11:15	12:15	CHEM. LAB.	t
+cmv9eqv4j00kjphkrr06ivw0o	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpurx0163gu0b65dn4dc8	cmv0jpmg0001rmzmyc93smozj	cmuzu9oqf00a5ydph2smdmgbf	\N	5	12:15	13:15	G-403	t
+cmv9eqv4k00klphkrp1daxnhu	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpus1016fgu0bdvf5edsf	cmv0jpmg0001rmzmyc93smozj	cmuzu9op5005fydphd5sve6c9	\N	5	14:15	15:15	A-303,304	t
+cmv9eqv4k00knphkrrwdv5jes	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpurx0163gu0b65dn4dc8	cmv0jpmg0001rmzmyc93smozj	cmuzu9oqf00a5ydph2smdmgbf	\N	5	15:15	16:15	G-403	t
+cmv9eqv4l00kpphkrayqlwp7j	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuux01fjgu0bdpknblsb	cmv0jpmg40023mzmypoo0djbb	cmuzu9oqv00bjydphbbvzpk44	\N	5	09:00	10:00	G-404	t
+cmv9eqv4l00krphkr5b073u0p	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuv501g7gu0bplr1e9k8	cmv0jpmg40023mzmypoo0djbb	cmuzu9op5005fydphd5sve6c9	\N	5	10:00	11:00	G-404	t
+cmv9eqv4m00ktphkrju6gby3s	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuuk01efgu0bniqp52ui	cmv0jpmg40023mzmypoo0djbb	cmuzu9op5005fydphd5sve6c9	\N	5	11:15	12:15	COMP. LAB-3	t
+cmv9eqv4m00kvphkr9jhb0ey7	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuug01e3gu0bs8bnocs4	cmv0jpmg40023mzmypoo0djbb	cmuzu9oqf00a5ydph2smdmgbf	\N	5	12:15	13:15	G-404	t
+cmv9eqv4m00kxphkrq3n9ftgm	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuuw01ffgu0b76kuo8be	cmv0jpmg40023mzmypoo0djbb	cmuzu9ooh003mydphxxnw12oj	\N	5	14:15	15:15	G-404	t
+cmv9eqv4n00kzphkrhu403t0h	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuug01e3gu0bs8bnocs4	cmv0jpmg40023mzmypoo0djbb	cmuzu9oqf00a5ydph2smdmgbf	\N	5	15:15	16:15	G-404	t
+cmv9eqv4n00l1phkrb2m3923u	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpumv00qngu0butq5hiqe	cmv0jpmfq0013mzmye9bpndkg	cmuzu9ooh003mydphxxnw12oj	\N	5	09:00	10:00	G-405	t
+cmv9eqv4o00l3phkreigc14c8	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpump00q7gu0bxafxwgxd	cmv0jpmfq0013mzmye9bpndkg	cmuzu9or300ciydphg75soxyh	\N	5	10:00	11:00	G-405	t
+cmv9eqv4o00l5phkr2p3grceh	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpump00q7gu0bxafxwgxd	cmv0jpmfq0013mzmye9bpndkg	cmuzu9or300ciydphg75soxyh	\N	5	11:15	12:15	PHY LAB	t
+cmv9eqv4o00l7phkr04tzpv0u	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpumn00q3gu0bbd8lxl5w	cmv0jpmfq0013mzmye9bpndkg	cmuzu9oqf00a5ydph2smdmgbf	\N	5	12:15	13:15	G-405	t
+cmv9eqv4p00l9phkrh69ta4f2	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpund00s3gu0bzoojgigx	cmv0jpmfq0013mzmye9bpndkg	cmuzu9op5005fydphd5sve6c9	\N	5	14:15	15:15	G-402, G-405	t
+cmv9eqv4p00lbphkrmvi8hdgy	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpunf00s7gu0bjeh3xmyf	cmv0jpmfq0013mzmye9bpndkg	cmuzu9op5005fydphd5sve6c9	\N	5	15:15	16:15	G-405	t
+cmv9eqv4q00ldphkrg9wp3xhh	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo900ungu0bz0w2yk5n	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9ooh003mydphxxnw12oj	\N	5	09:00	10:00	G-405	t
+cmv9eqv4q00lfphkrgw7xtd7u	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo400u7gu0b2nhcpalo	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9or300ciydphg75soxyh	\N	5	10:00	11:00	G-405	t
+cmv9eqv4r00lhphkrodg3bl7l	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo400u7gu0b2nhcpalo	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9or300ciydphg75soxyh	\N	5	11:15	12:15	PHY LAB	t
+cmv9eqv4r00ljphkrfcx23q7u	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo200u3gu0b7aq8sxfc	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9oqf00a5ydph2smdmgbf	\N	5	12:15	13:15	G-405	t
+cmv9eqv4s00llphkrgpnjkst8	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuoq00w3gu0bk5lyqum2	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9op5005fydphd5sve6c9	\N	5	14:15	15:15	G-402, G-405	t
+cmv9eqv4s00lnphkrso5ij7h2	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuor00w7gu0brvf68zic	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9op5005fydphd5sve6c9	\N	5	15:15	16:15	G-405	t
+cmv9eqv4s00lpphkrszjx5wx6	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuwh01k7gu0bpvs24wes	cmv0jpmg60029mzmy20g7hxvl	cmuzu9op5005fydphd5sve6c9	\N	5	09:00	10:00	COMP. LAB-1	t
+cmv9eqv4t00lrphkrjcybo8vh	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvr01i3gu0b2g2mel7e	cmv0jpmg60029mzmy20g7hxvl	cmuzu9oqf00a5ydph2smdmgbf	\N	5	10:00	11:00	E-408	t
+cmv9eqv4t00ltphkr3wfmnsy7	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuw801jfgu0bz5awc3g9	cmv0jpmg60029mzmy20g7hxvl	cmuzu9ooh003mydphxxnw12oj	\N	5	11:15	12:15	G-408	t
+cmv9eqv4u00lvphkrq5gg85dh	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvr01i3gu0b2g2mel7e	cmv0jpmg60029mzmy20g7hxvl	cmuzu9oqf00a5ydph2smdmgbf	\N	5	12:15	13:15	G-408	t
+cmv9eqv4u00lxphkrwgffvs6r	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvv01ifgu0bbwidpd2y	cmv0jpmg60029mzmy20g7hxvl	cmuzu9op5005fydphd5sve6c9	\N	5	14:15	15:15	COMP. LAB-2	t
+cmv9eqv4u00lzphkrc0qrkcb9	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvr01i3gu0b2g2mel7e	cmv0jpmg60029mzmy20g7hxvl	cmuzu9oqf00a5ydph2smdmgbf	\N	5	15:15	16:15	E-408	t
+cmv9eqv4v00m1phkrqb7yiwh7	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupd00y3gu0bxeajuxpk	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9oqf00a5ydph2smdmgbf	\N	5	09:00	10:00	E-409	t
+cmv9eqv4v00m3phkr72smr9tx	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupk00yngu0bljzfe56d	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9ooh003mydphxxnw12oj	\N	5	10:00	11:00	E-409	t
+cmv9eqv4w00m5phkrs8rj391c	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupv00zngu0b4kxvkufh	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9opy0087ydpho4qo8und	\N	5	11:15	12:15	E-409	t
+cmv9eqv4w00m7phkrd8dqed30	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupr00zbgu0bam30rzdb	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9oq1008mydphm4jlnxo7	\N	5	12:15	13:15	E-409	t
+cmv9eqv4x00m9phkrfptm6mkk	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuq20107gu0bbipzvgim	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9op5005fydphd5sve6c9	\N	5	14:15	15:15	E-409	t
+cmv9eqv4x00mbphkrevgvqsws	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupg00yfgu0bl10h6cs5	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9op5005fydphd5sve6c9	\N	5	15:15	16:15	E-409	t
+cmv9eqv4x00mdphkr24wl6mae	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpug1006fgu0bywdpk9c2	cmv0jpmfd0009mzmyli6c12jp	cmuzu9op5005fydphd5sve6c9	\N	5	09:00	10:00	COMP. LAB-3	t
+cmv9eqv4y00mfphkrafm9ttti	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpufx0063gu0b6fuyue47	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oqf00a5ydph2smdmgbf	\N	5	10:00	11:00	E-410	t
+cmv9eqv4z00mhphkrghll8evx	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpugm0087gu0bzg6x4zcf	cmv0jpmfd0009mzmyli6c12jp	cmuzu9op5005fydphd5sve6c9	\N	5	11:15	12:15	E-410	t
+cmv9eqv4z00mjphkr1sm76dcg	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpufx0063gu0b6fuyue47	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oqf00a5ydph2smdmgbf	\N	5	12:15	13:15	E-410	t
+cmv9eqv5000mlphkrjpq6hjs3	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuge007fgu0bpfjruidi	cmv0jpmfd0009mzmyli6c12jp	cmuzu9ooh003mydphxxnw12oj	\N	5	14:15	15:15	E-410	t
+cmv9eqv5100mnphkrirmty793	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpug3006ngu0b7i591w9e	cmv0jpmfd0009mzmyli6c12jp	cmuzu9ooh003mydphxxnw12oj	\N	5	15:15	16:15	E-410	t
+cmv9eqv5100mpphkrmh8qk6b3	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuf4003vgu0bfhyd2fqw	cmv0jpmf30003mzmyilhkqgfs	cmuzu9ooe003hydphj3yb044c	\N	5	09:00	10:00	E-411	t
+cmv9eqv5200mrphkryx6qnsfy	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuee0023gu0bc4gefp5y	cmv0jpmf30003mzmyilhkqgfs	cmuzu9oqf00a5ydph2smdmgbf	\N	5	10:00	11:00	E-411	t
+cmv9eqv5200mtphkre608j492	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuf80047gu0bxs8a8yrj	cmv0jpmf30003mzmyilhkqgfs	cmuzu9op5005fydphd5sve6c9	\N	5	11:15	12:15	COMP. LAB-2	t
+cmv9eqv5300mvphkrdlpsk4ak	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuee0023gu0bc4gefp5y	cmv0jpmf30003mzmyilhkqgfs	cmuzu9oqf00a5ydph2smdmgbf	\N	5	12:15	13:15	E-411	t
+cmv9eqv5300mxphkrply4l2az	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuey003bgu0bsqop99yk	cmv0jpmf30003mzmyilhkqgfs	cmuzu9oq1008mydphm4jlnxo7	\N	5	14:15	15:15	E-411	t
+cmv9eqv5300mzphkrekjevvuc	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuf6003zgu0b90rroi31	cmv0jpmf30003mzmyilhkqgfs	cmuzu9ooh003mydphxxnw12oj	\N	5	15:15	16:15	E-411	t
+cmv9eqv5400n1phkr7srm1igi	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputv01c7gu0b9uovsc8y	cmv0jpmg2001xmzmyx16lscnz	cmuzu9op5005fydphd5sve6c9	\N	5	09:00	10:00	E-412	t
+cmv9eqv5400n3phkrttwypxg1	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputh01azgu0b7x3cstbl	cmv0jpmg2001xmzmyx16lscnz	cmuzu9opn0073ydphv2a59e4g	\N	5	10:00	11:00	E-412	t
+cmv9eqv5500n5phkr8vmwirk9	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputd01angu0bq01niudu	cmv0jpmg2001xmzmyx16lscnz	cmuzu9ooh003mydphxxnw12oj	\N	5	11:15	12:15	E-412	t
+cmv9eqv5500n7phkr5rador5w	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputa01afgu0bl38jb60i	cmv0jpmg2001xmzmyx16lscnz	cmuzu9op5005fydphd5sve6c9	\N	5	12:15	13:15	E-412	t
+cmv9eqv5500n9phkrr8e7d0gb	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputh01azgu0b7x3cstbl	cmv0jpmg2001xmzmyx16lscnz	cmuzu9opn0073ydphv2a59e4g	\N	5	14:15	15:15	A-406	t
+cmv9eqv5600nbphkrtza62f1h	cmuzp7hsm000ebynpfs5ze3wj	cmv0mput601a3gu0b70lpnwdr	cmv0jpmg2001xmzmyx16lscnz	cmuzu9oqf00a5ydph2smdmgbf	\N	5	15:15	16:15	E-412	t
+cmv9eqv5700ndphkr4xldk4cu	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujz00ibgu0bmaa0o22l	cmv0jpmfl000rmzmybncitrn3	cmuzu9op5005fydphd5sve6c9	\N	6	09:00	10:00	G-302	t
+cmv9eqv5700nfphkr8lwruick	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujw00i3gu0b208819ea	cmv0jpmfl000rmzmybncitrn3	cmuzu9oqf00a5ydph2smdmgbf	\N	6	10:00	11:00	G-302	t
+cmv9eqv5800nhphkrnjky5dfo	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuk600ivgu0boo1zqty6	cmv0jpmfl000rmzmybncitrn3	cmuzu9op5005fydphd5sve6c9	\N	6	11:15	12:15	G-302	t
+cmv9eqv5800njphkry89pkzjt	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujy00i7gu0bsiqrgkgk	cmv0jpmfl000rmzmybncitrn3	cmuzu9or300ciydphg75soxyh	\N	6	12:15	13:15	G-302	t
+cmv9eqv5800nlphkr6qkqon5w	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuk000ifgu0beoiya2q6	cmv0jpmfl000rmzmybncitrn3	cmuzu9op5005fydphd5sve6c9	\N	6	14:15	15:15	COMP. LAB-2	t
+cmv9eqv5900nnphkrsiimavwt	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpujw00i3gu0b208819ea	cmv0jpmfl000rmzmybncitrn3	cmuzu9oqf00a5ydph2smdmgbf	\N	6	15:15	16:15	G-302	t
+cmv9eqv5900npphkrxr4ephzm	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpule00mfgu0b1d7d40py	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9op5005fydphd5sve6c9	\N	6	09:00	10:00	COMP. LAB-2	t
+cmv9eqv5a00nrphkrkyxf91mg	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpul800m3gu0bf1pfxyfd	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9oqf00a5ydph2smdmgbf	\N	6	10:00	11:00	G-303	t
+cmv9eqv5a00ntphkrb914f8z0	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpul800m3gu0bf1pfxyfd	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9oqf00a5ydph2smdmgbf	\N	6	11:15	12:15	G-303	t
+cmv9eqv5b00nvphkrod0geg5v	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuli00mngu0bxd41bk89	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9ooh003mydphxxnw12oj	\N	6	12:15	13:15	G-303	t
+cmv9eqv5b00nxphkr96tzuo9d	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpulb00mbgu0b7y5dkca3	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9op5005fydphd5sve6c9	\N	6	14:15	15:15	G-303	t
+cmv9eqv5c00nzphkr2vxzwqz2	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpulm00mvgu0bjgppv6bh	cmv0jpmfo000xmzmy49gsp2cg	cmuzu9op5005fydphd5sve6c9	\N	6	15:15	16:15	G-303	t
+cmv9eqv5c00o1phkr7ttikuld	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhf00ajgu0bozfhe4kw	cmv0jpmfg000fmzmyqspzihe7	cmuzu9op5005fydphd5sve6c9	\N	6	09:00	10:00	G-304	t
+cmv9eqv5c00o3phkraa0hfjp7	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuha00a3gu0bt1vbylmj	cmv0jpmfg000fmzmyqspzihe7	cmuzu9oqf00a5ydph2smdmgbf	\N	6	10:00	11:00	G-304	t
+cmv9eqv5d00o5phkradjtp1d5	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhb00a7gu0bb8putfwm	cmv0jpmfg000fmzmyqspzihe7	cmuzu9or300ciydphg75soxyh	\N	6	11:15	12:15	PHY LAB	t
+cmv9eqv5d00o7phkrc2nml8a1	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuha00a3gu0bt1vbylmj	cmv0jpmfg000fmzmyqspzihe7	cmuzu9oqf00a5ydph2smdmgbf	\N	6	12:15	13:15	G-304	t
+cmv9eqv5e00o9phkr9usez8uk	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhg00angu0bfeb3nskr	cmv0jpmfg000fmzmyqspzihe7	cmuzu9ooh003mydphxxnw12oj	\N	6	14:15	15:15	G-304	t
+cmv9eqv5e00obphkrvll0gzr9	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuhc00abgu0b7604snjo	cmv0jpmfg000fmzmyqspzihe7	cmuzu9op5005fydphd5sve6c9	\N	6	15:15	16:15	G-304	t
+cmv9eqv5f00odphkrcagff82q	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuip00efgu0b6ejxp2ah	cmv0jpmfj000lmzmywm02pk3z	cmuzu9op5005fydphd5sve6c9	\N	6	09:00	10:00	G-305	t
+cmv9eqv5f00ofphkrqv3uo5jm	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuio00ebgu0bf4g6399a	cmv0jpmfj000lmzmywm02pk3z	cmuzu9op5005fydphd5sve6c9	\N	6	10:00	11:00	G-305	t
+cmv9eqv5g00ohphkroyyjmmnf	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuim00e3gu0b9wf4k8ah	cmv0jpmfj000lmzmywm02pk3z	cmuzu9oqf00a5ydph2smdmgbf	\N	6	11:15	12:15	G-305	t
+cmv9eqv5g00ojphkraga9v58l	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuin00e7gu0bcprti0yr	cmv0jpmfj000lmzmywm02pk3z	cmuzu9or300ciydphg75soxyh	\N	6	12:15	13:15	G-305	t
+cmv9eqv5h00olphkrtmz0jkjy	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuir00ejgu0bq4jt4fee	cmv0jpmfj000lmzmywm02pk3z	cmuzu9op5005fydphd5sve6c9	\N	6	14:15	15:15	COMP. LAB-3	t
+cmv9eqv5h00onphkrj8lcf98h	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuim00e3gu0b9wf4k8ah	cmv0jpmfj000lmzmywm02pk3z	cmuzu9oqf00a5ydph2smdmgbf	\N	6	15:15	16:15	G-305	t
+cmv9eqv5i00opphkrogmto1dg	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqx012zgu0boo84n4fg	cmv0jpmfy001lmzmyf0175cba	cmuzu9opn0073ydphv2a59e4g	\N	6	09:00	10:00	G-402	t
+cmv9eqv5i00orphkrt49e3b8i	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqn0123gu0b7a6vqfai	cmv0jpmfy001lmzmyf0175cba	cmuzu9oqf00a5ydph2smdmgbf	\N	6	10:00	11:00	G-402	t
+cmv9eqv5j00otphkrznymz372	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpur2013fgu0bjzqruwjd	cmv0jpmfy001lmzmyf0175cba	cmuzu9ooh003mydphxxnw12oj	\N	6	11:15	12:15	CHEM. LAB.	t
+cmv9eqv5j00ovphkr05w0vd90	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqn0123gu0b7a6vqfai	cmv0jpmfy001lmzmyf0175cba	cmuzu9oqf00a5ydph2smdmgbf	\N	6	12:15	13:15	G-402	t
+cmv9eqv5j00oxphkr9zsb5it5	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuqt012ngu0bfbeyv112	cmv0jpmfy001lmzmyf0175cba	cmuzu9ooh003mydphxxnw12oj	\N	6	14:15	15:15	G-402	t
+cmv9eqv5k00ozphkrey0v31yv	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpur1013bgu0bwfa2ciwv	cmv0jpmfy001lmzmyf0175cba	cmuzu9oq1008mydphm4jlnxo7	\N	6	15:15	16:15	G-402	t
+cmv9eqv5k00p1phkrkqfzykw8	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpus3016ngu0b7b0mpfur	cmv0jpmg0001rmzmyc93smozj	cmuzu9ooh003mydphxxnw12oj	\N	6	09:00	10:00	G-403	t
+cmv9eqv5l00p3phkrijw0hyro	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpus3016ngu0b7b0mpfur	cmv0jpmg0001rmzmyc93smozj	cmuzu9ooh003mydphxxnw12oj	\N	6	10:00	11:00	G-403	t
+cmv9eqv5l00p5phkrpbpvw1mz	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpurx0163gu0b65dn4dc8	cmv0jpmg0001rmzmyc93smozj	cmuzu9oqf00a5ydph2smdmgbf	\N	6	11:15	12:15	G-403	t
+cmv9eqv5m00p7phkrb19jfrx7	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpurz016bgu0bu1v4wt4m	cmv0jpmg0001rmzmyc93smozj	cmuzu9op5005fydphd5sve6c9	\N	6	12:15	13:15	G-403	t
+cmv9eqv5m00p9phkreyyu14pg	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpusc017fgu0bcihbgfo6	cmv0jpmg0001rmzmyc93smozj	cmuzu9ooh003mydphxxnw12oj	\N	6	14:15	15:15	CHEM. LAB.	t
+cmv9eqv5n00pbphkr6uitp6mf	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpurx0163gu0b65dn4dc8	cmv0jpmg0001rmzmyc93smozj	cmuzu9oqf00a5ydph2smdmgbf	\N	6	15:15	16:15	G-403	t
+cmv9eqv5n00pdphkrpe83vmbr	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuun01engu0bt2btep8d	cmv0jpmg40023mzmypoo0djbb	cmuzu9ooh003mydphxxnw12oj	\N	6	09:00	10:00	COMP. LAB-4	t
+cmv9eqv5o00pfphkrv2akr5ab	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuug01e3gu0bs8bnocs4	cmv0jpmg40023mzmypoo0djbb	cmuzu9oqf00a5ydph2smdmgbf	\N	6	10:00	11:00	G-404	t
+cmv9eqv5o00phphkrqz5s3z8a	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuuj01ebgu0bztqjgobd	cmv0jpmg40023mzmypoo0djbb	cmuzu9op5005fydphd5sve6c9	\N	6	11:15	12:15	G-404	t
+cmv9eqv5o00pjphkrawezhirv	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuux01fjgu0bdpknblsb	cmv0jpmg40023mzmypoo0djbb	cmuzu9oqv00bjydphbbvzpk44	\N	6	12:15	13:15	G-404	t
+cmv9eqv5p00plphkrgl2w99b7	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuuu01fbgu0bokwb81xn	cmv0jpmg40023mzmypoo0djbb	cmuzu9oq1008mydphm4jlnxo7	\N	6	14:15	15:15	G-404	t
+cmv9eqv5p00pnphkr0w8vlniz	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuuk01efgu0bniqp52ui	cmv0jpmg40023mzmypoo0djbb	cmuzu9op5005fydphd5sve6c9	\N	6	15:15	16:15	G-404	t
+cmv9eqv5q00ppphkrblqxeq1o	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpump00q7gu0bxafxwgxd	cmv0jpmfq0013mzmye9bpndkg	cmuzu9or300ciydphg75soxyh	\N	6	09:00	10:00	G-405	t
+cmv9eqv5q00prphkrl5vdaivl	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpumn00q3gu0bbd8lxl5w	cmv0jpmfq0013mzmye9bpndkg	cmuzu9oqf00a5ydph2smdmgbf	\N	6	10:00	11:00	G-405	t
+cmv9eqv5r00ptphkrnq4p2ei9	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpums00qfgu0bjo3am5ih	cmv0jpmfq0013mzmye9bpndkg	cmuzu9op5005fydphd5sve6c9	\N	6	11:15	12:15	G-405	t
+cmv9eqv5r00pvphkrkxmdxp5g	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpund00s3gu0bzoojgigx	cmv0jpmfq0013mzmye9bpndkg	cmuzu9op5005fydphd5sve6c9	\N	6	12:15	13:15	G-405	t
+cmv9eqv5r00pxphkramonnb31	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpumr00qbgu0bk9kaxq7f	cmv0jpmfq0013mzmye9bpndkg	cmuzu9op5005fydphd5sve6c9	\N	6	14:15	15:15	G-405	t
+cmv9eqv5s00pzphkrj8erswjr	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpumv00qngu0butq5hiqe	cmv0jpmfq0013mzmye9bpndkg	cmuzu9ooh003mydphxxnw12oj	\N	6	15:15	16:15	G-405	t
+cmv9eqv5s00q1phkrl1l5t8p5	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo400u7gu0b2nhcpalo	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9or300ciydphg75soxyh	\N	6	09:00	10:00	G-405	t
+cmv9eqv5t00q3phkrzzcw9zto	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo200u3gu0b7aq8sxfc	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9oqf00a5ydph2smdmgbf	\N	6	10:00	11:00	G-405	t
+cmv9eqv5t00q5phkrny9hjf2i	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo700ufgu0b6eadkj3j	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9op5005fydphd5sve6c9	\N	6	11:15	12:15	G-405	t
+cmv9eqv5t00q7phkrvbbjpd2z	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuoq00w3gu0bk5lyqum2	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9op5005fydphd5sve6c9	\N	6	12:15	13:15	G-405	t
+cmv9eqv5u00q9phkr4itgrv6j	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo500ubgu0blkhaldar	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9op5005fydphd5sve6c9	\N	6	14:15	15:15	G-405	t
+cmv9eqv5u00qbphkrb0glmk2x	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuo900ungu0bz0w2yk5n	cmv0jpmfs0019mzmyqgpcnbf9	cmuzu9ooh003mydphxxnw12oj	\N	6	15:15	16:15	G-405	t
+cmv9eqv5v00qdphkr0ry2pza4	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuw601jbgu0b0hlvsgk1	cmv0jpmg60029mzmy20g7hxvl	cmuzu9oq1008mydphm4jlnxo7	\N	6	09:00	10:00	G-408	t
+cmv9eqv5v00qfphkrxc3i8ljr	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuw801jfgu0bz5awc3g9	cmv0jpmg60029mzmy20g7hxvl	cmuzu9ooh003mydphxxnw12oj	\N	6	10:00	11:00	E-408	t
+cmv9eqv5w00qhphkripz7r0us	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvt01ibgu0bi3ohwuz0	cmv0jpmg60029mzmy20g7hxvl	cmuzu9op5005fydphd5sve6c9	\N	6	11:15	12:15	E-408	t
+cmv9eqv5w00qjphkrei3bv5oq	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvx01ingu0bg6ld6mic	cmv0jpmg60029mzmy20g7hxvl	cmuzu9ooh003mydphxxnw12oj	\N	6	12:15	13:15	G-408	t
+cmv9eqv5x00qlphkrcs3jg8mt	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuvr01i3gu0b2g2mel7e	cmv0jpmg60029mzmy20g7hxvl	cmuzu9oqf00a5ydph2smdmgbf	\N	6	14:15	15:15	E-408	t
+cmv9eqv5x00qnphkrw8obj901	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuw901jjgu0bq68fzlkk	cmv0jpmg60029mzmy20g7hxvl	cmuzu9oqv00bjydphbbvzpk44	\N	6	15:15	16:15	E-408	t
+cmv9eqv5y00qpphkrq587vxni	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupk00yngu0bljzfe56d	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9ooh003mydphxxnw12oj	\N	6	09:00	10:00	E-409	t
+cmv9eqv5y00qrphkrwxmj273s	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupd00y3gu0bxeajuxpk	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9oqf00a5ydph2smdmgbf	\N	6	10:00	11:00	E-409	t
+cmv9eqv5z00qtphkrv3czxche	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupg00yfgu0bl10h6cs5	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9op5005fydphd5sve6c9	\N	6	11:15	12:15	COMP. LAB-3	t
+cmv9eqv5z00qvphkrk97knphe	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupd00y3gu0bxeajuxpk	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9oqf00a5ydph2smdmgbf	\N	6	12:15	13:15	E-409	t
+cmv9eqv6000qxphkrorndatth	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupv00zngu0b4kxvkufh	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9opy0087ydpho4qo8und	\N	6	14:15	15:15	E-409	t
+cmv9eqv6000qzphkrolwbclft	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpupk00yngu0bljzfe56d	cmv0jpmfv001fmzmyz0ynozkq	cmuzu9ooh003mydphxxnw12oj	\N	6	15:15	16:15	E-409	t
+cmv9eqv6100r1phkrtdr4zg9j	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpugh007rgu0bew9xky73	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oov004lydphdqksogwy	\N	6	09:00	10:00	E-410	t
+cmv9eqv6100r3phkrru0qjswg	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpug3006ngu0b7i591w9e	cmv0jpmfd0009mzmyli6c12jp	cmuzu9ooh003mydphxxnw12oj	\N	6	10:00	11:00	E-410	t
+cmv9eqv6200r5phkrvxxipcw0	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpug1006fgu0bywdpk9c2	cmv0jpmfd0009mzmyli6c12jp	cmuzu9op5005fydphd5sve6c9	\N	6	11:15	12:15	E-410	t
+cmv9eqv6200r7phkrlql7mpwa	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpugc007bgu0bnfeoot44	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oq1008mydphm4jlnxo7	\N	6	12:15	13:15	E-410	t
+cmv9eqv6200r9phkr6kipw91d	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpufx0063gu0b6fuyue47	cmv0jpmfd0009mzmyli6c12jp	cmuzu9oqf00a5ydph2smdmgbf	\N	6	14:15	15:15	E-410	t
+cmv9eqv6300rbphkr2a6ynihi	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpug0006bgu0bitz4w01u	cmv0jpmfd0009mzmyli6c12jp	cmuzu9op5005fydphd5sve6c9	\N	6	15:15	16:15	E-410	t
+cmv9eqv6300rdphkrviylqf50	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuey003bgu0bsqop99yk	cmv0jpmf30003mzmyilhkqgfs	cmuzu9oq1008mydphm4jlnxo7	\N	6	09:00	10:00	E-411	t
+cmv9eqv6400rfphkrsq2z3y67	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuek002bgu0b5gwqhv1k	cmv0jpmf30003mzmyilhkqgfs	cmuzu9op5005fydphd5sve6c9	\N	6	10:00	11:00	E-411	t
+cmv9eqv6400rhphkreqkeardq	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuep002ngu0bub7xvapw	cmv0jpmf30003mzmyilhkqgfs	cmuzu9ooh003mydphxxnw12oj	\N	6	11:15	12:15	COMP. LAB-4	t
+cmv9eqv6500rjphkrf6ededst	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuee0023gu0bc4gefp5y	cmv0jpmf30003mzmyilhkqgfs	cmuzu9oqf00a5ydph2smdmgbf	\N	6	12:15	13:15	E-411	t
+cmv9eqv6500rlphkrqa5s4e5h	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuee0023gu0bc4gefp5y	cmv0jpmf30003mzmyilhkqgfs	cmuzu9oqf00a5ydph2smdmgbf	\N	6	14:15	15:15	E-411	t
+cmv9eqv6600rnphkrorzfivuh	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuee0023gu0bc4gefp5y	cmv0jpmf30003mzmyilhkqgfs	cmuzu9oqf00a5ydph2smdmgbf	\N	6	15:15	16:15	E-411	t
+cmv9eqv6600rpphkr5wrf4rai	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputh01azgu0b7x3cstbl	cmv0jpmg2001xmzmyx16lscnz	cmuzu9opn0073ydphv2a59e4g	\N	6	09:00	10:00	E-412	t
+cmv9eqv6700rrphkrgztczed9	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputd01angu0bq01niudu	cmv0jpmg2001xmzmyx16lscnz	cmuzu9ooh003mydphxxnw12oj	\N	6	10:00	11:00	E-412	t
+cmv9eqv6700rtphkr2sb1396j	cmuzp7hsm000ebynpfs5ze3wj	cmv0mput601a3gu0b70lpnwdr	cmv0jpmg2001xmzmyx16lscnz	cmuzu9oqf00a5ydph2smdmgbf	\N	6	11:15	12:15	E-412	t
+cmv9eqv6700rvphkrgwxq6tii	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputd01angu0bq01niudu	cmv0jpmg2001xmzmyx16lscnz	cmuzu9ooh003mydphxxnw12oj	\N	6	12:15	13:15	E-412	t
+cmv9eqv6800rxphkrvoaeu0ch	cmuzp7hsm000ebynpfs5ze3wj	cmv0mputk01bbgu0bm8dc931s	cmv0jpmg2001xmzmyx16lscnz	cmuzu9oq1008mydphm4jlnxo7	\N	6	14:15	15:15	E-412	t
+cmv9eqv6800rzphkrn397bmqd	cmuzp7hsm000ebynpfs5ze3wj	cmv0mput901abgu0begyjqlyw	cmv0jpmg2001xmzmyx16lscnz	cmuzu9op5005fydphd5sve6c9	\N	6	15:15	16:15	E-412	t
 \.
 
 
@@ -124557,5 +125061,5 @@ ALTER TABLE ONLY public."UserRole"
 -- PostgreSQL database dump complete
 --
 
-\unrestrict xht2zSocma67XRTlCCve12OCAZOshEJRZbNZXF4itSwE7UL2OGR4FERfAXeqMfF
+\unrestrict ArOZhha6MFNjwBMxB1LEfWbrjlCgdOmcVlfgqEMQe3fgjdCataFRc1yOI8botiS
 

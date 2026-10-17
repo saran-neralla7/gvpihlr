@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, Fragment } from "react";
 import Link from "next/link";
 import {
   FileText,
@@ -21,6 +21,8 @@ import {
   Phone,
   CalendarX,
   AlertCircle,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -172,6 +174,18 @@ export default function ReportsClient({
   // Section Classes & Labs Held Dedicated State
   const [classesHeldData, setClassesHeldData] = useState<AllSectionsReportResponse | null>(null);
   const [isLoadingClassesHeld, setIsLoadingClassesHeld] = useState(false);
+  const [classesHeldViewMode, setClassesHeldViewMode] = useState<"summary" | "subject_wise">("summary");
+  const [classesHeldMetric, setClassesHeldMetric] = useState<"hours" | "classes">("hours");
+  const [expandedSectionIds, setExpandedSectionIds] = useState<Set<string>>(new Set());
+
+  const toggleSectionExpand = (sectionId: string) => {
+    setExpandedSectionIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(sectionId)) next.delete(sectionId);
+      else next.add(sectionId);
+      return next;
+    });
+  };
 
   const fetchClassesHeldData = async (sDate = startDate, eDate = endDate) => {
     setIsLoadingClassesHeld(true);
@@ -560,9 +574,9 @@ export default function ReportsClient({
       [
         "S.No",
         "Name of the Course",
-        "No. of Classes Held",
+        "No. of Classes Held (Theory)",
         "No. of Labs Held (2 hrs = 1 lab session)",
-        "Total Periods Conducted",
+        "Total Periods / Hours Conducted",
       ],
       ...classesHeldData.sections.map((sec, idx) => [
         idx + 1,
@@ -580,9 +594,47 @@ export default function ReportsClient({
       ],
     ];
 
+    const subjectWiseData: any[][] = [
+      [COLLEGE_NAME],
+      [COLLEGE_SUBTITLE],
+      ["SUBJECT-WISE NUMBER OF HOURS & CLASSES HELD REPORT"],
+      [`Attendance Window: ${startDate} to ${endDate} | Generated: ${new Date().toLocaleDateString("en-GB")}`],
+      [],
+      [
+        "S.No",
+        "Course Name",
+        "Program",
+        "Subject Code",
+        "Subject Short Name",
+        "Subject Name",
+        "Type",
+        "Conducted Hours (Periods)",
+        "Conducted Classes / Sessions",
+      ],
+    ];
+
+    let subSNo = 1;
+    for (const sec of classesHeldData.sections) {
+      for (const sub of sec.subjectColumns) {
+        subjectWiseData.push([
+          subSNo++,
+          sec.courseDisplayName || sec.displayName,
+          sec.programName,
+          sub.code,
+          sub.shortName,
+          sub.name,
+          sub.type,
+          sub.conductedHours,
+          sub.conductedSessions,
+        ]);
+      }
+    }
+
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    const subWorksheet = XLSX.utils.aoa_to_sheet(subjectWiseData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Classes & Labs Held");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Summary (Classes & Labs)");
+    XLSX.utils.book_append_sheet(workbook, subWorksheet, "Subject-Wise Hours");
     XLSX.writeFile(
       workbook,
       `Section_Classes_and_Labs_Held_${startDate}_to_${endDate}.xlsx`
@@ -3816,143 +3868,399 @@ export default function ReportsClient({
             </div>
           </div>
 
-          {/* KPI Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  Total Sections
+            {/* View Mode & Metric Toggle Controls */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-3 shadow-xs flex flex-wrap items-center justify-between gap-3">
+              {/* Toggle 1: Summary vs Subject-Wise */}
+              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setClassesHeldViewMode("summary")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    classesHeldViewMode === "summary"
+                      ? "bg-white text-slate-900 shadow-xs font-black border border-slate-200"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Summary (Classes &amp; Labs)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setClassesHeldViewMode("subject_wise")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    classesHeldViewMode === "subject_wise"
+                      ? "bg-white text-slate-900 shadow-xs font-black border border-slate-200"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Subject-Wise Hours Breakdown
+                </button>
+              </div>
+
+              {/* Toggle 2: Hours / Periods vs Classes / Sessions */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  Metric:
                 </span>
-                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                  <LayoutGrid className="w-4 h-4" />
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setClassesHeldMetric("hours")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      classesHeldMetric === "hours"
+                        ? "bg-emerald-600 text-white shadow-xs font-black"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    Hours / Periods
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setClassesHeldMetric("classes")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      classesHeldMetric === "classes"
+                        ? "bg-blue-600 text-white shadow-xs font-black"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    Classes / Sessions
+                  </button>
                 </div>
               </div>
-              <div className="text-2xl font-black text-slate-900 mt-2">
-                {classesHeldData?.sections.length ?? 0}
-                <span className="text-xs font-semibold text-slate-400 ml-1.5">Sections</span>
-              </div>
-              <p className="text-[11px] text-slate-500 mt-1">Active sections across programs</p>
             </div>
 
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  Theory Classes Held
-                </span>
-                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                  <BookOpen className="w-4 h-4" />
+            {/* KPI Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    Total Sections
+                  </span>
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <LayoutGrid className="w-4 h-4" />
+                  </div>
                 </div>
-              </div>
-              <div className="text-2xl font-black text-slate-900 mt-2">
-                {classesHeldData?.sections.reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0) ?? 0}
-                <span className="text-xs font-semibold text-slate-400 ml-1.5">Classes</span>
-              </div>
-              <p className="text-[11px] text-slate-500 mt-1">Conducted lecture periods</p>
-            </div>
-
-            <div className="bg-white border border-emerald-200/90 rounded-2xl p-5 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">
-                  Labs Held (2 hrs = 1)
-                </span>
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                  <CheckCircle2 className="w-4 h-4" />
+                <div className="text-2xl font-black text-slate-900 mt-2">
+                  {classesHeldData?.sections.length ?? 0}
+                  <span className="text-xs font-semibold text-slate-400 ml-1.5">Sections</span>
                 </div>
+                <p className="text-[11px] text-slate-500 mt-1">Active sections across programs</p>
               </div>
-              <div className="text-2xl font-black text-emerald-700 mt-2">
-                {classesHeldData?.sections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0) ?? 0}
-                <span className="text-xs font-semibold text-emerald-500 ml-1.5">Lab Sessions</span>
-              </div>
-              <p className="text-[11px] text-emerald-600/80 mt-1">2 periods counted as 1 lab session</p>
-            </div>
 
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  Total Periods Conducted
-                </span>
-                <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
-                  <FileText className="w-4 h-4" />
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    {classesHeldMetric === "hours" ? "Theory Hours Held" : "Theory Classes Held"}
+                  </span>
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <BookOpen className="w-4 h-4" />
+                  </div>
                 </div>
+                <div className="text-2xl font-black text-slate-900 mt-2">
+                  {classesHeldData?.sections.reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0) ?? 0}
+                  <span className="text-xs font-semibold text-slate-400 ml-1.5">
+                    {classesHeldMetric === "hours" ? "Hours" : "Classes"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1">Conducted lecture periods</p>
               </div>
-              <div className="text-2xl font-black text-slate-900 mt-2">
-                {classesHeldData?.sections.reduce((acc, s) => acc + s.totalSessionsConducted, 0) ?? 0}
-                <span className="text-xs font-semibold text-slate-400 ml-1.5">Periods</span>
-              </div>
-              <p className="text-[11px] text-slate-500 mt-1">Total teaching hours in timetable</p>
-            </div>
-          </div>
 
-          {/* Table Container */}
-          <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs overflow-hidden">
-            {isLoadingClassesHeld && !classesHeldData ? (
-              <div className="py-16 text-center text-slate-400">
-                <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                <p className="font-semibold text-sm">Compiling section classes &amp; labs held data...</p>
+              <div className="bg-white border border-emerald-200/90 rounded-2xl p-5 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">
+                    {classesHeldMetric === "hours" ? "Lab Hours Held" : "Labs Held (2 hrs = 1)"}
+                  </span>
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <CheckCircle2 className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="text-2xl font-black text-emerald-700 mt-2">
+                  {classesHeldMetric === "hours"
+                    ? (classesHeldData?.sections.reduce((acc, s) => acc + (s.labPeriodsHeld ?? 0), 0) ?? 0)
+                    : (classesHeldData?.sections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0) ?? 0)}
+                  <span className="text-xs font-semibold text-emerald-500 ml-1.5">
+                    {classesHeldMetric === "hours" ? "Hours" : "Lab Sessions"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-emerald-600/80 mt-1">
+                  {classesHeldMetric === "hours" ? "Total laboratory clock hours" : "2 periods counted as 1 lab session"}
+                </p>
               </div>
-            ) : (
-              <div className="overflow-x-auto rounded-2xl border border-slate-200">
-                <table className="w-full border-collapse text-left text-xs">
-                  <thead>
-                    <tr className="bg-slate-100 border-b border-slate-200 text-slate-800 font-black">
-                      <th className="p-3 text-center w-14">S.No</th>
-                      <th className="p-3">Name of the Course</th>
-                      <th className="p-3 text-center w-40">No. of Classes Held</th>
-                      <th className="p-3 text-center w-52">
-                        No. of Labs Held
-                        <span className="block text-[10px] font-normal text-slate-500">
-                          (2 hrs = 1 lab session)
-                        </span>
-                      </th>
-                      <th className="p-3 text-center w-44">Total Periods Conducted</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {(classesHeldData?.sections || []).map((sec, idx) => (
-                      <tr key={sec.sectionId} className="hover:bg-blue-50/40 transition">
-                        <td className="p-3 text-center font-bold text-slate-500 font-mono">
-                          {idx + 1}
-                        </td>
-                        <td className="p-3 font-extrabold text-slate-900 text-sm">
-                          {sec.courseDisplayName || sec.displayName}
-                          <span className="block text-[11px] font-normal text-slate-400">
-                            {sec.programName}
+
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    {classesHeldMetric === "hours" ? "Total Periods / Hours" : "Total Classes &amp; Labs"}
+                  </span>
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="text-2xl font-black text-slate-900 mt-2">
+                  {classesHeldMetric === "hours"
+                    ? (classesHeldData?.sections.reduce((acc, s) => acc + s.totalSessionsConducted, 0) ?? 0)
+                    : (classesHeldData?.sections.reduce((acc, s) => acc + (s.totalClassesHeld ?? (s.theoryClassesHeld + s.labsHeld)), 0) ?? 0)}
+                  <span className="text-xs font-semibold text-slate-400 ml-1.5">
+                    {classesHeldMetric === "hours" ? "Hours" : "Sessions"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  {classesHeldMetric === "hours" ? "Total academic teaching hours" : "Total instructional deliveries"}
+                </p>
+              </div>
+            </div>
+
+            {/* Table Container */}
+            <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs overflow-hidden">
+              {isLoadingClassesHeld && !classesHeldData ? (
+                <div className="py-16 text-center text-slate-400">
+                  <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                  <p className="font-semibold text-sm">Compiling section classes &amp; labs held data...</p>
+                </div>
+              ) : classesHeldViewMode === "summary" ? (
+                /* SUMMARY TABLE VIEW */
+                <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                  <table className="w-full border-collapse text-left text-xs">
+                    <thead>
+                      <tr className="bg-slate-100 border-b border-slate-200 text-slate-800 font-black">
+                        <th className="p-3 text-center w-14">S.No</th>
+                        <th className="p-3">Name of the Course</th>
+                        <th className="p-3 text-center w-40">
+                          {classesHeldMetric === "hours" ? "Theory Hours Held" : "No. of Classes Held (Theory)"}
+                        </th>
+                        <th className="p-3 text-center w-52">
+                          {classesHeldMetric === "hours" ? "Lab Hours Held" : "No. of Labs Held"}
+                          <span className="block text-[10px] font-normal text-slate-500">
+                            {classesHeldMetric === "hours" ? "(2 periods per lab)" : "(2 hrs = 1 lab session)"}
                           </span>
+                        </th>
+                        <th className="p-3 text-center w-48">
+                          {classesHeldMetric === "hours" ? "Total Periods / Hours" : "Total Classes &amp; Labs Held"}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {(classesHeldData?.sections || []).map((sec, idx) => (
+                        <tr key={sec.sectionId} className="hover:bg-blue-50/40 transition">
+                          <td className="p-3 text-center font-bold text-slate-500 font-mono">
+                            {idx + 1}
+                          </td>
+                          <td className="p-3 font-extrabold text-slate-900 text-sm">
+                            {sec.courseDisplayName || sec.displayName}
+                            <span className="block text-[11px] font-normal text-slate-400">
+                              {sec.programName}
+                            </span>
+                          </td>
+                          <td className="p-3 text-center font-bold text-slate-800 font-mono text-sm">
+                            {sec.theoryClassesHeld ?? 0}
+                          </td>
+                          <td className="p-3 text-center font-black text-emerald-700 font-mono text-sm">
+                            {classesHeldMetric === "hours" ? (sec.labPeriodsHeld ?? 0) : (sec.labsHeld ?? 0)}
+                          </td>
+                          <td className="p-3 text-center font-black text-blue-900 font-mono text-sm">
+                            {classesHeldMetric === "hours"
+                              ? sec.totalSessionsConducted
+                              : (sec.totalClassesHeld ?? (sec.theoryClassesHeld + sec.labsHeld))}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-slate-100 font-black text-slate-900 border-t-2 border-slate-300">
+                        <td colSpan={2} className="p-3 text-right uppercase tracking-wider text-xs">
+                          Grand Total ({(classesHeldData?.sections || []).length} Sections)
                         </td>
-                        <td className="p-3 text-center font-bold text-slate-800 font-mono text-sm">
-                          {sec.theoryClassesHeld ?? 0}
+                        <td className="p-3 text-center font-mono text-sm">
+                          {(classesHeldData?.sections || []).reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0)}
                         </td>
-                        <td className="p-3 text-center font-black text-emerald-700 font-mono text-sm">
-                          {sec.labsHeld ?? 0}
+                        <td className="p-3 text-center font-mono text-sm text-emerald-800">
+                          {classesHeldMetric === "hours"
+                            ? (classesHeldData?.sections || []).reduce((acc, s) => acc + (s.labPeriodsHeld ?? 0), 0)
+                            : (classesHeldData?.sections || []).reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}
                         </td>
-                        <td className="p-3 text-center font-black text-blue-900 font-mono text-sm">
-                          {sec.totalSessionsConducted}
+                        <td className="p-3 text-center font-mono text-sm text-blue-950">
+                          {classesHeldMetric === "hours"
+                            ? (classesHeldData?.sections || []).reduce((acc, s) => acc + s.totalSessionsConducted, 0)
+                            : (classesHeldData?.sections || []).reduce(
+                                (acc, s) => acc + (s.totalClassesHeld ?? (s.theoryClassesHeld + s.labsHeld)),
+                                0
+                              )}
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-slate-100 font-black text-slate-900 border-t-2 border-slate-300">
-                      <td colSpan={2} className="p-3 text-right uppercase tracking-wider text-xs">
-                        Grand Total ({(classesHeldData?.sections || []).length} Sections)
-                      </td>
-                      <td className="p-3 text-center font-mono text-sm">
-                        {(classesHeldData?.sections || []).reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0)}
-                      </td>
-                      <td className="p-3 text-center font-mono text-sm text-emerald-800">
-                        {(classesHeldData?.sections || []).reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}
-                      </td>
-                      <td className="p-3 text-center font-mono text-sm text-blue-950">
-                        {(classesHeldData?.sections || []).reduce((acc, s) => acc + s.totalSessionsConducted, 0)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            )}
+                    </tfoot>
+                  </table>
+                </div>
+              ) : (
+                /* SUBJECT-WISE BREAKDOWN TABLE VIEW */
+                <div className="space-y-4">
+                  <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                    <table className="w-full border-collapse text-left text-xs">
+                      <thead>
+                        <tr className="bg-slate-100 border-b border-slate-200 text-slate-800 font-black">
+                          <th className="p-3 text-center w-12">S.No</th>
+                          <th className="p-3 w-56">Name of the Course</th>
+                          <th className="p-3">
+                            Subject-Wise Delivery Breakdown ({classesHeldMetric === "hours" ? "Hours Conducted" : "Classes / Sessions"})
+                          </th>
+                          <th className="p-3 text-center w-28">
+                            {classesHeldMetric === "hours" ? "Theory Hrs" : "Theory Cls"}
+                          </th>
+                          <th className="p-3 text-center w-28">
+                            {classesHeldMetric === "hours" ? "Lab Hrs" : "Labs Held"}
+                          </th>
+                          <th className="p-3 text-center w-32">
+                            {classesHeldMetric === "hours" ? "Total Hours" : "Total Sessions"}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {(classesHeldData?.sections || []).map((sec, idx) => {
+                          const isExpanded = expandedSectionIds.has(sec.sectionId);
+                          return (
+                            <React.Fragment key={sec.sectionId}>
+                              <tr className="hover:bg-blue-50/40 transition">
+                                <td className="p-3 text-center font-bold text-slate-500 font-mono">
+                                  {idx + 1}
+                                </td>
+                                <td className="p-3">
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleSectionExpand(sec.sectionId)}
+                                      className="p-1 rounded hover:bg-slate-200 text-slate-500 transition"
+                                      title="Toggle Detailed Subject Table"
+                                    >
+                                      {isExpanded ? (
+                                        <ChevronDown className="w-4 h-4 text-blue-600" />
+                                      ) : (
+                                        <ChevronRight className="w-4 h-4" />
+                                      )}
+                                    </button>
+                                    <div>
+                                      <div className="font-extrabold text-slate-900 text-sm">
+                                        {sec.courseDisplayName || sec.displayName}
+                                      </div>
+                                      <div className="text-[11px] font-normal text-slate-400">
+                                        {sec.programName}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="p-3">
+                                  <div className="flex flex-wrap gap-1.5 items-center">
+                                    {sec.subjectColumns.map((sub) => {
+                                      const isLab = sub.type === "LAB";
+                                      const value = classesHeldMetric === "hours" ? sub.conductedHours : sub.conductedSessions;
+                                      return (
+                                        <span
+                                          key={sub.id}
+                                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border transition ${
+                                            isLab
+                                              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                              : "bg-indigo-50 text-indigo-900 border-indigo-200"
+                                          }`}
+                                        >
+                                          <span>{sub.shortName}</span>
+                                          <span className="font-mono px-1.5 py-0.2 rounded bg-white font-black text-[11px] shadow-2xs">
+                                            {value} {classesHeldMetric === "hours" ? "h" : "c"}
+                                          </span>
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                </td>
+                                <td className="p-3 text-center font-bold text-slate-800 font-mono text-sm">
+                                  {sec.theoryClassesHeld ?? 0}
+                                </td>
+                                <td className="p-3 text-center font-black text-emerald-700 font-mono text-sm">
+                                  {classesHeldMetric === "hours" ? (sec.labPeriodsHeld ?? 0) : (sec.labsHeld ?? 0)}
+                                </td>
+                                <td className="p-3 text-center font-black text-blue-900 font-mono text-sm">
+                                  {classesHeldMetric === "hours"
+                                    ? sec.totalSessionsConducted
+                                    : (sec.totalClassesHeld ?? (sec.theoryClassesHeld + sec.labsHeld))}
+                                </td>
+                              </tr>
+                              {isExpanded && (
+                                <tr className="bg-slate-50/80">
+                                  <td colSpan={6} className="p-4 pl-12">
+                                    <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-xs">
+                                      <div className="text-xs font-black uppercase text-slate-700 tracking-wider mb-2">
+                                        Detailed Subject Audit: {sec.courseDisplayName || sec.displayName}
+                                      </div>
+                                      <table className="w-full text-xs border-collapse">
+                                        <thead>
+                                          <tr className="border-b border-slate-200 text-slate-600 font-bold">
+                                            <th className="p-2 text-left w-24">Code</th>
+                                            <th className="p-2 text-left">Subject Name</th>
+                                            <th className="p-2 text-center w-24">Type</th>
+                                            <th className="p-2 text-center w-32">Hours Conducted</th>
+                                            <th className="p-2 text-center w-36">Classes / Sessions</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                          {sec.subjectColumns.map((sub) => (
+                                            <tr key={sub.id} className="hover:bg-slate-50">
+                                              <td className="p-2 font-mono font-bold text-slate-700">{sub.code}</td>
+                                              <td className="p-2 font-semibold text-slate-900">{sub.name}</td>
+                                              <td className="p-2 text-center">
+                                                <span
+                                                  className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                                                    sub.type === "LAB"
+                                                      ? "bg-emerald-100 text-emerald-800"
+                                                      : "bg-indigo-100 text-indigo-800"
+                                                  }`}
+                                                >
+                                                  {sub.type}
+                                                </span>
+                                              </td>
+                                              <td className="p-2 text-center font-mono font-black text-slate-900">
+                                                {sub.conductedHours} hrs
+                                              </td>
+                                              <td className="p-2 text-center font-mono font-bold text-slate-700">
+                                                {sub.conductedSessions} {sub.type === "LAB" ? "lab sessions" : "classes"}
+                                              </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-slate-100 font-black text-slate-900 border-t-2 border-slate-300">
+                          <td colSpan={3} className="p-3 text-right uppercase tracking-wider text-xs">
+                            University Grand Total ({(classesHeldData?.sections || []).length} Sections)
+                          </td>
+                          <td className="p-3 text-center font-mono text-sm">
+                            {(classesHeldData?.sections || []).reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0)}
+                          </td>
+                          <td className="p-3 text-center font-mono text-sm text-emerald-800">
+                            {classesHeldMetric === "hours"
+                              ? (classesHeldData?.sections || []).reduce((acc, s) => acc + (s.labPeriodsHeld ?? 0), 0)
+                              : (classesHeldData?.sections || []).reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}
+                          </td>
+                          <td className="p-3 text-center font-mono text-sm text-blue-950">
+                            {classesHeldMetric === "hours"
+                              ? (classesHeldData?.sections || []).reduce((acc, s) => acc + s.totalSessionsConducted, 0)
+                              : (classesHeldData?.sections || []).reduce(
+                                  (acc, s) => acc + (s.totalClassesHeld ?? (s.theoryClassesHeld + s.labsHeld)),
+                                  0
+                                )}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* =========================================================================
           ONE-CLICK ALL SECTIONS PRINT MODAL (Portrait A4)

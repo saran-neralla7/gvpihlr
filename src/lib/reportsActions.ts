@@ -353,6 +353,7 @@ export interface AllSectionsReportItem {
   semester: number;
   totalStudents: number;
   totalSessionsConducted: number;
+  totalClassesHeld?: number;
   theoryClassesHeld: number;
   labsHeld: number;
   labPeriodsHeld: number;
@@ -366,6 +367,8 @@ export interface AllSectionsReportItem {
     shortName: string;
     type: string;
     conducted: number;
+    conductedHours: number;
+    conductedSessions: number;
   }[];
   students: {
     studentId: string;
@@ -605,6 +608,8 @@ export async function getAllSectionsAttendanceReport(
         shortName: string;
         type: string;
         conducted: number;
+        conductedHours: number;
+        conductedSessions: number;
       }
     >();
 
@@ -618,8 +623,8 @@ export async function getAllSectionsAttendanceReport(
       if (isLab) {
         labPeriodsCount++;
         const dateKey = sess.sessionDate.toISOString().split("T")[0];
-        const subKey = sub?.id || sess.assignmentId;
-        labSessionsSet.add(`${dateKey}_${subKey}`);
+        const slot = Math.floor((sess.periodNumber - 1) / 2);
+        labSessionsSet.add(`${dateKey}_slot_${slot}`);
       } else {
         theoryClassesCount++;
       }
@@ -633,11 +638,24 @@ export async function getAllSectionsAttendanceReport(
             shortName: sub.shortName || sub.code,
             type: sub.type,
             conducted: 0,
+            conductedHours: 0,
+            conductedSessions: 0,
           });
         }
-        subjectColumnsMap.get(sub.id)!.conducted += 1;
+        const item = subjectColumnsMap.get(sub.id)!;
+        item.conducted += 1;
+        item.conductedHours += 1;
       }
     }
+
+    // Set conductedSessions for each subject (for LAB: 2 hours = 1 session)
+    subjectColumnsMap.forEach((item) => {
+      if (item.type === "LAB") {
+        item.conductedSessions = Math.max(1, Math.round(item.conductedHours / 2));
+      } else {
+        item.conductedSessions = item.conductedHours;
+      }
+    });
 
     const labsHeldCount = labSessionsSet.size;
 
@@ -678,6 +696,9 @@ export async function getAllSectionsAttendanceReport(
     let secPercentageSum = 0;
     let secPercentageCount = 0;
 
+    const recordedSecSessions = secSessions.filter((s) => recordsBySession.has(s.id));
+    const totalRecordedSessions = recordedSecSessions.length;
+
     const studentReports = secEnrollments.map((enr) => {
       const studentId = enr.student.id;
       let attendedCount = 0;
@@ -701,11 +722,12 @@ export async function getAllSectionsAttendanceReport(
         }
       }
 
-      const absentClasses = Math.max(0, totalSessionsConducted - attendedCount);
+      const evaluationBase = totalRecordedSessions > 0 ? totalRecordedSessions : totalSessionsConducted;
+      const absentClasses = Math.max(0, evaluationBase - attendedCount);
       const percentage =
-        totalSessionsConducted > 0
+        evaluationBase > 0
           ? parseFloat(
-              ((attendedCount / totalSessionsConducted) * 100).toFixed(1)
+              ((attendedCount / evaluationBase) * 100).toFixed(1)
             )
           : null;
 
@@ -725,7 +747,7 @@ export async function getAllSectionsAttendanceReport(
         rollNumber: enr.student.rollNumber,
         fullName: enr.student.user?.fullName || "Student",
         phone: enr.student.user?.phone || null,
-        totalClasses: totalSessionsConducted,
+        totalClasses: evaluationBase,
         attendedClasses: attendedCount,
         absentClasses,
         percentage,
@@ -754,6 +776,7 @@ export async function getAllSectionsAttendanceReport(
       semester: sec.semester,
       totalStudents: secEnrollments.length,
       totalSessionsConducted,
+      totalClassesHeld: theoryClassesCount + labsHeldCount,
       theoryClassesHeld: theoryClassesCount,
       labsHeld: labsHeldCount,
       labPeriodsHeld: labPeriodsCount,

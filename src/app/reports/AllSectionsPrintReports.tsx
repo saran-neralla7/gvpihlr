@@ -31,6 +31,8 @@ export default function AllSectionsPrintReports({
 }: AllSectionsPrintReportsProps) {
   const [reportData, setReportData] = useState<AllSectionsReportResponse>(initialData);
   const [reportType, setReportType] = useState<"consolidated" | "subject_wise" | "classes_held">(initialMode);
+  const [classesHeldViewMode, setClassesHeldViewMode] = useState<"summary" | "subject_wise">("summary");
+  const [classesHeldMetric, setClassesHeldMetric] = useState<"hours" | "classes">("hours");
   
   // Scoped Filters
   const [selectedSchoolFilter, setSelectedSchoolFilter] = useState<string>("ALL");
@@ -231,6 +233,61 @@ export default function AllSectionsPrintReports({
               </button>
             </div>
 
+            {/* When Classes & Labs Held is active, show Sub-Toggles */}
+            {reportType === "classes_held" && (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center bg-white/10 p-1 rounded-xl border border-white/20 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setClassesHeldViewMode("summary")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                      classesHeldViewMode === "summary"
+                        ? "bg-white text-slate-900 shadow-xs font-black"
+                        : "text-white/80 hover:text-white"
+                    }`}
+                  >
+                    Summary
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setClassesHeldViewMode("subject_wise")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                      classesHeldViewMode === "subject_wise"
+                        ? "bg-white text-slate-900 shadow-xs font-black"
+                        : "text-white/80 hover:text-white"
+                    }`}
+                  >
+                    Subject-Wise Hours
+                  </button>
+                </div>
+
+                <div className="flex items-center bg-white/10 p-1 rounded-xl border border-white/20 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setClassesHeldMetric("hours")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                      classesHeldMetric === "hours"
+                        ? "bg-emerald-400 text-slate-950 shadow-xs font-black"
+                        : "text-white/80 hover:text-white"
+                    }`}
+                  >
+                    Hours
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setClassesHeldMetric("classes")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                      classesHeldMetric === "classes"
+                        ? "bg-blue-300 text-slate-950 shadow-xs font-black"
+                        : "text-white/80 hover:text-white"
+                    }`}
+                  >
+                    Classes
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Print Button */}
             <button
               type="button"
@@ -386,7 +443,9 @@ export default function AllSectionsPrintReports({
                 <div className="mt-2 py-1 px-3 bg-slate-100 rounded-lg inline-block border border-slate-300">
                   <h2 className="text-xs sm:text-sm font-black text-slate-900 tracking-wide uppercase font-sans">
                     {reportType === "classes_held"
-                      ? "SECTION-WISE NUMBER OF CLASSES & LABS HELD REPORT"
+                      ? classesHeldViewMode === "summary"
+                        ? "SECTION-WISE NUMBER OF CLASSES & LABS HELD REPORT"
+                        : "SECTION-WISE SUBJECT DELIVERY & HOURS HELD REPORT"
                       : reportType === "consolidated"
                       ? "ALL SECTIONS CONSOLIDATED ATTENDANCE SUMMARY"
                       : "ALL SECTIONS SUBJECT-WISE ATTENDANCE MASTER COMPILATION"}
@@ -411,21 +470,34 @@ export default function AllSectionsPrintReports({
                 {reportType === "classes_held" ? (
                   <>
                     <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
-                      <div className="text-[10pt] font-bold text-slate-600 uppercase">Theory Classes Held</div>
+                      <div className="text-[10pt] font-bold text-slate-600 uppercase">
+                        {classesHeldMetric === "hours" ? "Theory Hours Held" : "Theory Classes Held"}
+                      </div>
                       <div className="text-[14pt] font-black text-slate-900">
                         {matchingSections.reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0)}
                       </div>
                     </div>
                     <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
-                      <div className="text-[10pt] font-bold text-slate-600 uppercase">Labs Held (2 hrs = 1)</div>
+                      <div className="text-[10pt] font-bold text-slate-600 uppercase">
+                        {classesHeldMetric === "hours" ? "Lab Hours Held" : "Labs Held (2 hrs = 1)"}
+                      </div>
                       <div className="text-[14pt] font-black text-emerald-800">
-                        {matchingSections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}
+                        {classesHeldMetric === "hours"
+                          ? matchingSections.reduce((acc, s) => acc + (s.labPeriodsHeld ?? 0), 0)
+                          : matchingSections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}
                       </div>
                     </div>
                     <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
-                      <div className="text-[10pt] font-bold text-slate-600 uppercase">Total Periods Conducted</div>
+                      <div className="text-[10pt] font-bold text-slate-600 uppercase">
+                        {classesHeldMetric === "hours" ? "Total Hours Conducted" : "Total Sessions Conducted"}
+                      </div>
                       <div className="text-[14pt] font-black text-blue-900">
-                        {matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)}
+                        {classesHeldMetric === "hours"
+                          ? matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)
+                          : matchingSections.reduce(
+                              (acc, s) => acc + (s.totalClassesHeld ?? (s.theoryClassesHeld + s.labsHeld)),
+                              0
+                            )}
                       </div>
                     </div>
                   </>
@@ -453,51 +525,152 @@ export default function AllSectionsPrintReports({
               <div className="mb-6">
                 <h3 className="text-[10.5pt] font-black text-slate-900 uppercase mb-2">
                   {reportType === "classes_held"
-                    ? "Section-Wise Number of Classes & Labs Held"
+                    ? classesHeldViewMode === "summary"
+                      ? "Section-Wise Number of Classes & Labs Held"
+                      : "Section-Wise Subject Delivery & Hours Held"
                     : "Section-Wise Attendance Roster Summary"}
                 </h3>
                 {reportType === "classes_held" ? (
-                  <table className="w-full border-collapse border border-slate-800 text-left">
-                    <thead>
-                      <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
-                        <th className="p-1.5 border border-slate-800 text-center w-12">S.No</th>
-                        <th className="p-1.5 border border-slate-800">Name of the Course</th>
-                        <th className="p-1.5 border border-slate-800 text-center w-36">No. of Classes Held</th>
-                        <th className="p-1.5 border border-slate-800 text-center w-48">
-                          No. of Labs Held
-                          <div className="text-[8pt] font-normal text-slate-600">(2 hrs = 1 lab session)</div>
-                        </th>
-                        <th className="p-1.5 border border-slate-800 text-center w-36">Total Periods Conducted</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {matchingSections.map((sec, idx) => (
-                        <tr key={sec.sectionId} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{idx + 1}</td>
-                          <td className="p-1.5 border border-slate-800 text-[10pt] font-black">{sec.courseDisplayName || sec.displayName}</td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{sec.theoryClassesHeld ?? 0}</td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold text-blue-900">{sec.labsHeld ?? 0}</td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-black">{sec.totalSessionsConducted}</td>
+                  classesHeldViewMode === "summary" ? (
+                    <table className="w-full border-collapse border border-slate-800 text-left">
+                      <thead>
+                        <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
+                          <th className="p-1.5 border border-slate-800 text-center w-12">S.No</th>
+                          <th className="p-1.5 border border-slate-800">Name of the Course</th>
+                          <th className="p-1.5 border border-slate-800 text-center w-36">
+                            {classesHeldMetric === "hours" ? "Theory Hours Held" : "No. of Classes Held"}
+                          </th>
+                          <th className="p-1.5 border border-slate-800 text-center w-48">
+                            {classesHeldMetric === "hours" ? "Lab Hours Held" : "No. of Labs Held"}
+                            <div className="text-[8pt] font-normal text-slate-600">
+                              {classesHeldMetric === "hours" ? "(2 periods per lab)" : "(2 hrs = 1 lab session)"}
+                            </div>
+                          </th>
+                          <th className="p-1.5 border border-slate-800 text-center w-36">
+                            {classesHeldMetric === "hours" ? "Total Periods / Hours" : "Total Classes & Labs"}
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
-                        <td colSpan={2} className="p-1.5 border border-slate-800 text-right uppercase">
-                          Grand Total ({matchingSections.length} Sections)
-                        </td>
-                        <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
-                          {matchingSections.reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0)}
-                        </td>
-                        <td className="p-1.5 border border-slate-800 text-center text-[10.5pt] text-blue-950">
-                          {matchingSections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}
-                        </td>
-                        <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
-                          {matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {matchingSections.map((sec, idx) => (
+                          <tr key={sec.sectionId} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                            <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{idx + 1}</td>
+                            <td className="p-1.5 border border-slate-800 text-[10pt] font-black">{sec.courseDisplayName || sec.displayName}</td>
+                            <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{sec.theoryClassesHeld ?? 0}</td>
+                            <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold text-blue-900">
+                              {classesHeldMetric === "hours" ? (sec.labPeriodsHeld ?? 0) : (sec.labsHeld ?? 0)}
+                            </td>
+                            <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-black">
+                              {classesHeldMetric === "hours"
+                                ? sec.totalSessionsConducted
+                                : (sec.totalClassesHeld ?? (sec.theoryClassesHeld + sec.labsHeld))}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
+                          <td colSpan={2} className="p-1.5 border border-slate-800 text-right uppercase">
+                            Grand Total ({matchingSections.length} Sections)
+                          </td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
+                            {matchingSections.reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0)}
+                          </td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10.5pt] text-blue-950">
+                            {classesHeldMetric === "hours"
+                              ? matchingSections.reduce((acc, s) => acc + (s.labPeriodsHeld ?? 0), 0)
+                              : matchingSections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}
+                          </td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
+                            {classesHeldMetric === "hours"
+                              ? matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)
+                              : matchingSections.reduce(
+                                  (acc, s) => acc + (s.totalClassesHeld ?? (s.theoryClassesHeld + s.labsHeld)),
+                                  0
+                                )}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  ) : (
+                    /* SUBJECT-WISE MASTER TABLE VIEW FOR PORTRAIT A4 */
+                    <table className="w-full border-collapse border border-slate-800 text-left">
+                      <thead>
+                        <tr className="bg-slate-200 text-slate-900 font-black text-[9.5pt]">
+                          <th className="p-1.5 border border-slate-800 text-center w-10">S.No</th>
+                          <th className="p-1.5 border border-slate-800 w-44">Name of the Course</th>
+                          <th className="p-1.5 border border-slate-800">
+                            Subject Delivery Breakdown ({classesHeldMetric === "hours" ? "Hours" : "Classes"})
+                          </th>
+                          <th className="p-1.5 border border-slate-800 text-center w-24">
+                            {classesHeldMetric === "hours" ? "Theory Hrs" : "Theory Cls"}
+                          </th>
+                          <th className="p-1.5 border border-slate-800 text-center w-24">
+                            {classesHeldMetric === "hours" ? "Lab Hrs" : "Labs Held"}
+                          </th>
+                          <th className="p-1.5 border border-slate-800 text-center w-28">
+                            {classesHeldMetric === "hours" ? "Total Hours" : "Total Cls"}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {matchingSections.map((sec, idx) => (
+                          <tr key={sec.sectionId} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                            <td className="p-1.5 border border-slate-800 text-center text-[9.5pt] font-bold">{idx + 1}</td>
+                            <td className="p-1.5 border border-slate-800 text-[9.5pt] font-black">
+                              {sec.courseDisplayName || sec.displayName}
+                            </td>
+                            <td className="p-1.5 border border-slate-800 text-[9pt]">
+                              <div className="flex flex-wrap gap-1 leading-normal">
+                                {sec.subjectColumns.map((sub) => {
+                                  const val = classesHeldMetric === "hours" ? sub.conductedHours : sub.conductedSessions;
+                                  return (
+                                    <span key={sub.id} className="inline-block px-1.5 py-0.5 rounded border border-slate-300 bg-white font-medium text-[8.5pt]">
+                                      <strong>{sub.shortName}</strong>: {val}{classesHeldMetric === "hours" ? "h" : "c"}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            </td>
+                            <td className="p-1.5 border border-slate-800 text-center text-[9.5pt] font-bold">
+                              {sec.theoryClassesHeld ?? 0}
+                            </td>
+                            <td className="p-1.5 border border-slate-800 text-center text-[9.5pt] font-bold text-blue-900">
+                              {classesHeldMetric === "hours" ? (sec.labPeriodsHeld ?? 0) : (sec.labsHeld ?? 0)}
+                            </td>
+                            <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-black">
+                              {classesHeldMetric === "hours"
+                                ? sec.totalSessionsConducted
+                                : (sec.totalClassesHeld ?? (sec.theoryClassesHeld + sec.labsHeld))}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-slate-200 text-slate-900 font-black text-[9.5pt]">
+                          <td colSpan={3} className="p-1.5 border border-slate-800 text-right uppercase">
+                            University Grand Total ({matchingSections.length} Sections)
+                          </td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10pt]">
+                            {matchingSections.reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0)}
+                          </td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] text-blue-950">
+                            {classesHeldMetric === "hours"
+                              ? matchingSections.reduce((acc, s) => acc + (s.labPeriodsHeld ?? 0), 0)
+                              : matchingSections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}
+                          </td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10pt]">
+                            {classesHeldMetric === "hours"
+                              ? matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)
+                              : matchingSections.reduce(
+                                  (acc, s) => acc + (s.totalClassesHeld ?? (s.theoryClassesHeld + s.labsHeld)),
+                                  0
+                                )}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  )
                 ) : (
                   <table className="w-full border-collapse border border-slate-800 text-left">
                     <thead>

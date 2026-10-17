@@ -316,8 +316,9 @@ const BRANCH_MAP: Record<string, string[]> = {
   "ECE-1": ["BTECH-ELECTRONICS-AND-COMMUNICATION-ENG_1"],
   "ECE-2": ["BTECH-ELECTRONICS-AND-COMMUNICATION-ENG_2"],
   "ECE-3": ["BTECH-ELECTRONICS-ENG-VLSI-DESIGN-AND-TECHNOLOGY_1"],
-  "MECH": ["BTECH-MECHANICAL-ENG_1"],
+  "ECE-VLSI": ["BTECH-ELECTRONICS-ENG-VLSI-DESIGN-AND-TECHNOLOGY_1"],
   "MECH-ROBOTICS": ["BTECH-MECHANICAL-ENG-ROBOTICS-AND-AI_1"],
+  "MECH": ["BTECH-MECHANICAL-ENG_1"],
   "CSE (CS & DS)": [
     "BTECH-CS-AND-ENG-CYBERSECURITY_1",
     "BTECH-CS-AND-ENG-DATA-SCIENCE_1",
@@ -327,10 +328,11 @@ const BRANCH_MAP: Record<string, string[]> = {
   "CHEMICAL": ["BTECH-CHEMICAL-ENG_1"],
 };
 
-// 16 Dates from 22-Sep-2026 to 13-Oct-2026
-const DATES = [
+// All 24 Dates from 22-Sep-2026 to 24-Oct-2026
+const DATES: { sheet: string; fallback?: string; date: string; col?: number }[] = [
   { sheet: "Timetable_Final_22", fallback: "Copy of Timetable_Final", date: "2026-09-22", col: 11 },
   { sheet: "Timetable_Final_23", date: "2026-09-23", col: 12 },
+  { sheet: "Timetable_Final_24", date: "2026-09-24" }, // Cyclone day timetable exists, no student marks
   { sheet: "Timetable_Final_25", date: "2026-09-25", col: 13 },
   { sheet: "Timetable_Final_26", date: "2026-09-26", col: 14 },
   { sheet: "Timetable_Final_28", date: "2026-09-28", col: 15 },
@@ -345,11 +347,18 @@ const DATES = [
   { sheet: "Timetable_Final_09", fallback: "Copy of Timetable_Final_09", date: "2026-10-09", col: 24 },
   { sheet: "Timetable_Final_12", fallback: "Copy of Timetable_Final_12", date: "2026-10-12", col: 25 },
   { sheet: "Timetable_Final_13", fallback: "Copy of Timetable_Final_13", date: "2026-10-13", col: 26 },
+  { sheet: "Copy of Timetable_Final_14", date: "2026-10-14" },
+  { sheet: "Timetable_Final_15", fallback: "Copy of Timetable_Final_15", date: "2026-10-15" },
+  { sheet: "Timetable_Final_16", fallback: "Copy of Timetable_Final_16", date: "2026-10-16" },
+  { sheet: "Copy of Timetable_Final_17", fallback: "Timetable_Final_17", date: "2026-10-17" },
+  { sheet: "Copy of Timetable_Final_22", date: "2026-10-22" },
+  { sheet: "Copy of Timetable_Final_23", date: "2026-10-23" },
+  { sheet: "Copy of Timetable_Final_24", date: "2026-10-24" },
 ];
 
 function resolveSubjectDef(raw: string): SubjectDef | null {
   if (!raw) return null;
-  const isLab = raw.toUpperCase().includes("LAB");
+  const isLab = raw.toUpperCase().includes("LAB") || raw.toUpperCase().includes("3DDA");
   let s = raw.split(/[\r\n/]/)[0].trim().toUpperCase().replace(/\s+/g, " ");
   if (s === "BREAK" || s === "LUNCH" || s === "NIL" || !s) return null;
 
@@ -417,6 +426,9 @@ function resolveSubjectDef(raw: string): SubjectDef | null {
   }
   if (s.includes("FDS") || s.includes("CSP")) {
     return isLab ? SUBJECT_DEFS.find((d) => d.code === "26DS101L")! : SUBJECT_DEFS.find((d) => d.code === "26DS101")!;
+  }
+  if (s.includes("3DDA") || s.includes("3D DESIGN")) {
+    return SUBJECT_DEFS.find((d) => d.code === "26CS104")!;
   }
 
   return isLab ? SUBJECT_DEFS.find((d) => d.type === SubjectType.LAB)! : SUBJECT_DEFS[0];
@@ -563,8 +575,10 @@ async function main() {
     const studentDates = attendanceMap.get(roll)!;
 
     for (const d of DATES) {
-      const mark = row[d.col] !== undefined && row[d.col] !== null ? String(row[d.col]).trim().toUpperCase() : "A";
-      studentDates.set(d.date, mark === "P" ? "P" : "A");
+      if (d.col !== undefined) {
+        const mark = row[d.col] !== undefined && row[d.col] !== null ? String(row[d.col]).trim().toUpperCase() : "A";
+        studentDates.set(d.date, mark === "P" ? "P" : "A");
+      }
     }
   }
   console.log(`✅ Loaded attendance records for ${attendanceMap.size} students across ${DATES.length} dates.\n`);
@@ -624,56 +638,86 @@ async function main() {
 
     const rows: any[][] = xlsx.utils.sheet_to_json(sheet, { header: 1 });
     const sessionDate = new Date(`${dateItem.date}T00:00:00.000Z`);
+    const periodCols = [2, 3, 5, 6, 8, 9];
 
-    // For each row in the timetable sheet
-    for (let r = 0; r < rows.length; r++) {
-      const row = rows[r];
-      if (!row) continue;
-      const branchCell = String(row[0] || "").trim();
+    // Group rows into section blocks to capture parallel batch rows
+    const blocks: { branch: string; sectionKeys: string[]; rows: any[][] }[] = [];
+    let currentBlock: { branch: string; sectionKeys: string[]; rows: any[][] } | null = null;
 
-      // Find matching sections (longest pattern match first)
-      let targetSectionKeys: string[] = [];
+    for (let r = 5; r < rows.length; r++) {
+      const row = rows[r] || [];
+      const c0 = String(row[0] || "").trim();
+
+      let matchedBranch: string | null = null;
+      let targetSectionKeys: string[] | null = null;
+
       for (const [pattern, keys] of sortedBranchEntries) {
-        if (branchCell.includes(pattern)) {
+        if (c0.includes(pattern)) {
+          matchedBranch = pattern;
           targetSectionKeys = keys;
           break;
         }
       }
 
-      if (targetSectionKeys.length === 0) continue;
-
-      // Extract subjects for Periods 1 to 6
-      // Cols: 2 (P1), 3 (P2), 5 (P3), 6 (P4), 8 (P5), 9 (P6)
-      const periodCols = [2, 3, 5, 6, 8, 9];
-      const periodSubjects: (SubjectDef | null)[] = [];
-
-      for (let p = 0; p < periodCols.length; p++) {
-        const colIdx = periodCols[p];
-        const cellVal = row[colIdx];
-        let subDef = resolveSubjectDef(String(cellVal || ""));
-
-        // If P2 is null and P1 was a lab, P2 is part of that 2-hour lab
-        if (!subDef && p === 1 && periodSubjects[0]?.type === SubjectType.LAB) {
-          subDef = periodSubjects[0];
+      if (matchedBranch && targetSectionKeys) {
+        currentBlock = {
+          branch: matchedBranch,
+          sectionKeys: targetSectionKeys,
+          rows: [row],
+        };
+        blocks.push(currentBlock);
+      } else if (currentBlock && (!c0 || c0 === "null")) {
+        const hasContent = periodCols.some((c) => row[c] && String(row[c]).trim().length > 0);
+        if (hasContent) {
+          currentBlock.rows.push(row);
         }
-        // If P4 is null and P3 was a lab, P4 is part of that 2-hour lab
-        if (!subDef && p === 3 && periodSubjects[2]?.type === SubjectType.LAB) {
-          subDef = periodSubjects[2];
-        }
-        // If P6 is null and P5 was a lab, P6 is part of that 2-hour lab
-        if (!subDef && p === 5 && periodSubjects[4]?.type === SubjectType.LAB) {
-          subDef = periodSubjects[4];
-        }
+      }
+    }
 
-        // Fallback default theory subject if cell was empty
-        if (!subDef) {
-          subDef = SUBJECT_DEFS[0]; // Calculus
+    for (const block of blocks) {
+      // 3 Pairs: (P1, P2) -> cols 2, 3; (P3, P4) -> cols 5, 6; (P5, P6) -> cols 8, 9
+      const pairs = [
+        { pA: 0, pB: 1, colA: 2, colB: 3 },
+        { pA: 2, pB: 3, colA: 5, colB: 6 },
+        { pA: 4, pB: 5, colA: 8, colB: 9 },
+      ];
+
+      const periodSubjects: (SubjectDef | null)[] = new Array(6).fill(null);
+
+      for (const pair of pairs) {
+        // Check if any row in block has a lab in this pair
+        const isLab = block.rows.some((r) => {
+          const valA = String(r[pair.colA] || "").toUpperCase();
+          const valB = String(r[pair.colB] || "").toUpperCase();
+          return valA.includes("LAB") || valA.includes("3DDA") || valB.includes("LAB") || valB.includes("3DDA");
+        });
+
+        if (isLab) {
+          // Resolve lab subjects
+          let subA = resolveSubjectDef(String(block.rows[0][pair.colA] || block.rows[0][pair.colB] || ""));
+          let subB = null;
+          if (block.rows.length > 1) {
+            subB = resolveSubjectDef(String(block.rows[1][pair.colA] || block.rows[1][pair.colB] || ""));
+          }
+          if (!subA) subA = subB || SUBJECT_DEFS.find((d) => d.type === SubjectType.LAB)!;
+          if (!subB) subB = subA;
+
+          periodSubjects[pair.pA] = subA;
+          periodSubjects[pair.pB] = subB;
+        } else {
+          // Theory periods
+          let subA = resolveSubjectDef(String(block.rows[0][pair.colA] || ""));
+          let subB = resolveSubjectDef(String(block.rows[0][pair.colB] || ""));
+          if (!subA) subA = SUBJECT_DEFS[0]; // Calculus
+          if (!subB) subB = subA;
+
+          periodSubjects[pair.pA] = subA;
+          periodSubjects[pair.pB] = subB;
         }
-        periodSubjects.push(subDef);
       }
 
       // Now create sessions and records for each target section and period 1 to 6
-      for (const secKey of targetSectionKeys) {
+      for (const secKey of block.sectionKeys) {
         const sec = secLookup.get(secKey);
         if (!sec) continue;
 
@@ -691,16 +735,18 @@ async function main() {
           let absentCount = 0;
           const recordsToInsert: { studentId: string; status: AttendanceStatus }[] = [];
 
-          for (const st of enrolledStudents) {
-            const mark = attendanceMap.get(st.rollNumber)?.get(dateItem.date);
-            const isPresent = mark === "P";
-            if (isPresent) presentCount++;
-            else absentCount++;
+          if (dateItem.col !== undefined) {
+            for (const st of enrolledStudents) {
+              const mark = attendanceMap.get(st.rollNumber)?.get(dateItem.date);
+              const isPresent = mark === "P";
+              if (isPresent) presentCount++;
+              else absentCount++;
 
-            recordsToInsert.push({
-              studentId: st.studentId,
-              status: isPresent ? AttendanceStatus.PRESENT : AttendanceStatus.ABSENT,
-            });
+              recordsToInsert.push({
+                studentId: st.studentId,
+                status: isPresent ? AttendanceStatus.PRESENT : AttendanceStatus.ABSENT,
+              });
+            }
           }
 
           // Upsert AttendanceSession
@@ -728,7 +774,6 @@ async function main() {
                 sessionType: subDef.type === SubjectType.LAB ? SessionType.LAB_PRACTICAL : SessionType.REGULAR,
               },
             });
-            // Delete old records to prevent duplicates on rerun
             await prisma.attendanceRecord.deleteMany({
               where: { sessionId },
             });
@@ -753,18 +798,19 @@ async function main() {
 
           totalSessionsCreated++;
 
-          // Bulk insert AttendanceRecord
-          const recordsData = recordsToInsert.map((r) => ({
-            sessionId,
-            studentId: r.studentId,
-            status: r.status,
-          }));
+          if (recordsToInsert.length > 0) {
+            const recordsData = recordsToInsert.map((r) => ({
+              sessionId,
+              studentId: r.studentId,
+              status: r.status,
+            }));
 
-          await prisma.attendanceRecord.createMany({
-            data: recordsData,
-          });
+            await prisma.attendanceRecord.createMany({
+              data: recordsData,
+            });
 
-          totalRecordsCreated += recordsData.length;
+            totalRecordsCreated += recordsData.length;
+          }
         }
       }
     }

@@ -1,6 +1,7 @@
 import { PrismaClient, SubjectType } from "@prisma/client";
 import xlsx from "xlsx";
 import path from "path";
+import fs from "fs";
 
 const prisma = new PrismaClient();
 
@@ -344,15 +345,29 @@ const WEEK_DAYS = [
 
 function resolveSubjectDef(raw: string): SubjectDef | null {
   if (!raw) return null;
+  const isLab = raw.toUpperCase().includes("LAB");
   let s = raw.split(/[\r\n/]/)[0].trim().toUpperCase().replace(/\s+/g, " ");
   if (s === "BREAK" || s === "LUNCH" || s === "NIL" || !s) return null;
 
-  for (const def of SUBJECT_DEFS) {
+  // Filter candidates: if isLab, check LAB first, else check THEORY first
+  const primaryDefs = SUBJECT_DEFS.filter((d) => (isLab ? d.type === SubjectType.LAB : d.type === SubjectType.THEORY));
+  const secondaryDefs = SUBJECT_DEFS.filter((d) => (isLab ? d.type === SubjectType.THEORY : d.type === SubjectType.LAB));
+  const orderedDefs = [...primaryDefs, ...secondaryDefs];
+
+  for (const def of orderedDefs) {
     if (def.code === s || def.shortName.toUpperCase() === s || def.name.toUpperCase() === s) {
       return def;
     }
     for (const alias of def.aliases) {
-      if (s === alias || s.startsWith(alias) || alias.startsWith(s)) {
+      if (s === alias) {
+        return def;
+      }
+    }
+  }
+
+  for (const def of orderedDefs) {
+    for (const alias of def.aliases) {
+      if (s.startsWith(alias) || alias.startsWith(s) || s.includes(alias)) {
         return def;
       }
     }
@@ -360,36 +375,45 @@ function resolveSubjectDef(raw: string): SubjectDef | null {
 
   // Fallback checks
   if (s.includes("PHYSICS") || s.includes("PHY")) {
-    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26PH101L")! : SUBJECT_DEFS.find((d) => d.code === "26PH101")!;
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26PH101L")! : SUBJECT_DEFS.find((d) => d.code === "26PH101")!;
   }
   if (s.includes("CALCULUS") || s.includes("CAL")) return SUBJECT_DEFS.find((d) => d.code === "26MA101")!;
-  if (s.includes("PSUC") || s.includes("C LAB") || s.includes("PPSTC")) {
-    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26CS101L")! : SUBJECT_DEFS.find((d) => d.code === "26CS101")!;
+  if (s.includes("PSUC") || s.includes("C LAB")) {
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26CS101L")! : SUBJECT_DEFS.find((d) => d.code === "26CS101")!;
+  }
+  if (s.includes("PPSTC")) {
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26CS105L")! : SUBJECT_DEFS.find((d) => d.code === "26CS105")!;
   }
   if (s.includes("AITA")) {
-    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26CS102L")! : SUBJECT_DEFS.find((d) => d.code === "26CS102")!;
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26CS102L")! : SUBJECT_DEFS.find((d) => d.code === "26CS102")!;
   }
   if (s.includes("FWD")) {
-    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26CS103L")! : SUBJECT_DEFS.find((d) => d.code === "26CS103")!;
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26CS103L")! : SUBJECT_DEFS.find((d) => d.code === "26CS103")!;
   }
   if (s.includes("ENV") || s.includes("ES")) return SUBJECT_DEFS.find((d) => d.code === "26CH101")!;
   if (s.includes("FAI") || s.includes("ML")) {
-    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26AI101L")! : SUBJECT_DEFS.find((d) => d.code === "26AI101")!;
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26AI101L")! : SUBJECT_DEFS.find((d) => d.code === "26AI101")!;
   }
   if (s.includes("EME")) {
-    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26ME101L")! : SUBJECT_DEFS.find((d) => d.code === "26ME101")!;
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26ME101L")! : SUBJECT_DEFS.find((d) => d.code === "26ME101")!;
   }
   if (s.includes("COM") || s.includes("CHEM")) {
-    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26CH105L")! : SUBJECT_DEFS.find((d) => d.code === "26CH102")!;
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26CH105L")! : SUBJECT_DEFS.find((d) => d.code === "26CH102")!;
   }
   if (s.includes("ENG") || s.includes("EE")) {
-    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26EN101L")! : SUBJECT_DEFS.find((d) => d.code === "26EN101")!;
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26EN101L")! : SUBJECT_DEFS.find((d) => d.code === "26EN101")!;
+  }
+  if (s.includes("DLD")) {
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26EC101L")! : SUBJECT_DEFS.find((d) => d.code === "26EC101")!;
   }
   if (s.includes("SUS") || s.includes("SE")) {
     return SUBJECT_DEFS.find((d) => d.code === "26CE101")!;
   }
+  if (s.includes("FDS") || s.includes("CSP")) {
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26DS101L")! : SUBJECT_DEFS.find((d) => d.code === "26DS101")!;
+  }
 
-  return SUBJECT_DEFS[0]; // fallback default
+  return isLab ? SUBJECT_DEFS.find((d) => d.type === SubjectType.LAB)! : SUBJECT_DEFS[0];
 }
 
 function extractRoomNumber(cellVal: string, defaultRoom: string): string {
@@ -444,7 +468,9 @@ async function main() {
     (a, b) => b[0].length - a[0].length
   );
 
-  const filePath = path.join(process.cwd(), "1stSemTIME-TABLE 2026-2027_1.1.2.xlsx");
+  const filePath = fs.existsSync(path.join(process.cwd(), "1st Sem TIME TABLE 2026-2027_1.1.2.xlsx"))
+    ? path.join(process.cwd(), "1st Sem TIME TABLE 2026-2027_1.1.2.xlsx")
+    : path.join(process.cwd(), "1stSemTIME-TABLE 2026-2027_1.1.2.xlsx");
   const wb = xlsx.readFile(filePath);
 
   console.log("🧹 Clearing previous TimetableEntry records...");
@@ -494,6 +520,10 @@ async function main() {
         let room = extractRoomNumber(cellVal, defaultRoom);
 
         // Lab continuity
+        if (!subDef && p === 1 && periodSubjects[0]?.type === SubjectType.LAB) {
+          subDef = periodSubjects[0];
+          room = periodRooms[0];
+        }
         if (!subDef && p === 3 && periodSubjects[2]?.type === SubjectType.LAB) {
           subDef = periodSubjects[2];
           room = periodRooms[2];

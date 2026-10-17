@@ -16,7 +16,7 @@ import InstitutionalDatePicker from "@/components/InstitutionalDatePicker";
 
 interface AllSectionsPrintReportsProps {
   data: AllSectionsReportResponse;
-  initialMode?: "consolidated" | "subject_wise";
+  initialMode?: "consolidated" | "subject_wise" | "classes_held";
   onClose: () => void;
 }
 
@@ -30,7 +30,7 @@ export default function AllSectionsPrintReports({
   onClose,
 }: AllSectionsPrintReportsProps) {
   const [reportData, setReportData] = useState<AllSectionsReportResponse>(initialData);
-  const [reportType, setReportType] = useState<"consolidated" | "subject_wise">(initialMode);
+  const [reportType, setReportType] = useState<"consolidated" | "subject_wise" | "classes_held">(initialMode);
   
   // Scoped Filters
   const [selectedSchoolFilter, setSelectedSchoolFilter] = useState<string>("ALL");
@@ -194,8 +194,19 @@ export default function AllSectionsPrintReports({
 
           {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* Switcher: Consolidated vs Subject-Wise */}
+            {/* Switcher: Classes & Labs Held vs Consolidated vs Subject-Wise */}
             <div className="flex items-center bg-white/10 p-1 rounded-xl border border-white/20">
+              <button
+                type="button"
+                onClick={() => setReportType("classes_held")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  reportType === "classes_held"
+                    ? "bg-white text-slate-900 shadow-xs font-black"
+                    : "text-white/80 hover:text-white"
+                }`}
+              >
+                Classes &amp; Labs Held
+              </button>
               <button
                 type="button"
                 onClick={() => setReportType("consolidated")}
@@ -205,7 +216,7 @@ export default function AllSectionsPrintReports({
                     : "text-white/80 hover:text-white"
                 }`}
               >
-                Consolidated
+                Student Consolidated
               </button>
               <button
                 type="button"
@@ -374,7 +385,9 @@ export default function AllSectionsPrintReports({
 
                 <div className="mt-2 py-1 px-3 bg-slate-100 rounded-lg inline-block border border-slate-300">
                   <h2 className="text-xs sm:text-sm font-black text-slate-900 tracking-wide uppercase font-sans">
-                    {reportType === "consolidated"
+                    {reportType === "classes_held"
+                      ? "SECTION-WISE NUMBER OF CLASSES & LABS HELD REPORT"
+                      : reportType === "consolidated"
                       ? "ALL SECTIONS CONSOLIDATED ATTENDANCE SUMMARY"
                       : "ALL SECTIONS SUBJECT-WISE ATTENDANCE MASTER COMPILATION"}
                   </h2>
@@ -395,63 +408,134 @@ export default function AllSectionsPrintReports({
                   <div className="text-[10pt] font-bold text-slate-600 uppercase">Total Sections</div>
                   <div className="text-[14pt] font-black text-slate-900">{matchingSections.length}</div>
                 </div>
-                <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
-                  <div className="text-[10pt] font-bold text-slate-600 uppercase">Total Students</div>
-                  <div className="text-[14pt] font-black text-slate-900">{totalEnrolledInView.toLocaleString()}</div>
-                </div>
-                <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
-                  <div className="text-[10pt] font-bold text-slate-600 uppercase">Average Attendance</div>
-                  <div className="text-[14pt] font-black text-emerald-800">{averageAttendanceInView}%</div>
-                </div>
-                <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
-                  <div className="text-[10pt] font-bold text-slate-600 uppercase">Total Sessions Held</div>
-                  <div className="text-[14pt] font-black text-blue-900">
-                    {matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)}
-                  </div>
-                </div>
+                {reportType === "classes_held" ? (
+                  <>
+                    <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
+                      <div className="text-[10pt] font-bold text-slate-600 uppercase">Theory Classes Held</div>
+                      <div className="text-[14pt] font-black text-slate-900">
+                        {matchingSections.reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0)}
+                      </div>
+                    </div>
+                    <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
+                      <div className="text-[10pt] font-bold text-slate-600 uppercase">Labs Held (2 hrs = 1)</div>
+                      <div className="text-[14pt] font-black text-emerald-800">
+                        {matchingSections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}
+                      </div>
+                    </div>
+                    <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
+                      <div className="text-[10pt] font-bold text-slate-600 uppercase">Total Periods Conducted</div>
+                      <div className="text-[14pt] font-black text-blue-900">
+                        {matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
+                      <div className="text-[10pt] font-bold text-slate-600 uppercase">Total Students</div>
+                      <div className="text-[14pt] font-black text-slate-900">{totalEnrolledInView.toLocaleString()}</div>
+                    </div>
+                    <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
+                      <div className="text-[10pt] font-bold text-slate-600 uppercase">Average Attendance</div>
+                      <div className="text-[14pt] font-black text-emerald-800">{averageAttendanceInView}%</div>
+                    </div>
+                    <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
+                      <div className="text-[10pt] font-bold text-slate-600 uppercase">Total Sessions Held</div>
+                      <div className="text-[14pt] font-black text-blue-900">
+                        {matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Summary Table of All Sections (NO Status / Eligible / Defaulter columns) */}
               <div className="mb-6">
                 <h3 className="text-[10.5pt] font-black text-slate-900 uppercase mb-2">
-                  Section-Wise Attendance Roster Summary
+                  {reportType === "classes_held"
+                    ? "Section-Wise Number of Classes & Labs Held"
+                    : "Section-Wise Attendance Roster Summary"}
                 </h3>
-                <table className="w-full border-collapse border border-slate-800 text-left">
-                  <thead>
-                    <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
-                      <th className="p-1.5 border border-slate-800 text-center w-8">#</th>
-                      <th className="p-1.5 border border-slate-800 w-16 text-center">School</th>
-                      <th className="p-1.5 border border-slate-800">Program &amp; Section Name</th>
-                      <th className="p-1.5 border border-slate-800 text-center w-24">Enrolled</th>
-                      <th className="p-1.5 border border-slate-800 text-center w-24">Held</th>
-                      <th className="p-1.5 border border-slate-800 text-center w-28">Attended %</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {matchingSections.map((sec, idx) => (
-                      <tr key={sec.sectionId} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                        <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{idx + 1}</td>
-                        <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-black">{sec.schoolCode}</td>
-                        <td className="p-1.5 border border-slate-800 text-[10pt] font-bold">{sec.displayName}</td>
-                        <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{sec.totalStudents}</td>
-                        <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{sec.totalSessionsConducted}</td>
-                        <td className="p-1.5 border border-slate-800 text-center text-[10.5pt] font-black">{sec.averageAttendance}%</td>
+                {reportType === "classes_held" ? (
+                  <table className="w-full border-collapse border border-slate-800 text-left">
+                    <thead>
+                      <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
+                        <th className="p-1.5 border border-slate-800 text-center w-12">S.No</th>
+                        <th className="p-1.5 border border-slate-800">Name of the Course</th>
+                        <th className="p-1.5 border border-slate-800 text-center w-36">No. of Classes Held</th>
+                        <th className="p-1.5 border border-slate-800 text-center w-48">
+                          No. of Labs Held
+                          <div className="text-[8pt] font-normal text-slate-600">(2 hrs = 1 lab session)</div>
+                        </th>
+                        <th className="p-1.5 border border-slate-800 text-center w-36">Total Periods Conducted</th>
                       </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
-                      <td colSpan={3} className="p-1.5 border border-slate-800 text-right uppercase">
-                        University Grand Total
-                      </td>
-                      <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">{totalEnrolledInView}</td>
-                      <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
-                        {matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)}
-                      </td>
-                      <td className="p-1.5 border border-slate-800 text-center text-[11pt]">{averageAttendanceInView}%</td>
-                    </tr>
-                  </tfoot>
-                </table>
+                    </thead>
+                    <tbody>
+                      {matchingSections.map((sec, idx) => (
+                        <tr key={sec.sectionId} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{idx + 1}</td>
+                          <td className="p-1.5 border border-slate-800 text-[10pt] font-black">{sec.courseDisplayName || sec.displayName}</td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{sec.theoryClassesHeld ?? 0}</td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold text-blue-900">{sec.labsHeld ?? 0}</td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-black">{sec.totalSessionsConducted}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
+                        <td colSpan={2} className="p-1.5 border border-slate-800 text-right uppercase">
+                          Grand Total ({matchingSections.length} Sections)
+                        </td>
+                        <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
+                          {matchingSections.reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0)}
+                        </td>
+                        <td className="p-1.5 border border-slate-800 text-center text-[10.5pt] text-blue-950">
+                          {matchingSections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}
+                        </td>
+                        <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
+                          {matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                ) : (
+                  <table className="w-full border-collapse border border-slate-800 text-left">
+                    <thead>
+                      <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
+                        <th className="p-1.5 border border-slate-800 text-center w-8">#</th>
+                        <th className="p-1.5 border border-slate-800 w-16 text-center">School</th>
+                        <th className="p-1.5 border border-slate-800">Program &amp; Section Name</th>
+                        <th className="p-1.5 border border-slate-800 text-center w-24">Enrolled</th>
+                        <th className="p-1.5 border border-slate-800 text-center w-24">Held</th>
+                        <th className="p-1.5 border border-slate-800 text-center w-28">Attended %</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {matchingSections.map((sec, idx) => (
+                        <tr key={sec.sectionId} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{idx + 1}</td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-black">{sec.schoolCode}</td>
+                          <td className="p-1.5 border border-slate-800 text-[10pt] font-bold">{sec.displayName}</td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{sec.totalStudents}</td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{sec.totalSessionsConducted}</td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10.5pt] font-black">{sec.averageAttendance}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
+                        <td colSpan={3} className="p-1.5 border border-slate-800 text-right uppercase">
+                          University Grand Total
+                        </td>
+                        <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">{totalEnrolledInView}</td>
+                        <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
+                          {matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)}
+                        </td>
+                        <td className="p-1.5 border border-slate-800 text-center text-[11pt]">{averageAttendanceInView}%</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                )}
               </div>
 
               {/* Signature Row */}
@@ -467,7 +551,7 @@ export default function AllSectionsPrintReports({
           {/* =========================================================================
               SECTION-BY-SECTION DETAILED SHEETS (Each section on its own Portrait A4)
               ========================================================================= */}
-          {sectionsToDisplay.map((sec) => {
+          {reportType !== "classes_held" && sectionsToDisplay.map((sec) => {
             return (
               <div
                 key={sec.sectionId}

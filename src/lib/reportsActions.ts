@@ -353,6 +353,10 @@ export interface AllSectionsReportItem {
   semester: number;
   totalStudents: number;
   totalSessionsConducted: number;
+  theoryClassesHeld: number;
+  labsHeld: number;
+  labPeriodsHeld: number;
+  courseDisplayName: string;
   averageAttendance: number;
   defaultersCount: number;
   subjectColumns: {
@@ -397,6 +401,8 @@ export interface AllSectionsReportResponse {
     overallAverageAttendance: number;
     totalDefaulters: number;
     totalSessionsConducted: number;
+    totalTheoryClasses?: number;
+    totalLabsHeld?: number;
   };
   sections: AllSectionsReportItem[];
   availableSchools?: { id: string; name: string; code: string }[];
@@ -602,8 +608,22 @@ export async function getAllSectionsAttendanceReport(
       }
     >();
 
+    let theoryClassesCount = 0;
+    let labPeriodsCount = 0;
+    const labSessionsSet = new Set<string>();
+
     for (const sess of secSessions) {
       const sub = sess.assignment?.subjectOffering?.subject;
+      const isLab = sess.sessionType === "LAB_PRACTICAL" || sub?.type === "LAB";
+      if (isLab) {
+        labPeriodsCount++;
+        const dateKey = sess.sessionDate.toISOString().split("T")[0];
+        const subKey = sub?.id || sess.assignmentId;
+        labSessionsSet.add(`${dateKey}_${subKey}`);
+      } else {
+        theoryClassesCount++;
+      }
+
       if (sub) {
         if (!subjectColumnsMap.has(sub.id)) {
           subjectColumnsMap.set(sub.id, {
@@ -618,6 +638,37 @@ export async function getAllSectionsAttendanceReport(
         subjectColumnsMap.get(sub.id)!.conducted += 1;
       }
     }
+
+    const labsHeldCount = labSessionsSet.size;
+
+    const progName = sec.program.name;
+    let branchShort = "";
+    if (progName.includes("Artificial Intelligence & Machine Learning") || progName.includes("AI & ML")) {
+      branchShort = "CSE (AI&ML)";
+    } else if (progName.includes("Data Science")) {
+      branchShort = "CSE (Data Science)";
+    } else if (progName.includes("Cybersecurity") || progName.includes("Cyber Security")) {
+      branchShort = "CSE (Cybersecurity)";
+    } else if (progName.includes("Computer Science and Engineering") || progName.includes("Computer Science & Engineering")) {
+      branchShort = "CSE";
+    } else if (progName.includes("VLSI")) {
+      branchShort = "ECE (VLSI)";
+    } else if (progName.includes("Electronics and Communication") || progName.includes("Electronics & Communication")) {
+      branchShort = "ECE";
+    } else if (progName.includes("Robotics")) {
+      branchShort = "MECH (Robotics & AI)";
+    } else if (progName.includes("Mechanical Engineering")) {
+      branchShort = "MECH";
+    } else if (progName.includes("Electrical and Electronics") || progName.includes("Electrical & Electronics")) {
+      branchShort = "EEE";
+    } else if (progName.includes("Civil Engineering")) {
+      branchShort = "CIVIL";
+    } else if (progName.includes("Chemical Engineering")) {
+      branchShort = "CHEMICAL";
+    } else {
+      branchShort = sec.program.code.replace("BTECH-", "").replace(/[-_]/g, " ");
+    }
+    const courseDisplayName = `${branchShort} - Sec ${sec.name}`;
 
     const subjectColumns = Array.from(subjectColumnsMap.values()).filter(
       (c) => c.conducted > 0
@@ -703,6 +754,10 @@ export async function getAllSectionsAttendanceReport(
       semester: sec.semester,
       totalStudents: secEnrollments.length,
       totalSessionsConducted,
+      theoryClassesHeld: theoryClassesCount,
+      labsHeld: labsHeldCount,
+      labPeriodsHeld: labPeriodsCount,
+      courseDisplayName,
       averageAttendance,
       defaultersCount: secDefaulters,
       subjectColumns,
@@ -727,6 +782,8 @@ export async function getAllSectionsAttendanceReport(
       overallAverageAttendance,
       totalDefaulters: totalDefaultersAll,
       totalSessionsConducted: allSessions.length,
+      totalTheoryClasses: sectionResults.reduce((sum, s) => sum + s.theoryClassesHeld, 0),
+      totalLabsHeld: sectionResults.reduce((sum, s) => sum + s.labsHeld, 0),
     },
     sections: sectionResults,
     availableSchools: allSchools,

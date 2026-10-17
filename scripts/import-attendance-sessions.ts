@@ -1,6 +1,7 @@
 import { PrismaClient, SubjectType, AttendanceStatus, SessionType } from "@prisma/client";
 import xlsx from "xlsx";
 import path from "path";
+import fs from "fs";
 
 const prisma = new PrismaClient();
 
@@ -328,7 +329,7 @@ const BRANCH_MAP: Record<string, string[]> = {
 
 // 16 Dates from 22-Sep-2026 to 13-Oct-2026
 const DATES = [
-  { sheet: "Copy of Timetable_Final", date: "2026-09-22", col: 11 },
+  { sheet: "Timetable_Final_22", fallback: "Copy of Timetable_Final", date: "2026-09-22", col: 11 },
   { sheet: "Timetable_Final_23", date: "2026-09-23", col: 12 },
   { sheet: "Timetable_Final_25", date: "2026-09-25", col: 13 },
   { sheet: "Timetable_Final_26", date: "2026-09-26", col: 14 },
@@ -338,62 +339,87 @@ const DATES = [
   { sheet: "Timetable_Final_01", date: "2026-10-01", col: 18 },
   { sheet: "Timetable_Final_03", date: "2026-10-03", col: 19 },
   { sheet: "Timetable_Final_05", date: "2026-10-05", col: 20 },
-  { sheet: "Timetable_Final_06", date: "2026-10-06", col: 21 },
-  { sheet: "Timetable_Final_07", date: "2026-10-07", col: 22 },
-  { sheet: "Timetable_Final_08", date: "2026-10-08", col: 23 },
-  { sheet: "Timetable_Final_09", date: "2026-10-09", col: 24 },
-  { sheet: "Timetable_Final_12", date: "2026-10-12", col: 25 },
-  { sheet: "Timetable_Final_13", date: "2026-10-13", col: 26 },
+  { sheet: "Timetable_Final_06", fallback: "Copy of Timetable_Final_06", date: "2026-10-06", col: 21 },
+  { sheet: "Timetable_Final_07", fallback: "Copy of Timetable_Final_07", date: "2026-10-07", col: 22 },
+  { sheet: "Timetable_Final_08", fallback: "Copy of Timetable_Final_08", date: "2026-10-08", col: 23 },
+  { sheet: "Timetable_Final_09", fallback: "Copy of Timetable_Final_09", date: "2026-10-09", col: 24 },
+  { sheet: "Timetable_Final_12", fallback: "Copy of Timetable_Final_12", date: "2026-10-12", col: 25 },
+  { sheet: "Timetable_Final_13", fallback: "Copy of Timetable_Final_13", date: "2026-10-13", col: 26 },
 ];
 
 function resolveSubjectDef(raw: string): SubjectDef | null {
   if (!raw) return null;
+  const isLab = raw.toUpperCase().includes("LAB");
   let s = raw.split(/[\r\n/]/)[0].trim().toUpperCase().replace(/\s+/g, " ");
   if (s === "BREAK" || s === "LUNCH" || s === "NIL" || !s) return null;
 
-  for (const def of SUBJECT_DEFS) {
+  // Filter candidates: if isLab, check LAB first, else check THEORY first
+  const primaryDefs = SUBJECT_DEFS.filter((d) => (isLab ? d.type === SubjectType.LAB : d.type === SubjectType.THEORY));
+  const secondaryDefs = SUBJECT_DEFS.filter((d) => (isLab ? d.type === SubjectType.THEORY : d.type === SubjectType.LAB));
+  const orderedDefs = [...primaryDefs, ...secondaryDefs];
+
+  // 1. Exact match on code, shortName, or name
+  for (const def of orderedDefs) {
     if (def.code === s || def.shortName.toUpperCase() === s || def.name.toUpperCase() === s) {
       return def;
     }
     for (const alias of def.aliases) {
-      if (s === alias || s.startsWith(alias) || alias.startsWith(s)) {
+      if (s === alias) {
         return def;
       }
     }
   }
 
-  // Fallback checks
+  // 2. Prefix/Contains match on aliases
+  for (const def of orderedDefs) {
+    for (const alias of def.aliases) {
+      if (s.startsWith(alias) || alias.startsWith(s) || s.includes(alias)) {
+        return def;
+      }
+    }
+  }
+
+  // 3. Fallback checks
   if (s.includes("PHYSICS") || s.includes("PHY")) {
-    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26PH101L")! : SUBJECT_DEFS.find((d) => d.code === "26PH101")!;
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26PH101L")! : SUBJECT_DEFS.find((d) => d.code === "26PH101")!;
   }
   if (s.includes("CALCULUS") || s.includes("CAL")) return SUBJECT_DEFS.find((d) => d.code === "26MA101")!;
-  if (s.includes("PSUC") || s.includes("C LAB") || s.includes("PPSTC")) {
-    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26CS101L")! : SUBJECT_DEFS.find((d) => d.code === "26CS101")!;
+  if (s.includes("PSUC") || s.includes("C LAB")) {
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26CS101L")! : SUBJECT_DEFS.find((d) => d.code === "26CS101")!;
+  }
+  if (s.includes("PPSTC")) {
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26CS105L")! : SUBJECT_DEFS.find((d) => d.code === "26CS105")!;
   }
   if (s.includes("AITA")) {
-    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26CS102L")! : SUBJECT_DEFS.find((d) => d.code === "26CS102")!;
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26CS102L")! : SUBJECT_DEFS.find((d) => d.code === "26CS102")!;
   }
   if (s.includes("FWD")) {
-    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26CS103L")! : SUBJECT_DEFS.find((d) => d.code === "26CS103")!;
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26CS103L")! : SUBJECT_DEFS.find((d) => d.code === "26CS103")!;
   }
   if (s.includes("ENV") || s.includes("ES")) return SUBJECT_DEFS.find((d) => d.code === "26CH101")!;
   if (s.includes("FAI") || s.includes("ML")) {
-    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26AI101L")! : SUBJECT_DEFS.find((d) => d.code === "26AI101")!;
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26AI101L")! : SUBJECT_DEFS.find((d) => d.code === "26AI101")!;
   }
   if (s.includes("EME")) {
-    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26ME101L")! : SUBJECT_DEFS.find((d) => d.code === "26ME101")!;
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26ME101L")! : SUBJECT_DEFS.find((d) => d.code === "26ME101")!;
   }
   if (s.includes("COM") || s.includes("CHEM")) {
-    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26CH105L")! : SUBJECT_DEFS.find((d) => d.code === "26CH102")!;
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26CH105L")! : SUBJECT_DEFS.find((d) => d.code === "26CH102")!;
   }
   if (s.includes("ENG") || s.includes("EE")) {
-    return s.includes("LAB") ? SUBJECT_DEFS.find((d) => d.code === "26EN101L")! : SUBJECT_DEFS.find((d) => d.code === "26EN101")!;
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26EN101L")! : SUBJECT_DEFS.find((d) => d.code === "26EN101")!;
+  }
+  if (s.includes("DLD")) {
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26EC101L")! : SUBJECT_DEFS.find((d) => d.code === "26EC101")!;
   }
   if (s.includes("SUS") || s.includes("SE")) {
     return SUBJECT_DEFS.find((d) => d.code === "26CE101")!;
   }
+  if (s.includes("FDS") || s.includes("CSP")) {
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26DS101L")! : SUBJECT_DEFS.find((d) => d.code === "26DS101")!;
+  }
 
-  return SUBJECT_DEFS[0]; // fallback default
+  return isLab ? SUBJECT_DEFS.find((d) => d.type === SubjectType.LAB)! : SUBJECT_DEFS[0];
 }
 
 async function main() {
@@ -570,7 +596,10 @@ async function main() {
   console.log("✅ Clean state ready.\n");
 
   console.log(`🗓️ Processing ${DATES.length} Dates of Timetable Schedules & Generating Sessions...`);
-  const wbTT = xlsx.readFile("1stSemTIME-TABLE 2026-2027_1.1.2.xlsx");
+  const ttFileName = fs.existsSync(path.join(process.cwd(), "1st Sem TIME TABLE 2026-2027_1.1.2.xlsx"))
+    ? "1st Sem TIME TABLE 2026-2027_1.1.2.xlsx"
+    : "1stSemTIME-TABLE 2026-2027_1.1.2.xlsx";
+  const wbTT = xlsx.readFile(ttFileName);
 
   // Quick lookup from section key e.g. "BTECH-CS-AND-ENG_1" -> Section
   const secLookup = new Map<string, any>();
@@ -587,7 +616,7 @@ async function main() {
   let totalRecordsCreated = 0;
 
   for (const dateItem of DATES) {
-    const sheet = wbTT.Sheets[dateItem.sheet];
+    const sheet = wbTT.Sheets[dateItem.sheet] || (dateItem.fallback ? wbTT.Sheets[dateItem.fallback] : undefined);
     if (!sheet) {
       console.warn(`⚠️ Warning: Timetable sheet ${dateItem.sheet} not found!`);
       continue;
@@ -623,6 +652,10 @@ async function main() {
         const cellVal = row[colIdx];
         let subDef = resolveSubjectDef(String(cellVal || ""));
 
+        // If P2 is null and P1 was a lab, P2 is part of that 2-hour lab
+        if (!subDef && p === 1 && periodSubjects[0]?.type === SubjectType.LAB) {
+          subDef = periodSubjects[0];
+        }
         // If P4 is null and P3 was a lab, P4 is part of that 2-hour lab
         if (!subDef && p === 3 && periodSubjects[2]?.type === SubjectType.LAB) {
           subDef = periodSubjects[2];

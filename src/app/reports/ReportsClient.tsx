@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   FileText,
@@ -125,9 +125,9 @@ export default function ReportsClient({
     endDate?: string;
   };
 }) {
-  // Top Active Tab: "subject_wise" | "monthly" | "consolidated" | "matrix" | "defaulters"
+  // Top Active Tab: "subject_wise" | "monthly" | "consolidated" | "matrix" | "defaulters" | "classes_held"
   const [activeTab, setActiveTab] = useState<
-    "subject_wise" | "monthly" | "consolidated" | "matrix" | "defaulters"
+    "subject_wise" | "monthly" | "consolidated" | "matrix" | "defaulters" | "classes_held"
   >("subject_wise");
 
   // Academic Hierarchy States: School -> Program -> Year -> Semester -> Section
@@ -166,10 +166,38 @@ export default function ReportsClient({
   // One-Click All Sections Consolidated Report States
   const [allSectionsModalOpen, setAllSectionsModalOpen] = useState(false);
   const [allSectionsData, setAllSectionsData] = useState<AllSectionsReportResponse | null>(null);
-  const [allSectionsMode, setAllSectionsMode] = useState<"consolidated" | "subject_wise">("consolidated");
+  const [allSectionsMode, setAllSectionsMode] = useState<"consolidated" | "subject_wise" | "classes_held">("consolidated");
   const [isLoadingAllSections, setIsLoadingAllSections] = useState(false);
 
-  const handleOpenAllSectionsPrint = async (mode: "consolidated" | "subject_wise") => {
+  // Section Classes & Labs Held Dedicated State
+  const [classesHeldData, setClassesHeldData] = useState<AllSectionsReportResponse | null>(null);
+  const [isLoadingClassesHeld, setIsLoadingClassesHeld] = useState(false);
+
+  const fetchClassesHeldData = async (sDate = startDate, eDate = endDate) => {
+    setIsLoadingClassesHeld(true);
+    try {
+      const params = new URLSearchParams();
+      if (sDate) params.append("startDate", sDate);
+      if (eDate) params.append("endDate", eDate);
+      const res = await fetch(`/api/reports/all-sections?${params.toString()}`);
+      const data = await res.json();
+      if (data && data.success) {
+        setClassesHeldData(data);
+      }
+    } catch (e) {
+      console.error("Error fetching classes held data:", e);
+    } finally {
+      setIsLoadingClassesHeld(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "classes_held" && !classesHeldData && !isLoadingClassesHeld) {
+      fetchClassesHeldData(startDate, endDate);
+    }
+  }, [activeTab]);
+
+  const handleOpenAllSectionsPrint = async (mode: "consolidated" | "subject_wise" | "classes_held") => {
     setIsLoadingAllSections(true);
     setAllSectionsMode(mode);
     try {
@@ -507,12 +535,58 @@ export default function ReportsClient({
 
   const handleApplyDates = () => {
     fetchReport(selectedSectionId, selectedSubjectId, startDate, endDate);
+    if (activeTab === "classes_held") {
+      fetchClassesHeldData(startDate, endDate);
+    }
   };
 
   const handleResetDates = () => {
     setStartDate("2026-09-22");
     setEndDate("2026-10-13");
     fetchReport(selectedSectionId, selectedSubjectId, "2026-09-22", "2026-10-13");
+    if (activeTab === "classes_held") {
+      fetchClassesHeldData("2026-09-22", "2026-10-13");
+    }
+  };
+
+  const handleExportClassesHeldExcel = () => {
+    if (!classesHeldData) return;
+    const worksheetData = [
+      [COLLEGE_NAME],
+      [COLLEGE_SUBTITLE],
+      ["SECTION-WISE NUMBER OF CLASSES & LABS HELD REPORT"],
+      [`Attendance Window: ${startDate} to ${endDate} | Generated: ${new Date().toLocaleDateString("en-GB")}`],
+      [],
+      [
+        "S.No",
+        "Name of the Course",
+        "No. of Classes Held",
+        "No. of Labs Held (2 hrs = 1 lab session)",
+        "Total Periods Conducted",
+      ],
+      ...classesHeldData.sections.map((sec, idx) => [
+        idx + 1,
+        sec.courseDisplayName || sec.displayName,
+        sec.theoryClassesHeld ?? 0,
+        sec.labsHeld ?? 0,
+        sec.totalSessionsConducted,
+      ]),
+      [
+        "",
+        `Grand Total (${classesHeldData.sections.length} Sections)`,
+        classesHeldData.sections.reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0),
+        classesHeldData.sections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0),
+        classesHeldData.sections.reduce((acc, s) => acc + s.totalSessionsConducted, 0),
+      ],
+    ];
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Classes & Labs Held");
+    XLSX.writeFile(
+      workbook,
+      `Section_Classes_and_Labs_Held_${startDate}_to_${endDate}.xlsx`
+    );
   };
 
   const filteredStudents = useMemo(() => {
@@ -1111,6 +1185,27 @@ export default function ReportsClient({
         <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
           <button
             type="button"
+            onClick={() => {
+              setActiveTab("classes_held");
+              if (!classesHeldData) {
+                fetchClassesHeldData(startDate, endDate);
+              }
+            }}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition ${
+              activeTab === "classes_held"
+                ? "bg-white text-emerald-900 shadow-xs border border-slate-200 font-extrabold"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <BookOpen className="w-4 h-4 text-emerald-600" />
+            <span>Classes &amp; Labs Held</span>
+            <span className="px-1.5 py-0.5 rounded text-[9px] bg-emerald-100 text-emerald-700 font-black">
+              NEW
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab("subject_wise")}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition ${
               activeTab === "subject_wise"
@@ -1231,7 +1326,23 @@ export default function ReportsClient({
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* Button 1: Consolidated All Sections */}
+            {/* Button 1: Classes & Labs Held All Sections */}
+            <button
+              type="button"
+              disabled={isLoadingAllSections}
+              onClick={() => handleOpenAllSectionsPrint("classes_held")}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition shadow-sm hover:shadow active:scale-[0.98] disabled:opacity-50 border border-emerald-500/40"
+              title="Generate &amp; Print Section-Wise Classes &amp; Labs Held Report (Portrait A4)"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-white" />
+              <span>
+                {isLoadingAllSections && allSectionsMode === "classes_held"
+                  ? "Compiling Classes Held..."
+                  : "Print Classes & Labs Held"}
+              </span>
+            </button>
+
+            {/* Button 2: Consolidated All Sections */}
             <button
               type="button"
               disabled={isLoadingAllSections}
@@ -1247,7 +1358,7 @@ export default function ReportsClient({
               </span>
             </button>
 
-            {/* Button 2: Subject-Wise All Sections */}
+            {/* Button 3: Subject-Wise All Sections */}
             <button
               type="button"
               disabled={isLoadingAllSections}
@@ -3621,6 +3732,225 @@ export default function ReportsClient({
             </table>
           </div>
           )}
+        </div>
+      )}
+      {/* =========================================================================
+          VIEW 6: SECTION CLASSES & LABS HELD REPORT (ON-SCREEN VIEW)
+          ========================================================================= */}
+      {activeTab === "classes_held" && (
+        <div className="space-y-6">
+          {/* Header Controls Banner */}
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-emerald-50 text-[10px] font-black uppercase tracking-wider text-emerald-800 border border-emerald-200">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Section-Wise Academic Delivery Compilation</span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+                Section-Wise Number of Classes &amp; Labs Held
+              </h3>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Displays theory classes and lab sessions held for all sections (2 hours of lab counted as 1 lab session).
+              </p>
+            </div>
+
+            {/* Quick Action Buttons */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                onClick={handleExportClassesHeldExcel}
+                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-slate-200"
+              >
+                <Download className="w-4 h-4 text-slate-600" />
+                <span>Export Excel</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenAllSectionsPrint("classes_held")}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-xs"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Print Portrait A4</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Date Picker Filter Bar */}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Attendance Period:
+              </span>
+              <InstitutionalDatePicker
+                label="From:"
+                value={startDate}
+                onChange={(d) => setStartDate(d)}
+                variant="light"
+              />
+              <span className="text-slate-400 font-bold text-xs">—</span>
+              <InstitutionalDatePicker
+                label="To:"
+                value={endDate}
+                onChange={(d) => setEndDate(d)}
+                variant="light"
+              />
+              <button
+                type="button"
+                disabled={isLoadingClassesHeld}
+                onClick={() => fetchClassesHeldData(startDate, endDate)}
+                className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isLoadingClassesHeld ? (
+                  <>
+                    <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    <span>Loading...</span>
+                  </>
+                ) : (
+                  <span>Apply Dates</span>
+                )}
+              </button>
+            </div>
+
+            <div className="text-xs font-semibold text-slate-500">
+              Active Window: <strong className="text-slate-800">{startDate} to {endDate}</strong>
+            </div>
+          </div>
+
+          {/* KPI Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Total Sections
+                </span>
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <LayoutGrid className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-slate-900 mt-2">
+                {classesHeldData?.sections.length ?? 0}
+                <span className="text-xs font-semibold text-slate-400 ml-1.5">Sections</span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1">Active sections across programs</p>
+            </div>
+
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Theory Classes Held
+                </span>
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-slate-900 mt-2">
+                {classesHeldData?.sections.reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0) ?? 0}
+                <span className="text-xs font-semibold text-slate-400 ml-1.5">Classes</span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1">Conducted lecture periods</p>
+            </div>
+
+            <div className="bg-white border border-emerald-200/90 rounded-2xl p-5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">
+                  Labs Held (2 hrs = 1)
+                </span>
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-emerald-700 mt-2">
+                {classesHeldData?.sections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0) ?? 0}
+                <span className="text-xs font-semibold text-emerald-500 ml-1.5">Lab Sessions</span>
+              </div>
+              <p className="text-[11px] text-emerald-600/80 mt-1">2 periods counted as 1 lab session</p>
+            </div>
+
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Total Periods Conducted
+                </span>
+                <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+                  <FileText className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-slate-900 mt-2">
+                {classesHeldData?.sections.reduce((acc, s) => acc + s.totalSessionsConducted, 0) ?? 0}
+                <span className="text-xs font-semibold text-slate-400 ml-1.5">Periods</span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1">Total teaching hours in timetable</p>
+            </div>
+          </div>
+
+          {/* Table Container */}
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs overflow-hidden">
+            {isLoadingClassesHeld && !classesHeldData ? (
+              <div className="py-16 text-center text-slate-400">
+                <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                <p className="font-semibold text-sm">Compiling section classes &amp; labs held data...</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                <table className="w-full border-collapse text-left text-xs">
+                  <thead>
+                    <tr className="bg-slate-100 border-b border-slate-200 text-slate-800 font-black">
+                      <th className="p-3 text-center w-14">S.No</th>
+                      <th className="p-3">Name of the Course</th>
+                      <th className="p-3 text-center w-40">No. of Classes Held</th>
+                      <th className="p-3 text-center w-52">
+                        No. of Labs Held
+                        <span className="block text-[10px] font-normal text-slate-500">
+                          (2 hrs = 1 lab session)
+                        </span>
+                      </th>
+                      <th className="p-3 text-center w-44">Total Periods Conducted</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {(classesHeldData?.sections || []).map((sec, idx) => (
+                      <tr key={sec.sectionId} className="hover:bg-blue-50/40 transition">
+                        <td className="p-3 text-center font-bold text-slate-500 font-mono">
+                          {idx + 1}
+                        </td>
+                        <td className="p-3 font-extrabold text-slate-900 text-sm">
+                          {sec.courseDisplayName || sec.displayName}
+                          <span className="block text-[11px] font-normal text-slate-400">
+                            {sec.programName}
+                          </span>
+                        </td>
+                        <td className="p-3 text-center font-bold text-slate-800 font-mono text-sm">
+                          {sec.theoryClassesHeld ?? 0}
+                        </td>
+                        <td className="p-3 text-center font-black text-emerald-700 font-mono text-sm">
+                          {sec.labsHeld ?? 0}
+                        </td>
+                        <td className="p-3 text-center font-black text-blue-900 font-mono text-sm">
+                          {sec.totalSessionsConducted}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-slate-100 font-black text-slate-900 border-t-2 border-slate-300">
+                      <td colSpan={2} className="p-3 text-right uppercase tracking-wider text-xs">
+                        Grand Total ({(classesHeldData?.sections || []).length} Sections)
+                      </td>
+                      <td className="p-3 text-center font-mono text-sm">
+                        {(classesHeldData?.sections || []).reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0)}
+                      </td>
+                      <td className="p-3 text-center font-mono text-sm text-emerald-800">
+                        {(classesHeldData?.sections || []).reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}
+                      </td>
+                      <td className="p-3 text-center font-mono text-sm text-blue-950">
+                        {(classesHeldData?.sections || []).reduce((acc, s) => acc + s.totalSessionsConducted, 0)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

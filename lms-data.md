@@ -1,4 +1,4 @@
-# GVPIHLR LMS & Student Activity Telemetry System - Comprehensive Implementation Plan
+# GVPIHLR LMS, Telemetry & Single-Device Access Control - Implementation Blueprint
 
 ## 1. Executive Summary & Capabilities Confirmation
 
@@ -9,8 +9,9 @@ This document details the blueprint for:
 1. **Faculty LMS Studio Card**: Unit-wise Lecture Plan, Syllabus Topics tracker, Material (PDF) repository, Question Bank with Difficulty levels (Easy/Medium/Hard), and Section Quizzes.
 2. **Dedicated Student LMS Dashboard**: Subject rooms, roadmap, in-browser PDF reader, practice mode, and timed section quizzes.
 3. **Comprehensive Student Activity & Telemetry Engine (Audit Logging)**: Millisecond-level tracking of every login, device fingerprint, card view, tab switch, PDF preview, PDF download, and quiz activity.
-4. **Syllabus Coverage Speedometer (HOD/Dean View)** (Feature 1).
-5. **Continuous Internal Evaluation (CIE) & Internal Marks Feeder** (Feature 5).
+4. **Single-Device Student Login Enforcement & Device Takeover Prompt**: Restricts each student to exactly one active device at any time, with an interactive *"Terminate previous session and log in here"* modal for legitimate device switches.
+5. **Syllabus Coverage Speedometer (HOD/Dean View)** (Feature 1).
+6. **Continuous Internal Evaluation (CIE) & Internal Marks Feeder** (Feature 5).
 
 ---
 
@@ -58,8 +59,8 @@ flowchart TD
 ### Granular Events Captured
 | Event Category | Action Logged | Captured Metadata |
 | :--- | :--- | :--- |
-| **Authentication** | `AUTH_LOGIN` | Device type (Mobile/Desktop/Tablet), OS (iOS, Android, Windows, Mac), Browser name & version, IP address, Timestamp |
-| **Session** | `AUTH_LOGOUT`, `SESSION_TIMEOUT` | Active session duration, reason for termination |
+| **Authentication** | `AUTH_LOGIN`, `SESSION_TAKEOVER` | Device type (Mobile/Desktop/Tablet), OS, Browser version, IP, Old session ID |
+| **Session Control** | `SESSION_TERMINATED`, `DEVICE_KICKED` | Invalidation timestamp, device disconnected |
 | **Navigation** | `VIEW_DASHBOARD`, `VIEW_LMS_HOME` | Page URL, referrer, time spent on dashboard |
 | **Subject Room** | `OPEN_SUBJECT_ROOM` | Subject code (e.g. `26MA101`), Faculty name, Section ID |
 | **Lecture Plan** | `VIEW_LECTURE_PLAN` | Unit selected, topic clicked |
@@ -71,13 +72,84 @@ flowchart TD
 
 ---
 
-## 3. Database Schema Blueprint (Prisma)
+## 3. Single-Device Student Login Policy & Device Takeover Flow
 
-This schema directly extends the existing `prisma/schema.prisma` without disturbing current tables or data.
+To prevent credential sharing, unauthorized proxy logins, or simultaneous exam attempts, student accounts are strictly limited to **one active device**.
+
+### Device Takeover Sequence
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor S as Student
+    participant D2 as Device B (Mobile Phone)
+    participant D1 as Device A (Laptop - Currently Logged In)
+    participant API as /api/auth/login
+    participant DB as PostgreSQL Database
+
+    Note over D1,DB: Active session activeSessionId: "sess_laptop_123" on Windows 11 Chrome
+
+    S->>D2: Enters Roll Number & Password on Device B
+    D2->>API: POST /api/auth/login { username, password, forceTakeover: false }
+    
+    API->>DB: Check if Student has active session within last 20 mins
+    DB-->>API: Active session found: "Windows 11 (Chrome 128)" active 2m ago
+    
+    API-->>D2: Return 409 Conflict: { requiresTakeover: true, activeDevice: "Windows 11 (Chrome 128)", activeSince: "10:15 AM" }
+    
+    Note over D2: UI displays Modal: "You are already logged in on Windows 11 (Chrome 128). Terminate previous session and continue here?"
+    
+    S->>D2: Clicks "End Previous Session & Log In Here"
+    D2->>API: POST /api/auth/login { username, password, forceTakeover: true }
+    
+    API->>DB: Invalidate "sess_laptop_123" & Register new activeSessionId "sess_mobile_456"
+    DB-->>API: Updated successfully
+    
+    API-->>D2: Set session cookie & Log in to Dashboard
+    
+    Note over D1: When Device A performs next action, session verification detects mismatch and kicks to login screen with message: "Session ended because you logged in from another device."
+```
+
+### Policy Rules & Safeguards:
+1. **Strict 1-Device Concurrency**: No two browsers or devices can hold an active authenticated session for the same student simultaneously.
+2. **Interactive Takeover Prompt**: If a student moves from their laptop to their mobile (or forgot to log out in a college lab), entering their credentials on the new device displays:
+   > ⚠️ **Active Session Detected**  
+   > *You are currently logged in from **Windows 11 (Chrome)** active at 10:15 AM.*  
+   > *Logging in here will immediately disconnect and log out that device.*  
+   > **[Cancel]** &nbsp;&nbsp;&nbsp; **[End Previous Session & Log In Here]**
+3. **Instant Disconnection of Old Device**: The moment takeover is confirmed, the previous session token is revoked in the database. The previous device immediately displays *"Logged out: You signed in from another device"* on its next request.
+4. **20-Minute Inactivity Auto-Release**: If a student closes their browser without logging out, their active device reservation automatically expires after 20 minutes of inactivity.
+5. **Administrative Session Override**: Administrators and Faculty Mentors have a **"Clear Active Device Session"** button on `/admin/students/[id]` and `/admin/users` to assist students with lost or damaged phones.
+
+---
+
+## 4. Database Schema Blueprint (Prisma)
+
+This schema directly extends existing tables without disturbing current student, faculty, or attendance records.
 
 ```prisma
 // =========================================================================
-// 1. GRANULAR STUDENT ACTIVITY TELEMETRY
+// 1. SINGLE-DEVICE CONCURRENCY & SESSION TRACKING (Added to User Model)
+// =========================================================================
+
+// Extends existing User model
+model User {
+  // Existing fields...
+  // id, username, email, passwordHash, isActive, etc.
+
+  // Single Device Enforcement Fields:
+  activeSessionId       String?          // Unique UUID for current active session
+  activeDeviceSummary   String?          // "Windows 11 (Chrome 128)" or "iPhone (Safari)"
+  activeDeviceIp        String?          // Client IP address
+  lastHeartbeatAt       DateTime?        // Last activity timestamp for idle detection
+  sessionExpiresAt      DateTime?        // Session expiry timestamp
+
+  // Relationships
+  activityLogs          StudentActivityLog[]
+}
+
+// =========================================================================
+// 2. GRANULAR STUDENT ACTIVITY TELEMETRY
 // =========================================================================
 
 enum ActivityCategory {
@@ -93,8 +165,10 @@ model StudentActivityLog {
   id              String           @id @default(cuid())
   studentId       String
   student         Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
   category        ActivityCategory
-  action          String           // e.g. "AUTH_LOGIN", "PDF_DOWNLOAD", "TAB_SWITCH"
+  action          String           // "AUTH_LOGIN", "PDF_DOWNLOAD", "SESSION_TAKEOVER", "TAB_SWITCH"
   targetResource  String?          // e.g. "26MA101", "material_cuid123", "quiz_cuid456"
   description     String           // Human readable e.g. "Downloaded Unit 2 Formula Sheet PDF"
   ipAddress       String?
@@ -112,7 +186,7 @@ model StudentActivityLog {
 }
 
 // =========================================================================
-// 2. LECTURE PLAN & UNIT SYLLABUS TOPICS
+// 3. LECTURE PLAN & UNIT SYLLABUS TOPICS
 // =========================================================================
 
 enum DeliveryStatus {
@@ -141,7 +215,7 @@ model LecturePlanTopic {
 }
 
 // =========================================================================
-// 3. UNIT-WISE STUDY MATERIALS (PDF / PPT / VIDEO-READY)
+// 4. UNIT-WISE STUDY MATERIALS (PDF / PPT / VIDEO-READY)
 // =========================================================================
 
 enum MaterialType {
@@ -172,7 +246,7 @@ model CourseMaterial {
 }
 
 // =========================================================================
-// 4. QUESTION BANK & BLOOM'S TAXONOMY
+// 5. QUESTION BANK & BLOOM'S TAXONOMY
 // =========================================================================
 
 enum QuestionDifficulty {
@@ -206,7 +280,7 @@ model QuestionBankItem {
 }
 
 // =========================================================================
-// 5. SECTION-BOUND ONLINE QUIZZES & AUTO-GRADING
+// 6. SECTION-BOUND ONLINE QUIZZES & AUTO-GRADING
 // =========================================================================
 
 model CourseQuiz {
@@ -257,7 +331,7 @@ model QuizStudentAttempt {
 
 ---
 
-## 4. Feature Details & Workflows
+## 5. Feature Workflows & Modules
 
 ### Module 1: Faculty LMS Studio Card
 - **Location**: Prominently featured on the main Faculty Dashboard alongside Attendance and Marks.
@@ -321,25 +395,27 @@ model QuizStudentAttempt {
   - *“Opened LMS Portal at 08:43 AM”*
   - *“Viewed Unit-2 Calculus Lecture Notes for 14 minutes”*
   - *“Downloaded Unit-2 Question Bank (Hard Difficulty) at 08:58 AM”*
+  - *“Session terminated on iPhone due to login from Windows PC at 09:15 AM”*
   - *“Completed Unit-1 Quiz: Score 18/20 (Tab switches: 0)”*
 - **Subject Engagement Heatmap**: Faculty can inspect which students in their section have not opened the required study materials before exams.
 
 ---
 
-## 5. Phased Implementation Roadmap
+## 6. Phased Implementation Roadmap
 
 ```mermaid
 flowchart LR
-    P1["Phase 1: Telemetry & Core LMS<br/>• Student Activity Logger<br/>• Faculty LMS Card<br/>• Unit 1-5 Lecture Plan & PDFs<br/>• Student LMS Dashboard"] 
+    P1["Phase 1: Security & Core LMS<br/>• Single-Device Login & Takeover<br/>• Student Activity Telemetry<br/>• Faculty LMS Card<br/>• Unit 1-5 Lecture Plan & PDFs<br/>• Student LMS Dashboard"] 
     --> P2["Phase 2: Question Bank & Quizzes<br/>• Easy/Medium/Hard Bank<br/>• Timed CBT Quiz Engine<br/>• Anti-cheat Tab Proctoring"]
     --> P3["Phase 3: Academic Governance<br/>• Feature 1: Syllabus Speedometer<br/>• Feature 5: Internal CIE Feeder<br/>• Student Audit Timeline Panel"]
 ```
 
-### Phase 1: Foundation & Telemetry
-1. Create `StudentActivityLog`, `LecturePlanTopic`, and `CourseMaterial` models in Prisma schema.
-2. Build `/api/telemetry/student-event` endpoint with automatic device/OS/browser user-agent parser.
-3. Build **Faculty LMS Studio Card** (`/faculty/lms`) with Lecture Plan editor and Unit 1–5 PDF uploader.
-4. Build **Student LMS Dashboard** (`/student/lms`) with subject rooms, unit tabs, and in-browser PDF reader with view/download event tracking.
+### Phase 1: Security, Telemetry & Core LMS
+1. Add `activeSessionId`, `activeDeviceSummary`, `lastHeartbeatAt` to `User` and create `StudentActivityLog`, `LecturePlanTopic`, and `CourseMaterial` models.
+2. Update `/api/auth/login` to enforce **Single-Device limit with Interactive Takeover Prompt**.
+3. Build `/api/telemetry/student-event` endpoint with automatic device/OS/browser user-agent parser.
+4. Build **Faculty LMS Studio Card** (`/faculty/lms`) with Lecture Plan editor and Unit 1–5 PDF uploader.
+5. Build **Student LMS Dashboard** (`/student/lms`) with subject rooms, unit tabs, and in-browser PDF reader with view/download event tracking.
 
 ### Phase 2: Question Bank & Quizzes
 1. Create `QuestionBankItem`, `CourseQuiz`, and `QuizStudentAttempt` models.
@@ -353,7 +429,7 @@ flowchart LR
 
 ---
 
-## 6. Safety & Zero Data Loss Guarantee
+## 7. Safety & Zero Data Loss Guarantee
 - All changes are strictly additive.
 - Existing tables (`Student`, `Faculty`, `Subject`, `AttendanceSession`, `AttendanceMark`) remain 100% untouched.
 - All 1,187 students, 89 faculty, and 113,952+ attendance marks remain fully protected.

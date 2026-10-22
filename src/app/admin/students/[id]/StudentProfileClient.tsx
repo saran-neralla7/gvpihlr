@@ -26,6 +26,10 @@ import {
   X,
   ExternalLink,
   Printer,
+  Lock,
+  Unlock,
+  FileSpreadsheet,
+  Bus,
 } from "lucide-react";
 import StudentAttendanceLineChart from "@/components/student/StudentAttendanceLineChart";
 import StudentAttendanceTranscript from "@/components/student/StudentAttendanceTranscript";
@@ -58,6 +62,32 @@ interface StudentProfileProps {
     jeeRank?: string | null;
     eapcetRank?: string | null;
     tcVerified?: string | null;
+    isProfileEditAllowed?: boolean;
+    qualifyingExam?: string | null;
+    eapcetHallTicket?: string | null;
+    jeeScore?: string | null;
+    jeeHallTicket?: string | null;
+    transportFacility?: boolean | null;
+    hostelFacility?: boolean | null;
+    nationality?: string | null;
+    religion?: string | null;
+    fatherName?: string | null;
+    motherName?: string | null;
+    fatherOccupation?: string | null;
+    motherOccupation?: string | null;
+    fatherAadhaar?: string | null;
+    motherAadhaar?: string | null;
+    permanentAddress?: string | null;
+    permanentPincode?: string | null;
+    correspondenceAddress?: string | null;
+    correspondencePincode?: string | null;
+    tenthBoard?: string | null;
+    tenthMedium?: string | null;
+    tenthPercentage?: string | null;
+    tenthPassYear?: string | null;
+    twelfthBoard?: string | null;
+    twelfthMedium?: string | null;
+    twelfthPassYear?: string | null;
     programName: string;
     programCode: string;
     schoolName: string;
@@ -108,9 +138,37 @@ export default function StudentProfileClient({
   canEdit,
   canDelete,
 }: StudentProfileProps) {
-  const [activeTab, setActiveTab] = useState<"personal" | "attendance" | "academics" | "documents">(
+  const [activeTab, setActiveTab] = useState<"personal" | "admission" | "attendance" | "academics" | "documents">(
     "personal"
   );
+  const [isEditAllowed, setIsEditAllowed] = useState(!!student.isProfileEditAllowed);
+  const [isTogglingEdit, setIsTogglingEdit] = useState(false);
+  const [permToast, setPermToast] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const handleToggleStudentEditAccess = async () => {
+    setIsTogglingEdit(true);
+    setPermToast(null);
+    const target = !isEditAllowed;
+    try {
+      const res = await fetch("/api/admin/students/permissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope: "single", studentId: student.id, allowEdit: target }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Failed to update permission");
+
+      setIsEditAllowed(target);
+      setPermToast({
+        type: "success",
+        text: `Student self-editing ${target ? "enabled" : "disabled"} for ${student.rollNumber}.`,
+      });
+    } catch (err: any) {
+      setPermToast({ type: "error", text: err.message });
+    } finally {
+      setIsTogglingEdit(false);
+    }
+  };
   const [showTranscriptModal, setShowTranscriptModal] = useState(false);
   const [attendanceSearch, setAttendanceSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "PRESENT" | "ABSENT">("ALL");
@@ -172,8 +230,31 @@ export default function StudentProfileClient({
           </div>
         </div>
 
-        {/* Action Call Buttons: Direct Dialpad Access on Mobile */}
+        {/* Action Call Buttons & Self-Edit Toggle */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Admin Toggle for Student Self-Edit */}
+          <button
+            onClick={handleToggleStudentEditAccess}
+            disabled={isTogglingEdit}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition shadow-xs ${
+              isEditAllowed
+                ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
+                : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
+            }`}
+            title="Toggle student permission to edit their admission details"
+          >
+            {isEditAllowed ? (
+              <>
+                <Unlock className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Self-Edit: Allowed</span>
+              </>
+            ) : (
+              <>
+                <Lock className="w-3.5 h-3.5 text-slate-500" />
+                <span>Self-Edit: Locked</span>
+              </>
+            )}
+          </button>
           {student.phone ? (
             <a
               href={`tel:${student.phone}`}

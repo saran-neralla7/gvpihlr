@@ -58,36 +58,56 @@ export default async function StudentDetailPage({ params }: PageProps) {
     [sessions, records] = await Promise.all([
       prisma.attendanceSession.findMany({
         where: { sectionId },
+        orderBy: [{ sessionDate: "desc" }, { periodNumber: "desc" }],
         include: {
           assignment: {
             include: {
-              subjectOffering: { include: { subject: true } },
-              faculty: { include: { user: true } },
+              subjectOffering: {
+                include: {
+                  subject: true,
+                },
+              },
+              faculty: {
+                include: {
+                  user: {
+                    select: { fullName: true },
+                  },
+                },
+              },
             },
           },
         },
-        orderBy: [{ sessionDate: "desc" }, { periodNumber: "desc" }],
       }),
       prisma.attendanceRecord.findMany({
-        where: { studentId: student.id },
+        where: {
+          studentId: student.id,
+          session: { sectionId },
+        },
         select: {
           sessionId: true,
           status: true,
-          remarks: true,
         },
       }),
     ]);
   }
 
+  // Map session ID -> status
   const recordMap = new Map<string, string>();
-  records.forEach((r) => {
+  for (const r of records) {
     recordMap.set(r.sessionId, r.status);
-  });
+  }
 
-  const totalHeld = sessions.length;
-  let totalAttended = 0;
+  const PERIOD_TIMINGS: Record<number, string> = {
+    1: "08:40 - 09:30 AM",
+    2: "09:30 - 10:20 AM",
+    3: "10:30 - 11:20 AM",
+    4: "11:20 - 12:10 PM",
+    5: "01:00 - 01:50 PM",
+    6: "01:50 - 02:40 PM",
+    7: "02:40 - 03:30 PM",
+  };
 
-  // Build subject-wise breakdown
+  // Build subject aggregation & attendance log
   const subjectBreakdownMap = new Map<
     string,
     {
@@ -105,18 +125,12 @@ export default async function StudentDetailPage({ params }: PageProps) {
     }
   >();
 
-  const PERIOD_TIMINGS: Record<number, string> = {
-    1: "09:00 - 10:00 AM",
-    2: "10:00 - 11:00 AM",
-    3: "11:15 - 12:15 PM",
-    4: "12:15 - 01:15 PM",
-    5: "02:15 - 03:15 PM",
-    6: "03:15 - 04:15 PM",
-    7: "04:15 - 05:15 PM",
-  };
+  let totalHeld = 0;
+  let totalAttended = 0;
 
   const attendanceLog = sessions.map((s) => {
-    const rawStatus = recordMap.get(s.id);
+    totalHeld++;
+    const rawStatus = recordMap.get(s.id) || "ABSENT";
     const isPresent = rawStatus === "PRESENT" || rawStatus === "ON_DUTY";
     if (isPresent) totalAttended++;
 
@@ -184,7 +198,7 @@ export default async function StudentDetailPage({ params }: PageProps) {
         parentName: student.parentName,
         parentPhone: student.parentPhone,
         parentEmail: student.parentEmail,
-        address: (student as any).address || null,
+        address: student.permanentAddress || (student as any).address || null,
         casteCategory: student.casteCategory,
         ews: student.ews,
         specialCategory: student.specialCategory,
@@ -195,6 +209,32 @@ export default async function StudentDetailPage({ params }: PageProps) {
         jeeRank: student.jeeRank,
         eapcetRank: student.eapcetRank,
         tcVerified: student.tcVerified,
+        isProfileEditAllowed: student.isProfileEditAllowed,
+        qualifyingExam: student.qualifyingExam,
+        eapcetHallTicket: student.eapcetHallTicket,
+        jeeScore: student.jeeScore,
+        jeeHallTicket: student.jeeHallTicket,
+        transportFacility: student.transportFacility,
+        hostelFacility: student.hostelFacility,
+        nationality: student.nationality,
+        religion: student.religion,
+        fatherName: student.fatherName,
+        motherName: student.motherName,
+        fatherOccupation: student.fatherOccupation,
+        motherOccupation: student.motherOccupation,
+        fatherAadhaar: student.fatherAadhaar,
+        motherAadhaar: student.motherAadhaar,
+        permanentAddress: student.permanentAddress,
+        permanentPincode: student.permanentPincode,
+        correspondenceAddress: student.correspondenceAddress,
+        correspondencePincode: student.correspondencePincode,
+        tenthBoard: student.tenthBoard,
+        tenthMedium: student.tenthMedium,
+        tenthPercentage: student.tenthPercentage,
+        tenthPassYear: student.tenthPassYear,
+        twelfthBoard: student.twelfthBoard,
+        twelfthMedium: student.twelfthMedium,
+        twelfthPassYear: student.twelfthPassYear,
         programName: enrollment?.program?.name || "B.Tech",
         programCode: enrollment?.program?.code || "ENG",
         schoolName: enrollment?.program?.school?.name || "School of Engineering",

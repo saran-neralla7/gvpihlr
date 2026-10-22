@@ -28,7 +28,6 @@ export async function POST(req: Request) {
           { facultyProfile: { shortName: { equals: username, mode: "insensitive" } } },
           { studentProfile: { rollNumber: { equals: username, mode: "insensitive" } } },
         ],
-        isActive: true,
       },
       include: {
         userRoles: {
@@ -42,17 +41,40 @@ export async function POST(req: Request) {
     if (!user) {
       await recordAuditLog({
         action: "FAILED_LOGIN",
-        description: `Failed login attempt for unknown or inactive identifier: "${username}"`,
+        description: `Failed login attempt for unknown identifier: "${username}"`,
         resource: "User",
         resourceId: username,
         status: "FAILURE",
         ipAddress,
         userAgent,
-        details: { reason: "User not found or inactive", username, device: deviceSummary },
+        details: { reason: "User not found", username, device: deviceSummary },
       });
       return NextResponse.json(
         { success: false, error: "Invalid username or password" },
         { status: 401 }
+      );
+    }
+
+    // Check account active status
+    if (!user.isActive) {
+      await recordAuditLog({
+        action: "FAILED_LOGIN",
+        description: `Login blocked for deactivated account: "${username}"`,
+        resource: "User",
+        resourceId: user.id,
+        status: "FAILURE",
+        ipAddress,
+        userAgent,
+        details: { reason: "Account login disabled", username, device: deviceSummary },
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: user.studentProfile
+            ? "Student portal logins are currently disabled by the administration. Please contact the administrative office."
+            : "Your account has been deactivated. Please contact the administrator.",
+        },
+        { status: 403 }
       );
     }
 
@@ -129,8 +151,8 @@ export async function POST(req: Request) {
 
     await recordAuditLog({
       userId: user.id,
-      action: "LOGIN",
-      description: `User "${user.fullName}" (${user.username}) signed in successfully as ${roleNames.join(", ")}`,
+      action: "SUCCESSFUL_LOGIN",
+      description: `User "${user.username}" (${user.fullName}) authenticated successfully`,
       resource: "User",
       resourceId: user.id,
       status: "SUCCESS",
@@ -141,7 +163,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: "Authentication successful",
       user: {
         id: user.id,
         username: user.username,
@@ -149,11 +170,8 @@ export async function POST(req: Request) {
         roles: roleNames,
       },
     });
-  } catch (error: any) {
-    console.error("Login API error:", error);
-    return NextResponse.json(
-      { success: false, error: "Internal authentication error" },
-      { status: 500 }
-    );
+  } catch (err: any) {
+    console.error("Login route error:", err);
+    return NextResponse.json({ success: false, error: "An unexpected error occurred" }, { status: 500 });
   }
 }

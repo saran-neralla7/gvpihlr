@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   Users,
@@ -19,6 +19,8 @@ import {
   ShieldCheck,
   UserCheck,
   UserX,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import CustomModal from "@/components/ui/CustomModal";
 
@@ -61,6 +63,17 @@ export default function UsersManagerClient({
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Status Alerts
+  // Student Login Management States
+  const [selectedStudentUserIds, setSelectedStudentUserIds] = useState<Set<string>>(new Set());
+  const [isGlobalLoginModalOpen, setIsGlobalLoginModalOpen] = useState(false);
+  const [globalLoginTarget, setGlobalLoginTarget] = useState(false);
+  const [isLoginActionInProgress, setIsLoginActionInProgress] = useState(false);
+  const [updatingStudentId, setUpdatingStudentId] = useState<string | null>(null);
+
+  const activeStudentLoginsCount = useMemo(() => {
+    return students.filter((s) => s.user?.isActive !== false).length;
+  }, [students]);
+
   const [actionAlert, setActionAlert] = useState<{
     type: "success" | "error" | "warning";
     message: string;
@@ -193,6 +206,104 @@ export default function UsersManagerClient({
         password: "",
         status: item.status || "ACTIVE",
       });
+    }
+  };
+
+  // Toggle Single Student Login
+  const handleToggleStudentLogin = async (studentId: string, enable: boolean) => {
+    setUpdatingStudentId(studentId);
+    setActionAlert(null);
+    try {
+      const res = await fetch("/api/admin/users/student-logins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope: "single", studentId, enable }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setActionAlert({ type: "error", message: data.error || "Failed to update login status." });
+        return;
+      }
+
+      setStudents((prev: any[]) =>
+        prev.map((s) =>
+          s.id === studentId ? { ...s, user: { ...s.user, isActive: enable } } : s
+        )
+      );
+      setActionAlert({
+        type: "success",
+        message: `Student login access successfully ${enable ? "enabled" : "disabled"}.`,
+      });
+    } catch {
+      setActionAlert({ type: "error", message: "Failed to communicate with server." });
+    } finally {
+      setUpdatingStudentId(null);
+    }
+  };
+
+  // Batch Toggle Student Logins
+  const handleBatchStudentLogins = async (enable: boolean) => {
+    const studentIds = Array.from(selectedStudentUserIds);
+    if (studentIds.length === 0) return;
+
+    setIsLoginActionInProgress(true);
+    try {
+      const res = await fetch("/api/admin/users/student-logins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope: "selected", studentIds, enable }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setActionAlert({ type: "error", message: data.error || "Failed to update login status." });
+        return;
+      }
+
+      const idSet = new Set(studentIds);
+      setStudents((prev: any[]) =>
+        prev.map((s) =>
+          idSet.has(s.id) ? { ...s, user: { ...s.user, isActive: enable } } : s
+        )
+      );
+      setSelectedStudentUserIds(new Set());
+      setActionAlert({
+        type: "success",
+        message: `Login access ${enable ? "enabled" : "disabled"} for ${data.count} selected students.`,
+      });
+    } catch {
+      setActionAlert({ type: "error", message: "Failed to communicate with server." });
+    } finally {
+      setIsLoginActionInProgress(false);
+    }
+  };
+
+  // Global Toggle Student Logins (All Students)
+  const handleGlobalStudentLogins = async (enable: boolean) => {
+    setIsLoginActionInProgress(true);
+    try {
+      const res = await fetch("/api/admin/users/student-logins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope: "all", enable }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setActionAlert({ type: "error", message: data.error || "Failed to update global login status." });
+        return;
+      }
+
+      setStudents((prev: any[]) =>
+        prev.map((s) => ({ ...s, user: { ...s.user, isActive: enable } }))
+      );
+      setIsGlobalLoginModalOpen(false);
+      setActionAlert({
+        type: "success",
+        message: `Global login access ${enable ? "enabled" : "disabled"} for all ${data.count} students.`,
+      });
+    } catch {
+      setActionAlert({ type: "error", message: "Failed to communicate with server." });
+    } finally {
+      setIsLoginActionInProgress(false);
     }
   };
 
@@ -363,6 +474,31 @@ export default function UsersManagerClient({
       s.parentName?.toLowerCase().includes(searchFilter.toLowerCase())
   );
 
+  // Multi-select helpers for students
+  const isAllStudentsSelected =
+    filteredStudents.length > 0 &&
+    filteredStudents.every((s) => selectedStudentUserIds.has(s.id));
+
+  const handleToggleSelectAllStudents = () => {
+    const newSet = new Set(selectedStudentUserIds);
+    if (isAllStudentsSelected) {
+      filteredStudents.forEach((s) => newSet.delete(s.id));
+    } else {
+      filteredStudents.forEach((s) => newSet.add(s.id));
+    }
+    setSelectedStudentUserIds(newSet);
+  };
+
+  const handleToggleSingleStudentSelect = (id: string) => {
+    const newSet = new Set(selectedStudentUserIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedStudentUserIds(newSet);
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Banner Navigation */}
@@ -483,6 +619,99 @@ export default function UsersManagerClient({
         </div>
       </div>
 
+      {/* Global Student Logins Control Bar */}
+      {activeTab === "students" && (
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0 border border-rose-200">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-black text-slate-900">Student Portal Logins:</span>
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black ${
+                  activeStudentLoginsCount === students.length
+                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                    : activeStudentLoginsCount === 0
+                    ? "bg-rose-100 text-rose-800 border border-rose-300"
+                    : "bg-amber-100 text-amber-800 border border-amber-300"
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${activeStudentLoginsCount > 0 ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`}></span>
+                  <span>{activeStudentLoginsCount} of {students.length} Logins Active</span>
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Disable or enable institutional student logins anytime. Student academic records and attendance are completely preserved.
+              </p>
+            </div>
+          </div>
+
+          {/* Global Buttons */}
+          <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                setGlobalLoginTarget(true);
+                setIsGlobalLoginModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition shadow-xs"
+            >
+              <UserCheck className="w-4 h-4 text-emerald-600" />
+              <span>Enable All Student Logins</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setGlobalLoginTarget(false);
+                setIsGlobalLoginModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-bold transition shadow-xs"
+            >
+              <UserX className="w-4 h-4 text-rose-600" />
+              <span>Disable All Student Logins</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Batch Actions Bar for Selected Students */}
+      {activeTab === "students" && selectedStudentUserIds.size > 0 && (
+        <div className="bg-[#0B2545] text-white rounded-2xl p-3.5 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center gap-2 text-xs font-bold">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>{selectedStudentUserIds.size} student(s) selected</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleBatchStudentLogins(true)}
+              disabled={isLoginActionInProgress}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-sm disabled:opacity-50"
+            >
+              <UserCheck className="w-3.5 h-3.5" />
+              <span>Enable Logins ({selectedStudentUserIds.size})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleBatchStudentLogins(false)}
+              disabled={isLoginActionInProgress}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow-sm disabled:opacity-50"
+            >
+              <UserX className="w-3.5 h-3.5" />
+              <span>Disable Logins ({selectedStudentUserIds.size})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedStudentUserIds(new Set())}
+              className="px-2.5 py-1.5 text-slate-300 hover:text-white text-xs font-semibold"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Users Table Card */}
       <div className="bg-white border border-slate-200/90 rounded-3xl shadow-xs overflow-hidden">
         {activeTab === "faculty" ? (
@@ -502,7 +731,7 @@ export default function UsersManagerClient({
               <tbody className="divide-y divide-slate-100">
                 {filteredFaculty.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400 font-medium">
+                    <td colSpan={8} className="py-12 text-center text-slate-400 font-medium">
                       No faculty users found matching your search.
                     </td>
                   </tr>
@@ -581,6 +810,14 @@ export default function UsersManagerClient({
             <table className="w-full text-left text-xs">
               <thead className="bg-[#0B2545] text-white font-bold uppercase tracking-wider text-[11px]">
                 <tr>
+                  <th className="py-3.5 px-4 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      checked={isAllStudentsSelected}
+                      onChange={handleToggleSelectAllStudents}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </th>
                   <th className="py-3.5 px-4 font-mono">Roll Number (Login)</th>
                   <th className="py-3.5 px-4">Student Name</th>
                   <th className="py-3.5 px-4">Program &amp; Current Section</th>
@@ -602,6 +839,14 @@ export default function UsersManagerClient({
                     const currEnroll = stu.enrollments?.find((e: any) => e.isCurrent);
                     return (
                       <tr key={stu.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-4 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedStudentUserIds.has(stu.id)}
+                            onChange={() => handleToggleSingleStudentSelect(stu.id)}
+                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                          />
+                        </td>
                         <td className="py-3 px-4 font-mono font-black text-rose-800 bg-rose-50/50">
                           {stu.rollNumber}
                         </td>
@@ -621,15 +866,17 @@ export default function UsersManagerClient({
                         <td className="py-3 px-4 text-slate-600 font-mono">{stu.parentPhone || "—"}</td>
                         <td className="py-3 px-4 text-center font-bold text-slate-700">{stu.admissionYear}</td>
                         <td className="py-3 px-4 text-center">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              stu.status === "ACTIVE"
-                                ? "bg-emerald-100 text-emerald-800"
-                                : "bg-slate-200 text-slate-600"
-                            }`}
-                          >
-                            {stu.status}
-                          </span>
+                          {stu.user?.isActive !== false ? (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1">
+                              <UserCheck className="w-3 h-3" />
+                              <span>ACTIVE</span>
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300 inline-flex items-center gap-1">
+                              <UserX className="w-3 h-3" />
+                              <span>DISABLED</span>
+                            </span>
+                          )}
                         </td>
                         <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
                           <button
@@ -640,20 +887,37 @@ export default function UsersManagerClient({
                             <Edit2 className="w-3 h-3" />
                             <span>Edit</span>
                           </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleToggleActive("student", stu.id, stu.status === "ACTIVE")
-                            }
-                            className={`px-2.5 py-1 font-bold rounded-lg text-[11px] border transition inline-flex items-center gap-1 ${
-                              stu.status === "ACTIVE"
-                                ? "text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-200"
-                                : "text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200"
-                            }`}
-                          >
-                            {stu.status === "ACTIVE" ? <UserX className="w-3 h-3" /> : <UserCheck className="w-3 h-3" />}
-                            <span>{stu.status === "ACTIVE" ? "Deactivate" : "Activate"}</span>
-                          </button>
+                          {stu.user?.isActive !== false ? (
+                            <button
+                              type="button"
+                              disabled={updatingStudentId === stu.id}
+                              onClick={() => handleToggleStudentLogin(stu.id, false)}
+                              className="px-2.5 py-1 font-bold rounded-lg text-[11px] border text-rose-700 bg-rose-50 hover:bg-rose-100 border-rose-200 transition inline-flex items-center gap-1 disabled:opacity-50"
+                              title="Disable this student from logging in"
+                            >
+                              {updatingStudentId === stu.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin text-rose-600" />
+                              ) : (
+                                <UserX className="w-3 h-3 text-rose-600" />
+                              )}
+                              <span>Disable Login</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={updatingStudentId === stu.id}
+                              onClick={() => handleToggleStudentLogin(stu.id, true)}
+                              className="px-2.5 py-1 font-bold rounded-lg text-[11px] border text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200 transition inline-flex items-center gap-1 disabled:opacity-50"
+                              title="Enable this student to log in"
+                            >
+                              {updatingStudentId === stu.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin text-emerald-600" />
+                              ) : (
+                                <UserCheck className="w-3 h-3 text-emerald-600" />
+                              )}
+                              <span>Enable Login</span>
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() =>
@@ -1059,6 +1323,22 @@ export default function UsersManagerClient({
         confirmText="Confirm Delete"
         type="danger"
         isLoading={isDeleting}
+      />
+
+      {/* GLOBAL STUDENT LOGINS CONFIRMATION MODAL */}
+      <CustomModal
+        isOpen={isGlobalLoginModalOpen}
+        onClose={() => setIsGlobalLoginModalOpen(false)}
+        onConfirm={() => handleGlobalStudentLogins(globalLoginTarget)}
+        title={globalLoginTarget ? "Enable All Student Logins" : "Disable All Student Logins"}
+        description={
+          globalLoginTarget
+            ? `Are you sure you want to enable portal logins for ALL ${students.length} students? Students will be able to log in to the portal with their roll number and password.`
+            : `Are you sure you want to disable portal logins for ALL ${students.length} students? When trying to log in, students will be informed that logins are temporarily disabled by the administration. Note: Student academic profiles, enrollments, and attendance records remain 100% intact.`
+        }
+        confirmText={globalLoginTarget ? "Confirm Enable All" : "Confirm Disable All"}
+        type={globalLoginTarget ? "success" : "danger"}
+        isLoading={isLoginActionInProgress}
       />
     </div>
   );

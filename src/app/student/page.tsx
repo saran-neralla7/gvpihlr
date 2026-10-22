@@ -4,6 +4,8 @@ import prisma from "@/lib/prisma";
 import { AttendanceStatus } from "@prisma/client";
 import StudentDashboardView from "@/components/student/StudentDashboardView";
 
+export const dynamic = "force-dynamic";
+
 export default async function StudentPortalPage() {
   const session = await getCurrentSession();
   if (!session) redirect("/login");
@@ -100,7 +102,9 @@ export default async function StudentPortalPage() {
       month: "short",
       year: "numeric",
     }),
+    sessionDate: new Date(s.sessionDate).toISOString().slice(0, 10),
     period: s.periodNumber,
+    periodNumber: s.periodNumber,
     subjectName: s.assignment.subjectOffering.subject.name,
     subjectCode: s.assignment.subjectOffering.subject.code,
     facultyName: s.assignment.faculty.user.fullName,
@@ -113,6 +117,7 @@ export default async function StudentPortalPage() {
     <div className="relative">
       <StudentDashboardView
         student={{
+          id: student.id,
           fullName: student.user.fullName,
           rollNumber: student.rollNumber,
           programName: enrollment?.program.name || "Computer Science and Engineering",
@@ -126,9 +131,56 @@ export default async function StudentPortalPage() {
           parentName: student.parentName || undefined,
           gender: student.gender || "Male",
           dateOfBirth: student.dateOfBirth
-            ? new Date(student.dateOfBirth).toLocaleDateString("en-IN")
+            ? new Date(student.dateOfBirth).toISOString().slice(0, 10)
             : undefined,
           labBatchName: activeLabBatch,
+          isProfileEditAllowed: student.isProfileEditAllowed,
+        }}
+        admissionData={{
+          id: student.id,
+          rollNumber: student.rollNumber,
+          fullName: student.user.fullName,
+          email: student.user.email,
+          phone: student.user.phone,
+          registerNumber: student.registerNumber,
+          gender: student.gender,
+          dateOfBirth: student.dateOfBirth ? new Date(student.dateOfBirth).toISOString().slice(0, 10) : "",
+          bloodGroup: student.bloodGroup,
+          casteCategory: student.casteCategory,
+          ews: student.ews,
+          specialCategory: student.specialCategory,
+          state: student.state,
+          region: student.region,
+          nationality: student.nationality || "Indian",
+          religion: student.religion,
+          transportFacility: student.transportFacility,
+          hostelFacility: student.hostelFacility,
+          fatherName: student.fatherName || student.parentName,
+          fatherOccupation: student.fatherOccupation,
+          fatherAadhaar: student.fatherAadhaar,
+          motherName: student.motherName,
+          motherOccupation: student.motherOccupation,
+          motherAadhaar: student.motherAadhaar,
+          parentPhone: student.parentPhone,
+          parentEmail: student.parentEmail,
+          permanentAddress: student.permanentAddress,
+          permanentPincode: student.permanentPincode,
+          correspondenceAddress: student.correspondenceAddress,
+          correspondencePincode: student.correspondencePincode,
+          tenthBoard: student.tenthBoard,
+          tenthMedium: student.tenthMedium,
+          tenthPercentage: student.tenthPercentage,
+          tenthPassYear: student.tenthPassYear,
+          twelfthBoard: student.twelfthBoard,
+          twelfthMedium: student.twelfthMedium,
+          interPercentage: student.interPercentage,
+          twelfthPassYear: student.twelfthPassYear,
+          qualifyingExam: student.qualifyingExam,
+          eapcetRank: student.eapcetRank,
+          eapcetHallTicket: student.eapcetHallTicket,
+          jeeRank: student.jeeRank,
+          jeeScore: student.jeeScore,
+          jeeHallTicket: student.jeeHallTicket,
         }}
         attendanceSummary={{
           overallPercentage,

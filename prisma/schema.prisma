@@ -361,6 +361,46 @@ model Student {
   jeeRank         String?
   eapcetRank      String?
   tcVerified      String?
+
+  // Permissions
+  isProfileEditAllowed Boolean  @default(false)
+
+  // Admission & Entrance
+  qualifyingExam      String?
+  eapcetHallTicket    String?
+  jeeScore            String?
+  jeeHallTicket       String?
+
+  // Facilities & Demographics
+  transportFacility   Boolean?  @default(false)
+  hostelFacility      Boolean?  @default(false)
+  nationality         String?   @default("Indian")
+  religion            String?
+
+  // Parents Information
+  fatherName          String?
+  motherName          String?
+  fatherOccupation    String?
+  motherOccupation    String?
+  fatherAadhaar       String?
+  motherAadhaar       String?
+
+  // Addresses
+  permanentAddress      String?
+  permanentPincode      String?
+  correspondenceAddress String?
+  correspondencePincode String?
+
+  // 10th (SSC) Details
+  tenthBoard          String?
+  tenthMedium         String?
+  tenthPercentage     String?
+  tenthPassYear       String?
+
+  // 12th (Intermediate) Details
+  twelfthBoard        String?
+  twelfthMedium       String?
+  twelfthPassYear     String?
   
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt

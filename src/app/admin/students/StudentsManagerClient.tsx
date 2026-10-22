@@ -22,6 +22,12 @@ import {
   AlertTriangle,
   Loader2,
   ExternalLink,
+  Lock,
+  Unlock,
+  ShieldCheck,
+  Download,
+  UploadCloud,
+  CheckCircle2,
 } from "lucide-react";
 import CustomModal from "@/components/ui/CustomModal";
 
@@ -75,6 +81,17 @@ export default function StudentsManagerClient({
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isPhotosOpen, setIsPhotosOpen] = useState(false);
+  const [isAdmissionModalOpen, setIsAdmissionModalOpen] = useState(false);
+  const [isGlobalModalOpen, setIsGlobalModalOpen] = useState(false);
+  const [globalTargetAllow, setGlobalTargetAllow] = useState(false);
+  const [admissionFile, setAdmissionFile] = useState<File | null>(null);
+  const [isUploadingExcel, setIsUploadingExcel] = useState(false);
+  const [uploadResult, setUploadResult] = useState<any>(null);
+  const [isPermUpdating, setIsPermUpdating] = useState(false);
+
+  const totalAllowedCount = useMemo(() => {
+    return students.filter((s) => s.isProfileEditAllowed).length;
+  }, [students]);
 
   const [activeStudent, setActiveStudent] = useState<any>(null);
   const [formData, setFormData] = useState<any>({});
@@ -264,6 +281,121 @@ export default function StudentsManagerClient({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // Toggle Single Student Edit Access
+  const handleToggleSinglePermission = async (studentId: string, allowEdit: boolean) => {
+    try {
+      const res = await fetch("/api/admin/students/permissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope: "single", studentId, allowEdit }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Failed to update permission");
+
+      setStudents((prev) =>
+        prev.map((s) => (s.id === studentId ? { ...s, isProfileEditAllowed: allowEdit } : s))
+      );
+      setAlertMsg({
+        type: "success",
+        text: `Profile editing ${allowEdit ? "enabled" : "disabled"} for student.`,
+      });
+    } catch (err: any) {
+      setAlertMsg({ type: "error", text: err.message });
+    }
+  };
+
+  // Toggle Batch Selected Students Edit Access
+  const handleBatchPermission = async (allowEdit: boolean) => {
+    const studentIds = Array.from(selectedStudentIds);
+    if (studentIds.length === 0) return;
+
+    setIsPermUpdating(true);
+    try {
+      const res = await fetch("/api/admin/students/permissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope: "selected", studentIds, allowEdit }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Failed to update permissions");
+
+      const idSet = new Set(studentIds);
+      setStudents((prev) =>
+        prev.map((s) => (idSet.has(s.id) ? { ...s, isProfileEditAllowed: allowEdit } : s))
+      );
+      setSelectedStudentIds(new Set());
+      setAlertMsg({
+        type: "success",
+        text: `Profile editing ${allowEdit ? "enabled" : "disabled"} for ${data.count} selected students.`,
+      });
+    } catch (err: any) {
+      setAlertMsg({ type: "error", text: err.message });
+    } finally {
+      setIsPermUpdating(false);
+    }
+  };
+
+  // Toggle Global Edit Access (All Students)
+  const handleGlobalPermission = async (allowEdit: boolean) => {
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/students/permissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope: "all", allowEdit }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Failed to update global permissions");
+
+      setStudents((prev) => prev.map((s) => ({ ...s, isProfileEditAllowed: allowEdit })));
+      setIsGlobalModalOpen(false);
+      setAlertMsg({
+        type: "success",
+        text: `Global profile editing ${allowEdit ? "enabled" : "disabled"} for all ${data.count} students.`,
+      });
+    } catch (err: any) {
+      setAlertMsg({ type: "error", text: err.message });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Upload Admission Excel Handler
+  const handleUploadAdmissionExcel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!admissionFile) {
+      setAlertMsg({ type: "error", text: "Please select an Excel (.xlsx) file first." });
+      return;
+    }
+
+    setIsUploadingExcel(true);
+    setUploadResult(null);
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append("file", admissionFile);
+
+      const res = await fetch("/api/admin/students/import-admission", {
+        method: "POST",
+        body: formDataUpload,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to import Excel data");
+      }
+
+      setUploadResult(data);
+      setAlertMsg({ type: "success", text: data.message });
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } catch (err: any) {
+      setAlertMsg({ type: "error", text: err.message });
+    } finally {
+      setIsUploadingExcel(false);
+    }
   };
 
   // Add Student Handler
@@ -662,6 +794,85 @@ export default function StudentsManagerClient({
           </button>
         </div>
       </div>
+
+      {/* Student Self-Edit Permissions Control Bar */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-900">Student Profile Self-Editing:</span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-blue-50 text-blue-700 border border-blue-200">
+                {totalAllowedCount} of {students.length} Open
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+              Control whether students can self-edit their admission & demographic details on their portal.
+            </p>
+          </div>
+        </div>
+
+        {/* Global Controls */}
+        <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+          <button
+            onClick={() => {
+              setGlobalTargetAllow(true);
+              setIsGlobalModalOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition shadow-xs"
+          >
+            <Unlock className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Allow All</span>
+          </button>
+          <button
+            onClick={() => {
+              setGlobalTargetAllow(false);
+              setIsGlobalModalOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold transition shadow-xs"
+          >
+            <Lock className="w-3.5 h-3.5 text-slate-500" />
+            <span>Lock All</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Floating Selected Batch Actions Bar */}
+      {selectedStudentIds.size > 0 && (
+        <div className="bg-indigo-900 text-white rounded-2xl p-3.5 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center gap-2 text-xs font-bold">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>{selectedStudentIds.size} student(s) selected</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleBatchPermission(true)}
+              disabled={isPermUpdating}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-sm disabled:opacity-50"
+            >
+              <Unlock className="w-3.5 h-3.5" />
+              <span>Allow Edit ({selectedStudentIds.size})</span>
+            </button>
+            <button
+              onClick={() => handleBatchPermission(false)}
+              disabled={isPermUpdating}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition shadow-sm disabled:opacity-50"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>Lock Edit ({selectedStudentIds.size})</span>
+            </button>
+            <button
+              onClick={() => setSelectedStudentIds(new Set())}
+              className="px-2.5 py-1.5 text-slate-300 hover:text-white text-xs font-semibold"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Students Table matching Screenshot 3 */}
       <div className="bg-white border border-slate-200/90 rounded-3xl shadow-xs overflow-hidden">
@@ -1270,6 +1481,161 @@ export default function StudentsManagerClient({
                 className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold"
               >
                 Upload &amp; Process
+              </button>
+            </div>
+          </div>
+        </CustomModal>
+      )}
+
+      {/* ADMISSION EXCEL MODAL */}
+      {isAdmissionModalOpen && (
+        <CustomModal
+          isOpen={isAdmissionModalOpen}
+          onClose={() => {
+            setIsAdmissionModalOpen(false);
+            setUploadResult(null);
+          }}
+          title="Admission Master Details - Excel Management"
+        >
+          <div className="space-y-6 text-xs">
+            {/* Step 1: Download Template */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-bold text-slate-900 text-sm">Download Excel Template</div>
+                  <div className="text-slate-500 mt-0.5">
+                    Pre-formatted .xlsx with all 30+ admission fields and academic columns.
+                  </div>
+                </div>
+                <a
+                  href="/api/admin/students/export-admission-template"
+                  download="GVPIHLR_Admission_Details_Template.xlsx"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-blue-700 font-bold border border-blue-200 shadow-xs"
+                >
+                  <Download className="w-4 h-4 text-blue-600" />
+                  <span>Download .xlsx</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Step 2: Upload Excel File */}
+            <form onSubmit={handleUploadAdmissionExcel} className="space-y-4">
+              <div>
+                <div className="font-bold text-slate-900 text-sm mb-1">Upload Admission Data Excel</div>
+                <p className="text-slate-500">
+                  Select your completed Excel file. Records will be matched by <code className="font-mono text-blue-700 font-bold">Roll Number</code> and updated seamlessly without touching existing attendance records.
+                </p>
+              </div>
+
+              <div className="border-2 border-dashed border-indigo-200 hover:border-indigo-400 bg-indigo-50/20 rounded-2xl p-6 text-center transition">
+                <UploadCloud className="w-8 h-8 text-indigo-500 mx-auto mb-2" />
+                <div className="font-bold text-slate-700">Choose .xlsx or .xls file</div>
+                <input
+                  type="file"
+                  accept=".xlsx, .xls"
+                  onChange={(e) => setAdmissionFile(e.target.files?.[0] || null)}
+                  className="mt-3 text-xs text-slate-600 mx-auto block cursor-pointer"
+                />
+                {admissionFile && (
+                  <div className="mt-2 text-xs font-bold text-emerald-700">
+                    Selected: {admissionFile.name} ({(admissionFile.size / 1024).toFixed(1)} KB)
+                  </div>
+                )}
+              </div>
+
+              {uploadResult && (
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 space-y-2">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>{uploadResult.message}</span>
+                  </div>
+                  {uploadResult.stats && (
+                    <div className="grid grid-cols-3 gap-2 pt-1 font-mono text-[11px]">
+                      <div>Total Rows: {uploadResult.stats.totalRows}</div>
+                      <div>Updated: {uploadResult.stats.updatedCount}</div>
+                      <div>Created: {uploadResult.stats.createdCount}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAdmissionModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 font-semibold hover:bg-slate-50"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  disabled={!admissionFile || isUploadingExcel}
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {isUploadingExcel ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Uploading &amp; Processing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud className="w-3.5 h-3.5" />
+                      <span>Upload &amp; Process</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </CustomModal>
+      )}
+
+      {/* GLOBAL PERMISSION CONFIRMATION MODAL */}
+      {isGlobalModalOpen && (
+        <CustomModal
+          isOpen={isGlobalModalOpen}
+          onClose={() => setIsGlobalModalOpen(false)}
+          title={globalTargetAllow ? "Allow All Students to Edit Profile" : "Lock All Student Profiles"}
+        >
+          <div className="space-y-4 text-xs">
+            <div className={`p-4 rounded-2xl flex items-start gap-3 ${
+              globalTargetAllow ? "bg-emerald-50 border border-emerald-200" : "bg-amber-50 border border-amber-200"
+            }`}>
+              <AlertTriangle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                globalTargetAllow ? "text-emerald-600" : "text-amber-600"
+              }`} />
+              <div>
+                <p className="font-bold text-slate-900 text-sm">
+                  {globalTargetAllow
+                    ? "Enable profile self-editing for ALL students?"
+                    : "Lock profile self-editing for ALL students?"}
+                </p>
+                <p className="text-slate-600 mt-1">
+                  {globalTargetAllow
+                    ? "This will allow every active student across all programs and sections to edit their admission and demographic details on the student portal."
+                    : "This will lock editing for all students, putting their profiles into read-only mode."}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsGlobalModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-slate-200 font-semibold hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleGlobalPermission(globalTargetAllow)}
+                disabled={isSubmitting}
+                className={`px-5 py-2 rounded-xl text-white font-bold flex items-center gap-1.5 ${
+                  globalTargetAllow ? "bg-emerald-600 hover:bg-emerald-700" : "bg-slate-800 hover:bg-slate-900"
+                }`}
+              >
+                {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>Confirm {globalTargetAllow ? "Allow All" : "Lock All"}</span>
               </button>
             </div>
           </div>

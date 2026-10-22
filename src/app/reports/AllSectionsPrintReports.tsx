@@ -10,6 +10,7 @@ import {
   Percent,
   LayoutGrid,
   Sparkles,
+  BookOpen,
 } from "lucide-react";
 import type { AllSectionsReportResponse, AllSectionsReportItem } from "@/lib/reportsActions";
 import InstitutionalDatePicker from "@/components/InstitutionalDatePicker";
@@ -17,6 +18,7 @@ import InstitutionalDatePicker from "@/components/InstitutionalDatePicker";
 interface AllSectionsPrintReportsProps {
   data: AllSectionsReportResponse;
   initialMode?: "consolidated" | "subject_wise" | "classes_held";
+  initialSubMode?: "summary" | "section_faculty" | "faculty_workload" | "delivery" | "theory" | "labs";
   onClose: () => void;
 }
 
@@ -27,13 +29,16 @@ const COLLEGE_SUBTITLE =
 export default function AllSectionsPrintReports({
   data: initialData,
   initialMode = "consolidated",
+  initialSubMode = "summary",
   onClose,
 }: AllSectionsPrintReportsProps) {
   const [reportData, setReportData] = useState<AllSectionsReportResponse>(initialData);
   const [reportType, setReportType] = useState<"consolidated" | "subject_wise" | "classes_held">(initialMode);
-  const [classesHeldViewMode, setClassesHeldViewMode] = useState<"summary" | "subject_wise">("summary");
+  const [classesHeldViewMode, setClassesHeldViewMode] = useState<
+    "summary" | "section_faculty" | "faculty_workload" | "delivery" | "theory" | "labs"
+  >(initialSubMode as any);
   const [classesHeldMetric, setClassesHeldMetric] = useState<"hours" | "classes">("hours");
-  
+
   // Scoped Filters
   const [selectedSchoolFilter, setSelectedSchoolFilter] = useState<string>("ALL");
   const [selectedProgramFilter, setSelectedProgramFilter] = useState<string>("ALL");
@@ -88,7 +93,9 @@ export default function AllSectionsPrintReports({
   const matchingSections = useMemo(() => {
     return reportData.sections.filter((sec) => {
       if (selectedSchoolFilter !== "ALL") {
-        const prog = (reportData.availablePrograms || []).find((p) => p.name === sec.programName || p.code === sec.programCode);
+        const prog = (reportData.availablePrograms || []).find(
+          (p) => p.name === sec.programName || p.code === sec.programCode
+        );
         if (prog && prog.schoolId !== selectedSchoolFilter) return false;
       }
       if (selectedProgramFilter !== "ALL") {
@@ -116,62 +123,250 @@ export default function AllSectionsPrintReports({
     return parseFloat((sum / matchingSections.length).toFixed(1));
   }, [matchingSections]);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-150">
-      {/* Print Container Styles */}
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: A4 portrait;
-            margin: 10mm 8mm 10mm 8mm;
-          }
-          body * {
-            visibility: hidden !important;
-          }
-          #all-sections-print-container,
-          #all-sections-print-container * {
-            visibility: visible !important;
-          }
-          #all-sections-print-container {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            background: white !important;
-            padding: 0 !important;
-            margin: 0 !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-          .page-break-section {
-            page-break-before: always !important;
-            break-before: page !important;
-          }
-          .avoid-break {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-          }
-          table {
-            border-collapse: collapse !important;
-            width: 100% !important;
-          }
-          th,
-          td {
-            border: 1px solid #1e293b !important;
-            color: #000000 !important;
-          }
+  // Dynamic distinct Theory subjects across matching sections
+  const distinctTheorySubjects = useMemo(() => {
+    const map = new Map<string, { id: string; code: string; shortName: string; totalHours: number; totalSessions: number }>();
+    matchingSections.forEach((sec) => {
+      sec.subjectColumns
+        .filter((c) => c.type !== "LAB")
+        .forEach((c) => {
+          const item = map.get(c.shortName) || {
+            id: c.id,
+            code: c.code,
+            shortName: c.shortName,
+            totalHours: 0,
+            totalSessions: 0,
+          };
+          item.totalHours += c.conductedHours;
+          item.totalSessions += c.conductedSessions;
+          map.set(c.shortName, item);
+        });
+    });
+    return Array.from(map.values()).sort((a, b) => b.totalHours - a.totalHours);
+  }, [matchingSections]);
+
+  // Dynamic distinct Lab subjects across matching sections
+  const distinctLabSubjects = useMemo(() => {
+    const map = new Map<string, { id: string; code: string; shortName: string; totalHours: number; totalSessions: number }>();
+    matchingSections.forEach((sec) => {
+      sec.subjectColumns
+        .filter((c) => c.type === "LAB")
+        .forEach((c) => {
+          const item = map.get(c.shortName) || {
+            id: c.id,
+            code: c.code,
+            shortName: c.shortName,
+            totalHours: 0,
+            totalSessions: 0,
+          };
+          item.totalHours += c.conductedHours;
+          item.totalSessions += c.conductedSessions;
+          map.set(c.shortName, item);
+        });
+    });
+    return Array.from(map.values()).sort((a, b) => b.totalHours - a.totalHours);
+  }, [matchingSections]);
+
+  // Dynamic Faculty Workload aggregation across matching sections
+  const facultyWorkloadList = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        facultyName: string;
+        sections: Set<string>;
+        subjects: Set<string>;
+        theoryHours: number;
+        labHours: number;
+        totalHours: number;
+      }
+    >();
+
+    matchingSections.forEach((sec) => {
+      const secName = sec.courseDisplayName || sec.displayName;
+      sec.subjectColumns.forEach((sub) => {
+        let facs =
+          sub.facultyNames && sub.facultyNames.length > 0
+            ? sub.facultyNames
+            : sub.facultyName && sub.facultyName !== "—" && sub.facultyName !== "-"
+            ? sub.facultyName.split(",").map((f) => f.trim()).filter(Boolean)
+            : [];
+
+        if (facs.length === 0) {
+          facs = ["Unassigned Faculty"];
         }
-      `}</style>
+
+        facs.forEach((fac) => {
+          const item = map.get(fac) || {
+            facultyName: fac,
+            sections: new Set<string>(),
+            subjects: new Set<string>(),
+            theoryHours: 0,
+            labHours: 0,
+            totalHours: 0,
+          };
+          item.sections.add(secName);
+          item.subjects.add(`${sub.shortName} (${sub.type})`);
+          if (sub.type === "LAB") {
+            item.labHours += sub.conductedHours;
+          } else {
+            item.theoryHours += sub.conductedHours;
+          }
+          item.totalHours += sub.conductedHours;
+          map.set(fac, item);
+        });
+      });
+    });
+
+    return Array.from(map.values()).sort(
+      (a, b) => b.totalHours - a.totalHours || a.facultyName.localeCompare(b.facultyName)
+    );
+  }, [matchingSections]);
+
+  const isLandscape =
+    reportType === "classes_held" &&
+    (classesHeldViewMode === "theory" ||
+      classesHeldViewMode === "labs" ||
+      classesHeldViewMode === "delivery" ||
+      classesHeldViewMode === "faculty_workload");
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-150 modal-backdrop-print">
+      {/* High-Precision Print Styles (Overcomes styled-jsx dynamic scope & page conflict bugs) */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @page {
+              size: ${isLandscape ? "A4 landscape" : "A4 portrait"} !important;
+              margin: ${isLandscape ? "5mm 6mm" : "7mm 8mm"} !important;
+            }
+            @media print {
+              html, body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              header,
+              footer,
+              nav,
+              [aria-hidden="true"],
+              .no-print,
+              #reports-main-content {
+                display: none !important;
+                height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+              }
+              main {
+                margin: 0 !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                height: auto !important;
+              }
+              .modal-backdrop-print {
+                position: static !important;
+                inset: auto !important;
+                background: transparent !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
+                display: block !important;
+              }
+              .modal-print-wrapper {
+                position: static !important;
+                display: block !important;
+                background: #ffffff !important;
+                border: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+                padding: 0 !important;
+                margin: 0 !important;
+              }
+              #all-sections-print-container {
+                position: static !important;
+                display: block !important;
+                width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
+                background: #ffffff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+              }
+              .page-break-section {
+                page-break-before: always !important;
+                break-before: page !important;
+              }
+              .avoid-break {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+              table {
+                border-collapse: collapse !important;
+                width: 100% !important;
+                page-break-inside: auto !important;
+              }
+              tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+              thead {
+                display: table-header-group !important;
+              }
+              tfoot {
+                display: table-footer-group !important;
+              }
+              th, td {
+                border: 1px solid #1e293b !important;
+                color: #000000 !important;
+              }
+              .landscape-kpi-cards {
+                display: none !important;
+              }
+              .landscape-kpi-inline {
+                display: flex !important;
+              }
+              .landscape-table th,
+              .landscape-table td {
+                padding: 2px 3px !important;
+                font-size: 8pt !important;
+                line-height: 1.15 !important;
+              }
+            }
+            @media screen {
+              .landscape-kpi-inline {
+                display: none !important;
+              }
+            }
+          `,
+        }}
+      />
 
       {/* Main Modal Wrapper (Screen View) */}
-      <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-7xl max-h-[96vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
+      <div
+        className={`bg-white rounded-3xl shadow-2xl border border-slate-200 w-full ${
+          isLandscape ? "max-w-[95vw]" : "max-w-7xl"
+        } max-h-[96vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150 modal-print-wrapper`}
+      >
         {/* Modal Top Control Bar (Screen only) */}
         <div className="p-4 sm:p-5 bg-gradient-to-r from-[#0F2C59] via-[#163A70] to-[#0B2545] text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4 no-print">
           <div>
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-black uppercase tracking-wider">
-                PORTRAIT A4 • ONE-CLICK REPORT
+                {isLandscape ? "LANDSCAPE A4" : "PORTRAIT A4"} • UNIVERSITY REPORT
               </span>
               <span className="text-xs font-bold text-blue-200">
                 Academic Year 2026-2027
@@ -182,21 +377,21 @@ export default function AllSectionsPrintReports({
                 </span>
               ) : (
                 <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 text-[10px] font-bold border border-amber-400/30">
-                  First Year Incharge Scope
+                  First Year Scope
                 </span>
               )}
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white mt-1">
-              All Sections Consolidated Attendance Report
+              Institutional Attendance &amp; Delivery Reports
             </h2>
             <p className="text-xs text-slate-200 font-medium">
-              Compiles active sections in high-clarity Portrait A4 format for executive review and university printing.
+              High-clarity print format for university records with authoritative Book3 faculty mappings.
             </p>
           </div>
 
           {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* Switcher: Classes & Labs Held vs Consolidated vs Subject-Wise */}
+            {/* Top Switcher: Classes & Labs Held vs Consolidated vs Subject-Wise */}
             <div className="flex items-center bg-white/10 p-1 rounded-xl border border-white/20">
               <button
                 type="button"
@@ -229,14 +424,38 @@ export default function AllSectionsPrintReports({
                     : "text-white/80 hover:text-white"
                 }`}
               >
-                Subject-Wise
+                Subject-Wise Students
               </button>
             </div>
 
             {/* When Classes & Labs Held is active, show Sub-Toggles */}
             {reportType === "classes_held" && (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center bg-white/10 p-1 rounded-xl border border-white/20 text-xs">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center bg-white/10 p-1 rounded-xl border border-white/20 text-xs gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setClassesHeldViewMode("section_faculty")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                      classesHeldViewMode === "section_faculty"
+                        ? "bg-emerald-400 text-slate-950 shadow-xs font-black"
+                        : "text-white/80 hover:text-white"
+                    }`}
+                    title="1 Section per Page with Subject, Faculty, and Hours"
+                  >
+                    Faculty &amp; Hours (1 Sec/Page)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setClassesHeldViewMode("faculty_workload")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                      classesHeldViewMode === "faculty_workload"
+                        ? "bg-purple-300 text-slate-950 shadow-xs font-black"
+                        : "text-white/80 hover:text-white"
+                    }`}
+                    title="Aggregated Workload by Faculty Member across all sections"
+                  >
+                    Faculty Workload
+                  </button>
                   <button
                     type="button"
                     onClick={() => setClassesHeldViewMode("summary")}
@@ -246,45 +465,69 @@ export default function AllSectionsPrintReports({
                         : "text-white/80 hover:text-white"
                     }`}
                   >
-                    Summary
+                    Summary (Portrait)
                   </button>
                   <button
                     type="button"
-                    onClick={() => setClassesHeldViewMode("subject_wise")}
+                    onClick={() => setClassesHeldViewMode("theory")}
                     className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
-                      classesHeldViewMode === "subject_wise"
+                      classesHeldViewMode === "theory"
                         ? "bg-white text-slate-900 shadow-xs font-black"
                         : "text-white/80 hover:text-white"
                     }`}
                   >
-                    Subject-Wise Hours
+                    Theory (Landscape)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setClassesHeldViewMode("labs")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                      classesHeldViewMode === "labs"
+                        ? "bg-white text-slate-900 shadow-xs font-black"
+                        : "text-white/80 hover:text-white"
+                    }`}
+                  >
+                    Labs (Landscape)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setClassesHeldViewMode("delivery")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                      classesHeldViewMode === "delivery"
+                        ? "bg-white text-slate-900 shadow-xs font-black"
+                        : "text-white/80 hover:text-white"
+                    }`}
+                  >
+                    Delivery Split
                   </button>
                 </div>
 
-                <div className="flex items-center bg-white/10 p-1 rounded-xl border border-white/20 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setClassesHeldMetric("hours")}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
-                      classesHeldMetric === "hours"
-                        ? "bg-emerald-400 text-slate-950 shadow-xs font-black"
-                        : "text-white/80 hover:text-white"
-                    }`}
-                  >
-                    Hours
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setClassesHeldMetric("classes")}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
-                      classesHeldMetric === "classes"
-                        ? "bg-blue-300 text-slate-950 shadow-xs font-black"
-                        : "text-white/80 hover:text-white"
-                    }`}
-                  >
-                    Classes
-                  </button>
-                </div>
+                {classesHeldViewMode !== "section_faculty" && classesHeldViewMode !== "faculty_workload" && (
+                  <div className="flex items-center bg-white/10 p-1 rounded-xl border border-white/20 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setClassesHeldMetric("hours")}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                        classesHeldMetric === "hours"
+                          ? "bg-emerald-400 text-slate-950 shadow-xs font-black"
+                          : "text-white/80 hover:text-white"
+                      }`}
+                    >
+                      Hours
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setClassesHeldMetric("classes")}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                        classesHeldMetric === "classes"
+                          ? "bg-blue-300 text-slate-950 shadow-xs font-black"
+                          : "text-white/80 hover:text-white"
+                      }`}
+                    >
+                      Classes
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -295,7 +538,7 @@ export default function AllSectionsPrintReports({
               className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-xs"
             >
               <Printer className="w-4 h-4" />
-              <span>Print A4 Report</span>
+              <span>Print A4</span>
             </button>
 
             {/* Close Button */}
@@ -345,14 +588,12 @@ export default function AllSectionsPrintReports({
                   setSelectedProgramFilter(e.target.value);
                   setSelectedSectionFilter("ALL");
                 }}
-                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white font-bold text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-[230px] truncate"
+                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white font-bold text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-[220px] truncate"
               >
-                <option value="ALL">
-                  {reportData.isSuperAdmin ? "All Programs" : "All Assigned Programs"}
-                </option>
-                {filteredProgramsList.map((pr) => (
-                  <option key={pr.id} value={pr.id}>
-                    {pr.name}
+                <option value="ALL">All Programs</option>
+                {filteredProgramsList.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
                   </option>
                 ))}
               </select>
@@ -364,26 +605,27 @@ export default function AllSectionsPrintReports({
               <select
                 value={selectedSectionFilter}
                 onChange={(e) => setSelectedSectionFilter(e.target.value)}
-                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white font-bold text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-[190px] truncate"
+                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white font-bold text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-[200px] truncate"
               >
-                <option value="ALL">All {matchingSections.length} Sections</option>
+                <option value="ALL">All Sections ({matchingSections.length})</option>
                 {matchingSections.map((s) => (
                   <option key={s.sectionId} value={s.sectionId}>
-                    {s.schoolCode} - {s.displayName} ({s.totalStudents} Students)
+                    {s.courseDisplayName || s.displayName}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Date Range: From Date & To Date */}
-            <div className="flex items-center gap-1.5">
+            {/* Live Date Range Selection */}
+            <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+              <span className="font-bold text-slate-500 uppercase text-[10px]">Window:</span>
               <InstitutionalDatePicker
                 label="From:"
                 value={fromDate}
                 onChange={(d) => setFromDate(d)}
                 variant="light"
               />
-              <span className="text-slate-400 font-bold text-xs">—</span>
+              <span className="text-slate-400 font-bold">—</span>
               <InstitutionalDatePicker
                 label="To:"
                 value={toDate}
@@ -418,11 +660,245 @@ export default function AllSectionsPrintReports({
         {/* Scrollable Container (Visible on screen AND captured during print) */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100/60" id="all-sections-print-container">
           {/* =========================================================================
-              DOCUMENT COVER / EXECUTIVE SUMMARY PAGE (Portrait A4)
+              VIEW A: PER-SECTION SUBJECT & FACULTY HOURS REPORT (1 Section per Page)
+              Table columns: Sno | name of the subject | name of the faculty | no of hours held
+              Header: Program Name & Section Name
+              Signatures: Completely removed as requested!
               ========================================================================= */}
-          {selectedSectionFilter === "ALL" && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 max-w-[210mm] mx-auto mb-8 avoid-break text-black print:border-none print:shadow-none print:p-0 print:mb-0">
-              {/* Institutional Header with Logo in Same Row */}
+          {reportType === "classes_held" && classesHeldViewMode === "section_faculty" && (
+            <div>
+              {sectionsToDisplay.map((sec, secIdx) => {
+                const subjects = [...sec.subjectColumns].sort((a, b) => {
+                  if (a.type !== b.type) return a.type === "THEORY" ? -1 : 1;
+                  return a.shortName.localeCompare(b.shortName);
+                });
+                const totalHours = subjects.reduce((acc, sub) => acc + sub.conductedHours, 0);
+
+                return (
+                  <div
+                    key={sec.sectionId}
+                    className={`bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 max-w-[210mm] mx-auto mb-8 text-black print:border-none print:shadow-none print:p-0 print:m-0 avoid-break ${
+                      secIdx > 0 ? "page-break-section" : ""
+                    }`}
+                  >
+                    {/* Institutional Header with Logo */}
+                    <div className="border-b-2 border-slate-900 pb-3 mb-4 text-center">
+                      <div className="flex items-center justify-center gap-3 mb-1.5">
+                        <img
+                          src="/gvpihlr.png"
+                          alt="University Seal"
+                          className="w-14 h-14 object-contain flex-shrink-0"
+                        />
+                        <div>
+                          <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 leading-tight uppercase font-sans">
+                            {COLLEGE_NAME}
+                          </h1>
+                          <p className="text-[10px] sm:text-[11px] font-semibold text-slate-700 leading-tight mt-0.5 font-sans">
+                            {COLLEGE_SUBTITLE}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 py-1 px-4 bg-slate-100 rounded-lg inline-block border border-slate-300">
+                        <h2 className="text-xs sm:text-sm font-black text-slate-900 tracking-wide uppercase font-sans">
+                          SECTION-WISE SUBJECT &amp; FACULTY CONDUCTED HOURS REPORT
+                        </h2>
+                      </div>
+
+                      {/* Header displaying Program and Section Name */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 text-[10pt] font-bold text-slate-800 mt-2.5 px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 gap-y-1.5 text-left">
+                        <div>
+                          Program Name: <strong className="text-slate-950 font-black">{sec.programName}</strong>
+                        </div>
+                        <div className="text-center">
+                          Section Name: <strong className="text-blue-900 font-black">{sec.courseDisplayName || sec.displayName}</strong>
+                        </div>
+                        <div className="text-right">
+                          School: <strong className="text-slate-950 font-black">{sec.schoolCode}</strong>
+                        </div>
+                        <div>
+                          Academic Year: <strong>2026-2027 (Year {sec.year}, Sem {sec.semester})</strong>
+                        </div>
+                        <div className="text-center">
+                          Attendance Period: <strong className="text-slate-950">{fromDate} to {toDate}</strong>
+                        </div>
+                        <div className="text-right">
+                          Total Hours Held: <strong className="text-emerald-800 font-black">{totalHours} Hours</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Table as requested by user: Sno | name of the subject | name of the faculty | no of hours held */}
+                    <div className="mb-4">
+                      <table className="w-full border-collapse border border-slate-800 text-left">
+                        <thead>
+                          <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
+                            <th className="p-2 border border-slate-800 text-center w-12">S.No</th>
+                            <th className="p-2 border border-slate-800">Name of the Subject</th>
+                            <th className="p-2 border border-slate-800">Name of the Faculty</th>
+                            <th className="p-2 border border-slate-800 text-center w-36">No. of Hours Held</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {subjects.map((sub, idx) => {
+                            const facDisplay =
+                              sub.facultyNames && sub.facultyNames.length > 0
+                                ? sub.facultyNames.join(", ")
+                                : sub.facultyName && sub.facultyName !== "-" && sub.facultyName !== "—"
+                                ? sub.facultyName
+                                : "—";
+
+                            return (
+                              <tr key={sub.id} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50/80"}>
+                                <td className="p-2 border border-slate-800 text-center text-[10pt] font-bold">
+                                  {idx + 1}
+                                </td>
+                                <td className="p-2 border border-slate-800 text-[10pt] font-bold text-slate-900">
+                                  <div>
+                                    {sub.name}{" "}
+                                    <span className="font-mono font-bold text-slate-600">({sub.shortName})</span>
+                                    <span
+                                      className={`ml-2 px-1.5 py-0.5 rounded text-[8pt] font-black uppercase ${
+                                        sub.type === "LAB"
+                                          ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                          : "bg-slate-100 text-slate-700 border border-slate-300"
+                                      }`}
+                                    >
+                                      {sub.type}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="p-2 border border-slate-800 text-[9.5pt] font-bold text-slate-800">
+                                  {facDisplay}
+                                </td>
+                                <td className="p-2 border border-slate-800 text-center text-[10.5pt] font-black font-mono text-slate-950">
+                                  {sub.conductedHours}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                        <tfoot>
+                          <tr className="bg-slate-200 text-slate-900 font-black text-[10.5pt]">
+                            <td colSpan={3} className="p-2.5 border border-slate-800 text-right uppercase">
+                              Total Hours Conducted ({sec.courseDisplayName || sec.displayName})
+                            </td>
+                            <td className="p-2.5 border border-slate-800 text-center font-black font-mono text-[11pt] text-blue-950">
+                              {totalHours}
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+
+                    {/* Notice: No signatures below, as requested by user */}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* =========================================================================
+              VIEW B: UNIVERSITY-WIDE FACULTY WORKLOAD REPORT (Landscape/Portrait)
+              ========================================================================= */}
+          {reportType === "classes_held" && classesHeldViewMode === "faculty_workload" && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 max-w-[297mm] mx-auto mb-8 avoid-break text-black print:border-none print:shadow-none print:p-0 print:mb-0">
+              {/* Institutional Header with Logo */}
+              <div className="border-b-2 border-slate-900 pb-3 mb-4 text-center">
+                <div className="flex items-center justify-center gap-3 mb-1.5">
+                  <img src="/gvpihlr.png" alt="University Seal" className="w-14 h-14 object-contain flex-shrink-0" />
+                  <div>
+                    <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 leading-tight uppercase font-sans">
+                      {COLLEGE_NAME}
+                    </h1>
+                    <p className="text-[10px] sm:text-[11px] font-semibold text-slate-700 leading-tight mt-0.5 font-sans">
+                      {COLLEGE_SUBTITLE}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-2 py-1 px-3 bg-purple-50 rounded-lg inline-block border border-purple-300">
+                  <h2 className="text-xs sm:text-sm font-black text-purple-950 tracking-wide uppercase font-sans">
+                    FACULTY-WISE TEACHING WORKLOAD &amp; CONDUCTED HOURS REPORT
+                  </h2>
+                </div>
+
+                <div className="flex items-center justify-between text-[10pt] font-bold text-slate-800 mt-2 px-1 border-t border-slate-200 pt-1.5">
+                  <span>Academic Year: <strong>2026-2027</strong></span>
+                  <span className="bg-slate-100 px-3 py-0.5 rounded border border-slate-300 text-slate-900 font-black">
+                    Attendance Window: <strong>{fromDate} to {toDate}</strong>
+                  </span>
+                  <span>Total Active Faculty: <strong>{facultyWorkloadList.length}</strong></span>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <table className="w-full border-collapse border border-slate-800 text-left text-[9pt]">
+                  <thead>
+                    <tr className="bg-slate-200 text-slate-900 font-black">
+                      <th className="p-1.5 border border-slate-800 text-center w-10">S.No</th>
+                      <th className="p-1.5 border border-slate-800 w-52">Name of the Faculty</th>
+                      <th className="p-1.5 border border-slate-800">Assigned Sections</th>
+                      <th className="p-1.5 border border-slate-800">Subjects Taught</th>
+                      <th className="p-1.5 border border-slate-800 text-center w-28">Theory Hours</th>
+                      <th className="p-1.5 border border-slate-800 text-center w-24">Lab Hours</th>
+                      <th className="p-1.5 border border-slate-800 text-center w-28 bg-slate-300">Total Hours</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {facultyWorkloadList.map((fac, idx) => (
+                      <tr key={fac.facultyName} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                        <td className="p-1.5 border border-slate-800 text-center font-bold">{idx + 1}</td>
+                        <td className="p-1.5 border border-slate-800 font-black text-slate-900">{fac.facultyName}</td>
+                        <td className="p-1.5 border border-slate-800 font-semibold text-[8.5pt] text-slate-700">
+                          {Array.from(fac.sections).join(", ")}
+                        </td>
+                        <td className="p-1.5 border border-slate-800 font-semibold text-[8.5pt] text-slate-700">
+                          {Array.from(fac.subjects).join(", ")}
+                        </td>
+                        <td className="p-1.5 border border-slate-800 text-center font-bold font-mono">{fac.theoryHours}</td>
+                        <td className="p-1.5 border border-slate-800 text-center font-bold font-mono text-emerald-800">{fac.labHours}</td>
+                        <td className="p-1.5 border border-slate-800 text-center font-black font-mono bg-slate-100 text-blue-950">
+                          {fac.totalHours}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-slate-200 text-slate-900 font-black">
+                      <td colSpan={4} className="p-2 border border-slate-800 text-right uppercase">
+                        University Grand Total ({facultyWorkloadList.length} Faculty Members)
+                      </td>
+                      <td className="p-2 border border-slate-800 text-center font-mono text-[10pt]">
+                        {facultyWorkloadList.reduce((acc, f) => acc + f.theoryHours, 0)}
+                      </td>
+                      <td className="p-2 border border-slate-800 text-center font-mono text-[10pt] text-emerald-900">
+                        {facultyWorkloadList.reduce((acc, f) => acc + f.labHours, 0)}
+                      </td>
+                      <td className="p-2 border border-slate-800 text-center font-black font-mono text-[10.5pt] bg-slate-300">
+                        {facultyWorkloadList.reduce((acc, f) => acc + f.totalHours, 0)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* =========================================================================
+              VIEW C: EXECUTIVE CONSOLIDATED SUMMARY (Portrait A4)
+              Table columns: S.No | Name of the Course | No. of Classes Held | No. of Labs Held | Total Classes & Labs
+              Signatures: Completely removed as requested!
+              ========================================================================= */}
+          {reportType === "classes_held" &&
+            classesHeldViewMode !== "section_faculty" &&
+            classesHeldViewMode !== "faculty_workload" && (
+            <div
+              className={`bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 ${
+                isLandscape ? "max-w-[297mm]" : "max-w-[210mm]"
+              } mx-auto mb-8 avoid-break text-black print:border-none print:shadow-none print:p-0 print:mb-0`}
+            >
+              {/* Institutional Header with Logo */}
               <div className="border-b-2 border-slate-900 pb-3 mb-4 text-center">
                 <div className="flex items-center justify-center gap-3 mb-1.5">
                   <img
@@ -442,13 +918,13 @@ export default function AllSectionsPrintReports({
 
                 <div className="mt-2 py-1 px-3 bg-slate-100 rounded-lg inline-block border border-slate-300">
                   <h2 className="text-xs sm:text-sm font-black text-slate-900 tracking-wide uppercase font-sans">
-                    {reportType === "classes_held"
-                      ? classesHeldViewMode === "summary"
-                        ? "SECTION-WISE NUMBER OF CLASSES & LABS HELD REPORT"
-                        : "SECTION-WISE SUBJECT DELIVERY & HOURS HELD REPORT"
-                      : reportType === "consolidated"
-                      ? "ALL SECTIONS CONSOLIDATED ATTENDANCE SUMMARY"
-                      : "ALL SECTIONS SUBJECT-WISE ATTENDANCE MASTER COMPILATION"}
+                    {classesHeldViewMode === "summary"
+                      ? "SECTION-WISE NUMBER OF CLASSES & LABS HELD REPORT"
+                      : classesHeldViewMode === "theory"
+                      ? "SECTION-WISE THEORY SUBJECT DELIVERY MATRIX (LANDSCAPE)"
+                      : classesHeldViewMode === "labs"
+                      ? "SECTION-WISE LAB SUBJECT DELIVERY MATRIX (LANDSCAPE)"
+                      : "SECTION-WISE SUBJECT DELIVERY & HOURS HELD REPORT"}
                   </h2>
                 </div>
 
@@ -461,466 +937,538 @@ export default function AllSectionsPrintReports({
                 </div>
               </div>
 
-              {/* Master KPI Banner (Clean institutional metrics) */}
-              <div className="grid grid-cols-4 gap-2.5 mb-5 text-center">
+              {/* Master KPI Banner */}
+              <div className="grid grid-cols-4 gap-2.5 mb-5 text-center landscape-kpi-cards">
                 <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
                   <div className="text-[10pt] font-bold text-slate-600 uppercase">Total Sections</div>
                   <div className="text-[14pt] font-black text-slate-900">{matchingSections.length}</div>
                 </div>
-                {reportType === "classes_held" ? (
-                  <>
-                    <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
-                      <div className="text-[10pt] font-bold text-slate-600 uppercase">
-                        {classesHeldMetric === "hours" ? "Theory Hours Held" : "Theory Classes Held"}
-                      </div>
-                      <div className="text-[14pt] font-black text-slate-900">
-                        {matchingSections.reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0)}
-                      </div>
-                    </div>
-                    <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
-                      <div className="text-[10pt] font-bold text-slate-600 uppercase">
-                        {classesHeldMetric === "hours" ? "Lab Hours Held" : "Labs Held (2 hrs = 1)"}
-                      </div>
-                      <div className="text-[14pt] font-black text-emerald-800">
-                        {classesHeldMetric === "hours"
-                          ? matchingSections.reduce((acc, s) => acc + (s.labPeriodsHeld ?? 0), 0)
-                          : matchingSections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}
-                      </div>
-                    </div>
-                    <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
-                      <div className="text-[10pt] font-bold text-slate-600 uppercase">
-                        {classesHeldMetric === "hours" ? "Total Hours Conducted" : "Total Sessions Conducted"}
-                      </div>
-                      <div className="text-[14pt] font-black text-blue-900">
-                        {classesHeldMetric === "hours"
-                          ? matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)
-                          : matchingSections.reduce(
-                              (acc, s) => acc + (s.totalClassesHeld ?? (s.theoryClassesHeld + s.labsHeld)),
-                              0
-                            )}
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
-                      <div className="text-[10pt] font-bold text-slate-600 uppercase">Total Students</div>
-                      <div className="text-[14pt] font-black text-slate-900">{totalEnrolledInView.toLocaleString()}</div>
-                    </div>
-                    <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
-                      <div className="text-[10pt] font-bold text-slate-600 uppercase">Average Attendance</div>
-                      <div className="text-[14pt] font-black text-emerald-800">{averageAttendanceInView}%</div>
-                    </div>
-                    <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
-                      <div className="text-[10pt] font-bold text-slate-600 uppercase">Total Sessions Held</div>
-                      <div className="text-[14pt] font-black text-blue-900">
-                        {matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)}
-                      </div>
-                    </div>
-                  </>
-                )}
+                <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
+                  <div className="text-[10pt] font-bold text-slate-600 uppercase">
+                    {classesHeldMetric === "hours" ? "Theory Hours Held" : "Theory Classes Held"}
+                  </div>
+                  <div className="text-[14pt] font-black text-slate-900">
+                    {matchingSections.reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0)}
+                  </div>
+                </div>
+                <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
+                  <div className="text-[10pt] font-bold text-slate-600 uppercase">
+                    {classesHeldMetric === "hours" ? "Lab Hours Held" : "Labs Held (2 hrs = 1)"}
+                  </div>
+                  <div className="text-[14pt] font-black text-emerald-800">
+                    {classesHeldMetric === "hours"
+                      ? matchingSections.reduce((acc, s) => acc + (s.labPeriodsHeld ?? 0), 0)
+                      : matchingSections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}
+                  </div>
+                </div>
+                <div className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
+                  <div className="text-[10pt] font-bold text-slate-600 uppercase">
+                    {classesHeldMetric === "hours" ? "Total Periods / Hours" : "Total Classes &amp; Labs"}
+                  </div>
+                  <div className="text-[14pt] font-black text-blue-900">
+                    {classesHeldMetric === "hours"
+                      ? matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)
+                      : matchingSections.reduce(
+                          (acc, s) => acc + (s.totalClassesHeld ?? (s.theoryClassesHeld + s.labsHeld)),
+                          0
+                        )}
+                  </div>
+                </div>
               </div>
 
-              {/* Summary Table of All Sections (NO Status / Eligible / Defaulter columns) */}
-              <div className="mb-6">
-                <h3 className="text-[10.5pt] font-black text-slate-900 uppercase mb-2">
-                  {reportType === "classes_held"
-                    ? classesHeldViewMode === "summary"
-                      ? "Section-Wise Number of Classes & Labs Held"
-                      : "Section-Wise Subject Delivery & Hours Held"
-                    : "Section-Wise Attendance Roster Summary"}
-                </h3>
-                {reportType === "classes_held" ? (
-                  classesHeldViewMode === "summary" ? (
-                    <table className="w-full border-collapse border border-slate-800 text-left">
-                      <thead>
-                        <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
-                          <th className="p-1.5 border border-slate-800 text-center w-12">S.No</th>
-                          <th className="p-1.5 border border-slate-800">Name of the Course</th>
-                          <th className="p-1.5 border border-slate-800 text-center w-36">
-                            {classesHeldMetric === "hours" ? "Theory Hours Held" : "No. of Classes Held"}
-                          </th>
-                          <th className="p-1.5 border border-slate-800 text-center w-48">
-                            {classesHeldMetric === "hours" ? "Lab Hours Held" : "No. of Labs Held"}
-                            <div className="text-[8pt] font-normal text-slate-600">
-                              {classesHeldMetric === "hours" ? "(2 periods per lab)" : "(2 hrs = 1 lab session)"}
-                            </div>
-                          </th>
-                          <th className="p-1.5 border border-slate-800 text-center w-36">
-                            {classesHeldMetric === "hours" ? "Total Periods / Hours" : "Total Classes & Labs"}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {matchingSections.map((sec, idx) => (
-                          <tr key={sec.sectionId} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                            <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{idx + 1}</td>
-                            <td className="p-1.5 border border-slate-800 text-[10pt] font-black">{sec.courseDisplayName || sec.displayName}</td>
-                            <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{sec.theoryClassesHeld ?? 0}</td>
-                            <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold text-blue-900">
-                              {classesHeldMetric === "hours" ? (sec.labPeriodsHeld ?? 0) : (sec.labsHeld ?? 0)}
-                            </td>
-                            <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-black">
-                              {classesHeldMetric === "hours"
-                                ? sec.totalSessionsConducted
-                                : (sec.totalClassesHeld ?? (sec.theoryClassesHeld + sec.labsHeld))}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot>
-                        <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
-                          <td colSpan={2} className="p-1.5 border border-slate-800 text-right uppercase">
-                            Grand Total ({matchingSections.length} Sections)
-                          </td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
-                            {matchingSections.reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0)}
-                          </td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10.5pt] text-blue-950">
-                            {classesHeldMetric === "hours"
-                              ? matchingSections.reduce((acc, s) => acc + (s.labPeriodsHeld ?? 0), 0)
-                              : matchingSections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}
-                          </td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
-                            {classesHeldMetric === "hours"
-                              ? matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)
-                              : matchingSections.reduce(
-                                  (acc, s) => acc + (s.totalClassesHeld ?? (s.theoryClassesHeld + s.labsHeld)),
-                                  0
-                                )}
-                          </td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  ) : (
-                    /* SUBJECT-WISE MASTER TABLE VIEW FOR PORTRAIT A4 */
-                    <table className="w-full border-collapse border border-slate-800 text-left">
-                      <thead>
-                        <tr className="bg-slate-200 text-slate-900 font-black text-[9.5pt]">
-                          <th className="p-1.5 border border-slate-800 text-center w-10">S.No</th>
-                          <th className="p-1.5 border border-slate-800 w-44">Name of the Course</th>
-                          <th className="p-1.5 border border-slate-800">
-                            Subject Delivery Breakdown ({classesHeldMetric === "hours" ? "Hours" : "Classes"})
-                          </th>
-                          <th className="p-1.5 border border-slate-800 text-center w-24">
-                            {classesHeldMetric === "hours" ? "Theory Hrs" : "Theory Cls"}
-                          </th>
-                          <th className="p-1.5 border border-slate-800 text-center w-24">
-                            {classesHeldMetric === "hours" ? "Lab Hrs" : "Labs Held"}
-                          </th>
-                          <th className="p-1.5 border border-slate-800 text-center w-28">
-                            {classesHeldMetric === "hours" ? "Total Hours" : "Total Cls"}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {matchingSections.map((sec, idx) => (
-                          <tr key={sec.sectionId} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                            <td className="p-1.5 border border-slate-800 text-center text-[9.5pt] font-bold">{idx + 1}</td>
-                            <td className="p-1.5 border border-slate-800 text-[9.5pt] font-black">
-                              {sec.courseDisplayName || sec.displayName}
-                            </td>
-                            <td className="p-1.5 border border-slate-800 text-[9pt]">
-                              <div className="flex flex-wrap gap-1 leading-normal">
-                                {sec.subjectColumns.map((sub) => {
-                                  const val = classesHeldMetric === "hours" ? sub.conductedHours : sub.conductedSessions;
-                                  return (
-                                    <span key={sub.id} className="inline-block px-1.5 py-0.5 rounded border border-slate-300 bg-white font-medium text-[8.5pt]">
-                                      <strong>{sub.shortName}</strong>: {val}{classesHeldMetric === "hours" ? "h" : "c"}
-                                    </span>
-                                  );
-                                })}
-                              </div>
-                            </td>
-                            <td className="p-1.5 border border-slate-800 text-center text-[9.5pt] font-bold">
-                              {sec.theoryClassesHeld ?? 0}
-                            </td>
-                            <td className="p-1.5 border border-slate-800 text-center text-[9.5pt] font-bold text-blue-900">
-                              {classesHeldMetric === "hours" ? (sec.labPeriodsHeld ?? 0) : (sec.labsHeld ?? 0)}
-                            </td>
-                            <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-black">
-                              {classesHeldMetric === "hours"
-                                ? sec.totalSessionsConducted
-                                : (sec.totalClassesHeld ?? (sec.theoryClassesHeld + sec.labsHeld))}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot>
-                        <tr className="bg-slate-200 text-slate-900 font-black text-[9.5pt]">
-                          <td colSpan={3} className="p-1.5 border border-slate-800 text-right uppercase">
-                            University Grand Total ({matchingSections.length} Sections)
-                          </td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10pt]">
-                            {matchingSections.reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0)}
-                          </td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] text-blue-950">
-                            {classesHeldMetric === "hours"
-                              ? matchingSections.reduce((acc, s) => acc + (s.labPeriodsHeld ?? 0), 0)
-                              : matchingSections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}
-                          </td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10pt]">
-                            {classesHeldMetric === "hours"
-                              ? matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)
-                              : matchingSections.reduce(
-                                  (acc, s) => acc + (s.totalClassesHeld ?? (s.theoryClassesHeld + s.labsHeld)),
-                                  0
-                                )}
-                          </td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  )
-                ) : (
+              {/* Compact Inline KPI Banner for Print (Landscape) */}
+              <div className="landscape-kpi-inline items-center justify-between px-3 py-1 bg-slate-100 border border-slate-300 rounded mb-2 text-[8.5pt] font-bold text-slate-800">
+                <span>Total Sections: <strong className="font-black text-slate-900">{matchingSections.length}</strong></span>
+                <span>Theory Hours Held: <strong className="font-black text-slate-900">{matchingSections.reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0)}</strong></span>
+                <span>Lab Hours Held: <strong className="font-black text-emerald-800">{classesHeldMetric === "hours" ? matchingSections.reduce((acc, s) => acc + (s.labPeriodsHeld ?? 0), 0) : matchingSections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}</strong></span>
+                <span>Total Conducted Hours: <strong className="font-black text-blue-900">{classesHeldMetric === "hours" ? matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0) : matchingSections.reduce((acc, s) => acc + (s.totalClassesHeld ?? (s.theoryClassesHeld + s.labsHeld)), 0)}</strong></span>
+              </div>
+
+              {/* Table rendering based on sub-mode */}
+              <div className="mb-4">
+                {classesHeldViewMode === "summary" ? (
+                  /* EXECUTIVE SUMMARY PORTRAIT TABLE */
                   <table className="w-full border-collapse border border-slate-800 text-left">
                     <thead>
                       <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
-                        <th className="p-1.5 border border-slate-800 text-center w-8">#</th>
-                        <th className="p-1.5 border border-slate-800 w-16 text-center">School</th>
-                        <th className="p-1.5 border border-slate-800">Program &amp; Section Name</th>
-                        <th className="p-1.5 border border-slate-800 text-center w-24">Enrolled</th>
-                        <th className="p-1.5 border border-slate-800 text-center w-24">Held</th>
-                        <th className="p-1.5 border border-slate-800 text-center w-28">Attended %</th>
+                        <th className="p-1.5 border border-slate-800 text-center w-12">S.No</th>
+                        <th className="p-1.5 border border-slate-800">Name of the Course</th>
+                        <th className="p-1.5 border border-slate-800 text-center w-36">
+                          {classesHeldMetric === "hours" ? "Theory Hours Held" : "No. of Classes Held"}
+                        </th>
+                        <th className="p-1.5 border border-slate-800 text-center w-48">
+                          {classesHeldMetric === "hours" ? "Lab Hours Held" : "No. of Labs Held"}
+                          <div className="text-[8pt] font-normal text-slate-600">
+                            {classesHeldMetric === "hours" ? "(2 periods per lab)" : "(2 hrs = 1 lab session)"}
+                          </div>
+                        </th>
+                        <th className="p-1.5 border border-slate-800 text-center w-36">
+                          {classesHeldMetric === "hours" ? "Total Periods / Hours" : "Total Classes &amp; Labs"}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {matchingSections.map((sec, idx) => (
                         <tr key={sec.sectionId} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                           <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{idx + 1}</td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-black">{sec.schoolCode}</td>
-                          <td className="p-1.5 border border-slate-800 text-[10pt] font-bold">{sec.displayName}</td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{sec.totalStudents}</td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">{sec.totalSessionsConducted}</td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10.5pt] font-black">{sec.averageAttendance}%</td>
+                          <td className="p-1.5 border border-slate-800 text-[10pt] font-black">
+                            {sec.courseDisplayName || sec.displayName}
+                          </td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold">
+                            {sec.theoryClassesHeld ?? 0}
+                          </td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-bold text-blue-900">
+                            {classesHeldMetric === "hours" ? (sec.labPeriodsHeld ?? 0) : (sec.labsHeld ?? 0)}
+                          </td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-black">
+                            {classesHeldMetric === "hours"
+                              ? sec.totalSessionsConducted
+                              : (sec.totalClassesHeld ?? (sec.theoryClassesHeld + sec.labsHeld))}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
                       <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
-                        <td colSpan={3} className="p-1.5 border border-slate-800 text-right uppercase">
-                          University Grand Total
+                        <td colSpan={2} className="p-1.5 border border-slate-800 text-right uppercase">
+                          Grand Total ({matchingSections.length} Sections)
                         </td>
-                        <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">{totalEnrolledInView}</td>
                         <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
-                          {matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)}
+                          {matchingSections.reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0)}
                         </td>
-                        <td className="p-1.5 border border-slate-800 text-center text-[11pt]">{averageAttendanceInView}%</td>
+                        <td className="p-1.5 border border-slate-800 text-center text-[10.5pt] text-blue-950">
+                          {classesHeldMetric === "hours"
+                            ? matchingSections.reduce((acc, s) => acc + (s.labPeriodsHeld ?? 0), 0)
+                            : matchingSections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}
+                        </td>
+                        <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
+                          {classesHeldMetric === "hours"
+                            ? matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)
+                            : matchingSections.reduce(
+                                (acc, s) => acc + (s.totalClassesHeld ?? (s.theoryClassesHeld + s.labsHeld)),
+                                0
+                              )}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                ) : classesHeldViewMode === "theory" ? (
+                  /* LANDSCAPE THEORY MATRIX VIEW */
+                  <table className="w-full border-collapse border border-slate-800 text-left text-[9pt] landscape-table">
+                    <thead>
+                      <tr className="bg-slate-200 text-slate-900 font-black">
+                        <th className="p-1 border border-slate-800 text-center w-8">#</th>
+                        <th className="p-1 border border-slate-800 w-36">Course Name</th>
+                        {distinctTheorySubjects.map((sub) => (
+                          <th key={sub.shortName} className="p-1 border border-slate-800 text-center font-mono">
+                            <div>{sub.shortName}</div>
+                          </th>
+                        ))}
+                        <th className="p-1 border border-slate-800 text-center w-24 bg-slate-300">
+                          Total Theory
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {matchingSections.map((sec, idx) => {
+                        const colMap = new Map(sec.subjectColumns.map((c) => [c.shortName, c]));
+                        return (
+                          <tr key={sec.sectionId} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                            <td className="p-1 border border-slate-800 text-center font-bold">{idx + 1}</td>
+                            <td className="p-1 border border-slate-800 font-bold">
+                              {sec.courseDisplayName || sec.displayName}
+                            </td>
+                            {distinctTheorySubjects.map((sub) => {
+                              const found = colMap.get(sub.shortName);
+                              const val = found
+                                ? classesHeldMetric === "hours"
+                                  ? found.conductedHours
+                                  : found.conductedSessions
+                                : 0;
+                              return (
+                                <td
+                                  key={sub.shortName}
+                                  className={`p-1 border border-slate-800 text-center font-mono ${
+                                    val > 0 ? "font-bold text-slate-900" : "text-slate-300"
+                                  }`}
+                                >
+                                  {val > 0 ? val : "—"}
+                                </td>
+                              );
+                            })}
+                            <td className="p-1 border border-slate-800 text-center font-black bg-slate-100">
+                              {sec.theoryClassesHeld ?? 0}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-slate-200 text-slate-900 font-black">
+                        <td colSpan={2} className="p-1 border border-slate-800 text-right uppercase">
+                          Grand Total
+                        </td>
+                        {distinctTheorySubjects.map((sub) => (
+                          <td key={sub.shortName} className="p-1 border border-slate-800 text-center font-mono">
+                            {sub.totalHours}
+                          </td>
+                        ))}
+                        <td className="p-1 border border-slate-800 text-center font-black bg-slate-300">
+                          {matchingSections.reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                ) : classesHeldViewMode === "labs" ? (
+                  /* LANDSCAPE LAB MATRIX VIEW */
+                  <table className="w-full border-collapse border border-slate-800 text-left text-[9pt] landscape-table">
+                    <thead>
+                      <tr className="bg-slate-200 text-slate-900 font-black">
+                        <th className="p-1 border border-slate-800 text-center w-8">#</th>
+                        <th className="p-1 border border-slate-800 w-36">Course Name</th>
+                        {distinctLabSubjects.map((sub) => (
+                          <th key={sub.shortName} className="p-1 border border-slate-800 text-center font-mono">
+                            <div>{sub.shortName}</div>
+                          </th>
+                        ))}
+                        <th className="p-1 border border-slate-800 text-center w-24 bg-slate-300">
+                          Total Labs
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {matchingSections.map((sec, idx) => {
+                        const colMap = new Map(sec.subjectColumns.map((c) => [c.shortName, c]));
+                        return (
+                          <tr key={sec.sectionId} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                            <td className="p-1 border border-slate-800 text-center font-bold">{idx + 1}</td>
+                            <td className="p-1 border border-slate-800 font-bold">
+                              {sec.courseDisplayName || sec.displayName}
+                            </td>
+                            {distinctLabSubjects.map((sub) => {
+                              const found = colMap.get(sub.shortName);
+                              const val = found
+                                ? classesHeldMetric === "hours"
+                                  ? found.conductedHours
+                                  : found.conductedSessions
+                                : 0;
+                              return (
+                                <td
+                                  key={sub.shortName}
+                                  className={`p-1 border border-slate-800 text-center font-mono ${
+                                    val > 0 ? "font-bold text-emerald-900" : "text-slate-300"
+                                  }`}
+                                >
+                                  {val > 0 ? val : "—"}
+                                </td>
+                              );
+                            })}
+                            <td className="p-1 border border-slate-800 text-center font-black bg-slate-100 text-emerald-950">
+                              {classesHeldMetric === "hours" ? (sec.labPeriodsHeld ?? 0) : (sec.labsHeld ?? 0)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-slate-200 text-slate-900 font-black">
+                        <td colSpan={2} className="p-1 border border-slate-800 text-right uppercase">
+                          Grand Total
+                        </td>
+                        {distinctLabSubjects.map((sub) => (
+                          <td key={sub.shortName} className="p-1 border border-slate-800 text-center font-mono">
+                            {sub.totalHours}
+                          </td>
+                        ))}
+                        <td className="p-1 border border-slate-800 text-center font-black bg-slate-300 text-emerald-950">
+                          {classesHeldMetric === "hours"
+                            ? matchingSections.reduce((acc, s) => acc + (s.labPeriodsHeld ?? 0), 0)
+                            : matchingSections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                ) : (
+                  /* DELIVERY SPLIT PORTRAIT VIEW */
+                  <table className="w-full border-collapse border border-slate-800 text-left">
+                    <thead>
+                      <tr className="bg-slate-200 text-slate-900 font-black text-[9.5pt]">
+                        <th className="p-1.5 border border-slate-800 text-center w-10">S.No</th>
+                        <th className="p-1.5 border border-slate-800 w-44">Name of the Course</th>
+                        <th className="p-1.5 border border-slate-800">
+                          Subject Delivery Breakdown ({classesHeldMetric === "hours" ? "Hours" : "Classes"})
+                        </th>
+                        <th className="p-1.5 border border-slate-800 text-center w-24">
+                          {classesHeldMetric === "hours" ? "Theory Hrs" : "Theory Cls"}
+                        </th>
+                        <th className="p-1.5 border border-slate-800 text-center w-24">
+                          {classesHeldMetric === "hours" ? "Lab Hrs" : "Labs Held"}
+                        </th>
+                        <th className="p-1.5 border border-slate-800 text-center w-28">
+                          {classesHeldMetric === "hours" ? "Total Hours" : "Total Cls"}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {matchingSections.map((sec, idx) => (
+                        <tr key={sec.sectionId} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                          <td className="p-1.5 border border-slate-800 text-center text-[9.5pt] font-bold">{idx + 1}</td>
+                          <td className="p-1.5 border border-slate-800 text-[9.5pt] font-black">
+                            {sec.courseDisplayName || sec.displayName}
+                          </td>
+                          <td className="p-1.5 border border-slate-800 text-[9pt]">
+                            <div className="flex flex-wrap gap-1 leading-normal">
+                              {sec.subjectColumns.map((sub) => {
+                                const val = classesHeldMetric === "hours" ? sub.conductedHours : sub.conductedSessions;
+                                return (
+                                  <span
+                                    key={sub.id}
+                                    className="inline-block px-1.5 py-0.5 rounded border border-slate-300 bg-white font-medium text-[8.5pt]"
+                                  >
+                                    <strong>{sub.shortName}</strong>: {val}
+                                    {classesHeldMetric === "hours" ? "h" : "c"}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[9.5pt] font-bold">
+                            {sec.theoryClassesHeld ?? 0}
+                          </td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[9.5pt] font-bold text-blue-900">
+                            {classesHeldMetric === "hours" ? (sec.labPeriodsHeld ?? 0) : (sec.labsHeld ?? 0)}
+                          </td>
+                          <td className="p-1.5 border border-slate-800 text-center text-[10pt] font-black">
+                            {classesHeldMetric === "hours"
+                              ? sec.totalSessionsConducted
+                              : (sec.totalClassesHeld ?? (sec.theoryClassesHeld + sec.labsHeld))}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-slate-200 text-slate-900 font-black text-[9.5pt]">
+                        <td colSpan={3} className="p-1.5 border border-slate-800 text-right uppercase">
+                          University Grand Total ({matchingSections.length} Sections)
+                        </td>
+                        <td className="p-1.5 border border-slate-800 text-center text-[10pt]">
+                          {matchingSections.reduce((acc, s) => acc + (s.theoryClassesHeld ?? 0), 0)}
+                        </td>
+                        <td className="p-1.5 border border-slate-800 text-center text-[10pt] text-blue-950">
+                          {classesHeldMetric === "hours"
+                            ? matchingSections.reduce((acc, s) => acc + (s.labPeriodsHeld ?? 0), 0)
+                            : matchingSections.reduce((acc, s) => acc + (s.labsHeld ?? 0), 0)}
+                        </td>
+                        <td className="p-1.5 border border-slate-800 text-center text-[10pt]">
+                          {classesHeldMetric === "hours"
+                            ? matchingSections.reduce((acc, s) => acc + s.totalSessionsConducted, 0)
+                            : matchingSections.reduce(
+                                (acc, s) => acc + (s.totalClassesHeld ?? (s.theoryClassesHeld + s.labsHeld)),
+                                0
+                              )}
+                        </td>
                       </tr>
                     </tfoot>
                   </table>
                 )}
               </div>
 
-              {/* Signature Row */}
-              <div className="pt-6 border-t border-slate-300 grid grid-cols-4 gap-4 text-center text-[10pt] font-black text-slate-800">
-                <div className="pt-8 border-t border-slate-800">Class Incharge</div>
-                <div className="pt-8 border-t border-slate-800">Head of Department</div>
-                <div className="pt-8 border-t border-slate-800">First Year Incharge</div>
-                <div className="pt-8 border-t border-slate-800">Registrar-I/C</div>
-              </div>
+              {/* Notice: No signatures below, as requested by user */}
             </div>
           )}
 
           {/* =========================================================================
-              SECTION-BY-SECTION DETAILED SHEETS (Each section on its own Portrait A4)
+              VIEW C: STUDENT REGISTERS (Consolidated & Subject-Wise)
+              Signatures: Completely removed as requested!
               ========================================================================= */}
-          {reportType !== "classes_held" && sectionsToDisplay.map((sec) => {
-            return (
-              <div
-                key={sec.sectionId}
-                className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 max-w-[210mm] mx-auto mb-8 page-break-section text-black print:border-none print:shadow-none print:p-0 print:mb-0"
-              >
-                {/* Header per Section with Logo */}
-                <div className="border-b-2 border-slate-900 pb-2.5 mb-3 text-center">
-                  <div className="flex items-center justify-center gap-3 mb-1">
-                    <img
-                      src="/gvpihlr.png"
-                      alt="University Seal"
-                      className="w-12 h-12 object-contain flex-shrink-0"
-                    />
-                    <div>
-                      <h2 className="text-sm sm:text-base font-black tracking-tight text-slate-900 leading-tight uppercase font-sans">
-                        {COLLEGE_NAME}
-                      </h2>
-                      <p className="text-[9pt] font-semibold text-slate-700 leading-tight font-sans">
-                        {COLLEGE_SUBTITLE}
-                      </p>
+          {reportType !== "classes_held" &&
+            sectionsToDisplay.map((sec) => {
+              return (
+                <div
+                  key={sec.sectionId}
+                  className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 max-w-[210mm] mx-auto mb-8 page-break-section text-black print:border-none print:shadow-none print:p-0 print:mb-0"
+                >
+                  {/* Header per Section with Logo */}
+                  <div className="border-b-2 border-slate-900 pb-2.5 mb-3 text-center">
+                    <div className="flex items-center justify-center gap-3 mb-1">
+                      <img
+                        src="/gvpihlr.png"
+                        alt="University Seal"
+                        className="w-12 h-12 object-contain flex-shrink-0"
+                      />
+                      <div>
+                        <h2 className="text-sm sm:text-base font-black tracking-tight text-slate-900 leading-tight uppercase font-sans">
+                          {COLLEGE_NAME}
+                        </h2>
+                        <p className="text-[9pt] font-semibold text-slate-700 leading-tight font-sans">
+                          {COLLEGE_SUBTITLE}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-1.5 py-0.5 px-3 bg-slate-100 rounded inline-block border border-slate-300">
+                      <h3 className="text-xs font-black text-slate-900 tracking-wide uppercase font-sans">
+                        {reportType === "consolidated"
+                          ? "CONSOLIDATED CLASS ATTENDANCE REGISTER"
+                          : "SUBJECT-WISE CONSOLIDATED CLASS ATTENDANCE REGISTER"}
+                      </h3>
+                    </div>
+
+                    {/* Section Metadata */}
+                    <div className="grid grid-cols-3 text-[9.5pt] font-bold text-slate-800 mt-2 px-1 text-left bg-slate-50 p-2 rounded border border-slate-200 gap-y-1">
+                      <div>
+                        School: <strong>{sec.schoolName} ({sec.schoolCode})</strong>
+                      </div>
+                      <div className="text-center">
+                        Program: <strong>{sec.programName}</strong>
+                      </div>
+                      <div className="text-right">
+                        Section: <strong>{sec.courseDisplayName || sec.displayName}</strong>
+                      </div>
+                      <div>
+                        Academic Year: <strong>2026-2027 (Year {sec.year}, Sem {sec.semester})</strong>
+                      </div>
+                      <div className="text-center">
+                        Period: <strong>{fromDate} to {toDate}</strong>
+                      </div>
+                      <div className="text-right">
+                        Conducted: <strong>{sec.totalSessionsConducted} Sessions ({sec.averageAttendance}%)</strong>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="mt-1.5 py-0.5 px-3 bg-slate-100 rounded inline-block border border-slate-300">
-                    <h3 className="text-xs font-black text-slate-900 tracking-wide uppercase font-sans">
-                      {reportType === "consolidated"
-                        ? "CONSOLIDATED CLASS ATTENDANCE REGISTER"
-                        : "SUBJECT-WISE CONSOLIDATED CLASS ATTENDANCE REGISTER"}
-                    </h3>
-                  </div>
-
-                  {/* Section Metadata including Attendance Period */}
-                  <div className="grid grid-cols-3 text-[9.5pt] font-bold text-slate-800 mt-2 px-1 text-left bg-slate-50 p-2 rounded border border-slate-200 gap-y-1">
+                  {/* Table based on mode */}
+                  {reportType === "consolidated" ? (
                     <div>
-                      School: <strong>{sec.schoolName} ({sec.schoolCode})</strong>
-                    </div>
-                    <div className="text-center">
-                      Program: <strong>{sec.programName}</strong>
-                    </div>
-                    <div className="text-right">
-                      Section: <strong>{sec.displayName}</strong>
-                    </div>
-                    <div>
-                      Academic Year: <strong>2026-2027 (Year {sec.year}, Sem {sec.semester})</strong>
-                    </div>
-                    <div className="text-center">
-                      Period: <strong>{fromDate} to {toDate}</strong>
-                    </div>
-                    <div className="text-right">
-                      Conducted: <strong>{sec.totalSessionsConducted} Sessions ({sec.averageAttendance}%)</strong>
-                    </div>
-                  </div>
-                </div>
-
-                {/* =========================================================================
-                    VIEW 1: CONSOLIDATED ROSTER (Portrait A4 Table - NO Status Column)
-                    ========================================================================= */}
-                {reportType === "consolidated" ? (
-                  <div>
-                    <table className="w-full border-collapse border border-slate-800 text-left">
-                      <thead>
-                        <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
-                          <th className="p-1 border border-slate-800 text-center w-8">#</th>
-                          <th className="p-1 border border-slate-800 w-32 font-mono">Roll Number</th>
-                          <th className="p-1 border border-slate-800">Student Name</th>
-                          <th className="p-1 border border-slate-800 text-center w-20">Total Held</th>
-                          <th className="p-1 border border-slate-800 text-center w-20">Attended</th>
-                          <th className="p-1 border border-slate-800 text-center w-20">Absent</th>
-                          <th className="p-1 border border-slate-800 text-center w-24">Attendance %</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sec.students.map((st, i) => (
-                          <tr
-                            key={st.studentId}
-                            className={i % 2 === 0 ? "bg-white font-medium" : "bg-slate-50 font-medium"}
-                          >
-                            <td className="p-1 border border-slate-800 text-center text-[10pt] font-bold">{i + 1}</td>
-                            <td className="p-1 border border-slate-800 font-mono font-bold text-[10pt] tracking-tight">
-                              {st.rollNumber}
-                            </td>
-                            <td className="p-1 border border-slate-800 font-bold text-[10pt] truncate max-w-[220px]">
-                              {st.fullName}
-                            </td>
-                            <td className="p-1 border border-slate-800 text-center text-[10pt] font-bold">
-                              {st.totalClasses}
-                            </td>
-                            <td className="p-1 border border-slate-800 text-center text-[10pt] font-black text-emerald-800">
-                              {st.attendedClasses}
-                            </td>
-                            <td className="p-1 border border-slate-800 text-center text-[10pt] font-bold text-rose-700">
-                              {st.absentClasses}
-                            </td>
-                            <td className="p-1 border border-slate-800 text-center text-[10.5pt] font-black">
-                              {st.percentage !== null ? `${st.percentage}%` : "—"}
-                            </td>
+                      <table className="w-full border-collapse border border-slate-800 text-left">
+                        <thead>
+                          <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
+                            <th className="p-1 border border-slate-800 text-center w-8">#</th>
+                            <th className="p-1 border border-slate-800 w-32 font-mono">Roll Number</th>
+                            <th className="p-1 border border-slate-800">Student Name</th>
+                            <th className="p-1 border border-slate-800 text-center w-20">Total Held</th>
+                            <th className="p-1 border border-slate-800 text-center w-20">Attended</th>
+                            <th className="p-1 border border-slate-800 text-center w-20">Absent</th>
+                            <th className="p-1 border border-slate-800 text-center w-24">Attendance %</th>
                           </tr>
-                        ))}
-                      </tbody>
-                      <tfoot>
-                        <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
-                          <td colSpan={3} className="p-1.5 border border-slate-800 text-right uppercase">
-                            Section Total ({sec.totalStudents} Students)
-                          </td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">{sec.totalSessionsConducted}</td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
-                            {sec.students.reduce((acc, s) => acc + s.attendedClasses, 0)}
-                          </td>
-                          <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
-                            {sec.students.reduce((acc, s) => acc + s.absentClasses, 0)}
-                          </td>
-                          <td className="p-1.5 border border-slate-800 text-center font-black text-[11pt]">
-                            {sec.averageAttendance}%
-                          </td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-                ) : (
-                  /* =========================================================================
-                      VIEW 2: SUBJECT-WISE CONSOLIDATED ROSTER (Portrait A4 Table - NO Status Column)
-                      ========================================================================= */
-                  <div>
-                    {/* Subject Legend Bar */}
-                    <div className="mb-2 p-2 bg-slate-50 border border-slate-300 rounded text-[9pt] font-bold text-slate-800 flex flex-wrap gap-x-3 gap-y-1">
-                      <span className="uppercase text-slate-500">Subjects Conducted:</span>
-                      {sec.subjectColumns.map((col) => (
-                        <span key={col.id} className="bg-white px-2 py-0.5 rounded border border-slate-200">
-                          <strong>{col.shortName}</strong> ({col.code}): {col.conducted} Held
-                        </span>
-                      ))}
-                    </div>
-
-                    <table className="w-full border-collapse border border-slate-800 text-left">
-                      <thead>
-                        <tr className="bg-slate-200 text-slate-900 font-black text-[9.5pt]">
-                          <th className="p-1 border border-slate-800 text-center w-7">#</th>
-                          <th className="p-1 border border-slate-800 w-24 font-mono">Roll No</th>
-                          <th className="p-1 border border-slate-800">Student Name</th>
-                          {sec.subjectColumns.map((col) => (
-                            <th key={col.id} className="p-1 border border-slate-800 text-center font-mono">
-                              <div>{col.shortName}</div>
-                              <div className="text-[9pt] text-slate-600 font-normal">({col.conducted})</div>
-                            </th>
+                        </thead>
+                        <tbody>
+                          {sec.students.map((st, i) => (
+                            <tr
+                              key={st.studentId}
+                              className={i % 2 === 0 ? "bg-white font-medium" : "bg-slate-50 font-medium"}
+                            >
+                              <td className="p-1 border border-slate-800 text-center text-[10pt] font-bold">{i + 1}</td>
+                              <td className="p-1 border border-slate-800 font-mono font-bold text-[10pt] tracking-tight">
+                                {st.rollNumber}
+                              </td>
+                              <td className="p-1 border border-slate-800 font-bold text-[10pt] truncate max-w-[220px]">
+                                {st.fullName}
+                              </td>
+                              <td className="p-1 border border-slate-800 text-center text-[10pt] font-bold">
+                                {st.totalClasses}
+                              </td>
+                              <td className="p-1 border border-slate-800 text-center text-[10pt] font-black text-emerald-800">
+                                {st.attendedClasses}
+                              </td>
+                              <td className="p-1 border border-slate-800 text-center text-[10pt] font-bold text-rose-700">
+                                {st.absentClasses}
+                              </td>
+                              <td className="p-1 border border-slate-800 text-center text-[10.5pt] font-black">
+                                {st.percentage !== null ? `${st.percentage}%` : "—"}
+                              </td>
+                            </tr>
                           ))}
-                          <th className="p-1 border border-slate-800 text-center w-14">Held</th>
-                          <th className="p-1 border border-slate-800 text-center w-14">Attended</th>
-                          <th className="p-1 border border-slate-800 text-center w-16">%</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sec.students.map((st, i) => (
-                          <tr
-                            key={st.studentId}
-                            className={i % 2 === 0 ? "bg-white font-medium" : "bg-slate-50 font-medium"}
-                          >
-                            <td className="p-1 border border-slate-800 text-center text-[10pt] font-bold">{i + 1}</td>
-                            <td className="p-1 border border-slate-800 font-mono font-bold text-[10pt]">
-                              {st.rollNumber}
+                        </tbody>
+                        <tfoot>
+                          <tr className="bg-slate-200 text-slate-900 font-black text-[10pt]">
+                            <td colSpan={3} className="p-1.5 border border-slate-800 text-right uppercase">
+                              Section Total ({sec.totalStudents} Students)
                             </td>
-                            <td className="p-1 border border-slate-800 font-bold text-[10pt] truncate max-w-[150px]">
-                              {st.fullName}
+                            <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">{sec.totalSessionsConducted}</td>
+                            <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
+                              {sec.students.reduce((acc, s) => acc + s.attendedClasses, 0)}
                             </td>
-                            {sec.subjectColumns.map((col) => {
-                              const att = st.subjectAttendance[col.id] ?? 0;
-                              return (
-                                <td key={col.id} className="p-1 border border-slate-800 text-center font-bold text-[10pt]">
-                                  {att}
-                                </td>
-                              );
-                            })}
-                            <td className="p-1 border border-slate-800 text-center font-bold text-[10pt]">
-                              {st.totalClasses}
+                            <td className="p-1.5 border border-slate-800 text-center text-[10.5pt]">
+                              {sec.students.reduce((acc, s) => acc + s.absentClasses, 0)}
                             </td>
-                            <td className="p-1 border border-slate-800 text-center font-black text-emerald-800 text-[10pt]">
-                              {st.attendedClasses}
-                            </td>
-                            <td className="p-1 border border-slate-800 text-center font-black text-[10.5pt]">
-                              {st.percentage !== null ? `${st.percentage}%` : "—"}
+                            <td className="p-1.5 border border-slate-800 text-center font-black text-[11pt]">
+                              {sec.averageAttendance}%
                             </td>
                           </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  ) : (
+                    <div>
+                      {/* Subject Legend Bar */}
+                      <div className="mb-2 p-2 bg-slate-50 border border-slate-300 rounded text-[9pt] font-bold text-slate-800 flex flex-wrap gap-x-3 gap-y-1">
+                        <span className="uppercase text-slate-500">Subjects Conducted:</span>
+                        {sec.subjectColumns.map((col) => (
+                          <span key={col.id} className="bg-white px-2 py-0.5 rounded border border-slate-200">
+                            <strong>{col.shortName}</strong> ({col.code}): {col.conducted} Held
+                          </span>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                      </div>
 
-                {/* Section Signature Block */}
-                <div className="mt-4 pt-4 border-t border-slate-300 grid grid-cols-3 gap-4 text-center text-[10pt] font-black text-slate-800 avoid-break">
-                  <div className="pt-6 border-t border-slate-800">Class Incharge</div>
-                  <div className="pt-6 border-t border-slate-800">Head of Department / 1st Year Incharge</div>
-                  <div className="pt-6 border-t border-slate-800">Registrar-I/C</div>
+                      <table className="w-full border-collapse border border-slate-800 text-left">
+                        <thead>
+                          <tr className="bg-slate-200 text-slate-900 font-black text-[9.5pt]">
+                            <th className="p-1 border border-slate-800 text-center w-7">#</th>
+                            <th className="p-1 border border-slate-800 w-24 font-mono">Roll No</th>
+                            <th className="p-1 border border-slate-800">Student Name</th>
+                            {sec.subjectColumns.map((col) => (
+                              <th key={col.id} className="p-1 border border-slate-800 text-center font-mono">
+                                <div>{col.shortName}</div>
+                                <div className="text-[9pt] text-slate-600 font-normal">({col.conducted})</div>
+                              </th>
+                            ))}
+                            <th className="p-1 border border-slate-800 text-center w-14">Held</th>
+                            <th className="p-1 border border-slate-800 text-center w-14">Attended</th>
+                            <th className="p-1 border border-slate-800 text-center w-16">%</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sec.students.map((st, i) => (
+                            <tr
+                              key={st.studentId}
+                              className={i % 2 === 0 ? "bg-white font-medium" : "bg-slate-50 font-medium"}
+                            >
+                              <td className="p-1 border border-slate-800 text-center text-[10pt] font-bold">{i + 1}</td>
+                              <td className="p-1 border border-slate-800 font-mono font-bold text-[10pt]">
+                                {st.rollNumber}
+                              </td>
+                              <td className="p-1 border border-slate-800 font-bold text-[10pt] truncate max-w-[150px]">
+                                {st.fullName}
+                              </td>
+                              {sec.subjectColumns.map((col) => {
+                                const att = st.subjectAttendance[col.id] ?? 0;
+                                return (
+                                  <td key={col.id} className="p-1 border border-slate-800 text-center font-bold text-[10pt]">
+                                    {att}
+                                  </td>
+                                );
+                              })}
+                              <td className="p-1 border border-slate-800 text-center font-bold text-[10pt]">
+                                {st.totalClasses}
+                              </td>
+                              <td className="p-1 border border-slate-800 text-center font-black text-emerald-800 text-[10pt]">
+                                {st.attendedClasses}
+                              </td>
+                              <td className="p-1 border border-slate-800 text-center font-black text-[10.5pt]">
+                                {st.percentage !== null ? `${st.percentage}%` : "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Notice: No signatures below, as requested by user */}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       </div>
     </div>

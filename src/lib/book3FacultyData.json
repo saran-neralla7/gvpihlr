@@ -1,0 +1,731 @@
+{
+  "CSE-1::CAL & LA": [
+    "Dr. A Suseelatha",
+    "Dr. B Bharathi"
+  ],
+  "CSE-1::ENGG.PHY": [
+    "Dr.V Siva Jahnavy",
+    "Dr. D Santhosh Kumar"
+  ],
+  "CSE-1::PPSTC": [
+    "Mr. D Arun Kumar",
+    "Mr. B Bala Krishna"
+  ],
+  "CSE-1::AITA": [
+    "Dr. MV Pankaj Lahari",
+    "Dr. M Bhaskar Kumar"
+  ],
+  "CSE-1::FWD": [
+    "Mr. S Vinod Manikantha",
+    "Mr. M Anil"
+  ],
+  "CSE-1::ENV. STD.": [
+    "Mrs. G Sravani",
+    "Mr. V Bhaskar Rao"
+  ],
+  "CSE-1::3DDA": [
+    "Ms. K Swathi",
+    "Ms. S Laxmi Aparna"
+  ],
+  "CSE-1::ENGG. PHY. LAB": [
+    "Dr.V Siva Jahnavy",
+    "Dr. NSSV Raja Rao",
+    "Mr. PSS Appalacharyulu",
+    "Dr. D Santhosh Kumar",
+    "Dr. Ch Rajesh",
+    "Mr. NV Siva Krishna"
+  ],
+  "CSE-1::PPSTC LAB": [
+    "Mr. D Arun Kumar",
+    "Mr. B Bala Krishna",
+    "Ms. B Divya Sati",
+    "Dr. D Manasa",
+    "Mr. Y Prasad Reddy"
+  ],
+  "CSE-1::AITA LAB": [
+    "Dr. MV Pankaj Lahari",
+    "Dr. M Bhaskar Kumar",
+    "Dr. I Srinivas Rao",
+    "Ms. P KiranMayi",
+    "Dr. BVS Arun Kumar"
+  ],
+  "CSE-1::FWD LAB": [
+    "Mr. S Vinod Manikantha",
+    "Mr. M Anil",
+    "Mr. B Bala Krishna",
+    "Dr. M Bhanu Sridhar",
+    "Mr. D Arun Kumar"
+  ],
+  "CSE-2::CAL & LA": [
+    "Dr. B Bharathi",
+    "Dr. S Ashok Kumar"
+  ],
+  "CSE-2::ENGG.PHY": [
+    "Dr. PV Rajeswari",
+    "Dr. B Rajesh Babu"
+  ],
+  "CSE-2::PPSTC": [
+    "Dr. K Rohini",
+    "Ms. C Aparna"
+  ],
+  "CSE-2::AITA": [
+    "Ms. Taj",
+    "Ms. P KiranMayi"
+  ],
+  "CSE-2::FWD": [
+    "Mr. S Vinod Manikantha",
+    "Mr. B Bala Krishna"
+  ],
+  "CSE-2::ENV. STD.": [
+    "Mr. P Manikanta",
+    "Mrs. G Sravani"
+  ],
+  "CSE-2::3DDA": [
+    "Ms. S Laxmi Aparna",
+    "Ms. K Swathi"
+  ],
+  "CSE-2::ENGG. PHY. LAB": [
+    "Dr. B Rajesh Babu",
+    "Dr. Ch Rajesh",
+    "Dr. B Nagarjun",
+    "Dr. PV Rajeswari",
+    "Dr.V Siva Jahnavy",
+    "Dr. Ch S Lakshmi"
+  ],
+  "CSE-2::PPSTC LAB": [
+    "Dr. K Rohini",
+    "Mr. NV Siva Krishna",
+    "Mrs. G Sravani",
+    "Ms. C Aparna"
+  ],
+  "CSE-2::AITA LAB": [
+    "Ms. Taj",
+    "Mr. PK DAS",
+    "Dr. BVS Arun Kumar",
+    "Ms. P KiranMayi",
+    "Dr. MV Pankaj Lahari"
+  ],
+  "CSE-2::FWD LAB": [
+    "Mr. S Vinod Manikantha",
+    "Dr. D Chandravathi",
+    "Mr. A Dhanunjaya Prasad",
+    "Mr. B Bala Krishna"
+  ],
+  "CSE(AI&ML)-1::CAL & LA": [
+    "Dr. N Giribabu",
+    "Dr. Ch Appala Naidu"
+  ],
+  "CSE(AI&ML)-1::ENGG.PHY": [
+    "Dr. Ch Rajesh",
+    "Mr. NV Siva Krishna"
+  ],
+  "CSE(AI&ML)-1::PPSTC": [
+    "Dr. D Chandravathi",
+    "Mr. M Anil"
+  ],
+  "CSE(AI&ML)-1::AITA": [
+    "Dr. V Adinarayana",
+    "Dr. D Santhosh Kumar"
+  ],
+  "CSE(AI&ML)-1::FAI & ML": [
+    "Mr. A Dhanunjaya Prasad",
+    "Ms. C Aparna"
+  ],
+  "CSE(AI&ML)-1::ENV. STD.": [
+    "Mrs. G Sravani",
+    "Mr. V Bhaskar Rao"
+  ],
+  "CSE(AI&ML)-1::3DDA": [
+    "Ms. S Laxmi Aparna",
+    "Ms. K Swathi"
+  ],
+  "CSE(AI&ML)-1::ENGG. PHY. LAB": [
+    "Dr. Ch Rajesh",
+    "Dr.V Siva Jahnavy",
+    "Dr. B Rajesh Babu",
+    "Mr. NV Siva Krishna",
+    "Mr. VVV Satyanarayana",
+    "Mr. PSS Appalacharyulu"
+  ],
+  "CSE(AI&ML)-1::PPSTC LAB": [
+    "Dr. D Chandravathi",
+    "Dr. A Ravi Shankar",
+    "Ms. K Manikyakanthi",
+    "Mr. M Anil",
+    "Ms. K Jhansi Rani"
+  ],
+  "CSE(AI&ML)-1::AITA LAB": [
+    "Dr. V Adinarayana",
+    "Mr. PSS Appalacharyulu",
+    "Dr. B Nagarjun",
+    "Dr. D Santhosh Kumar",
+    "Dr. NSSV Raja Rao",
+    "Dr. B Rajesh Babu"
+  ],
+  "CSE(AI&ML)-1::FAI & ML LAB": [
+    "Mr. A Dhanunjaya Prasad",
+    "Mrs. DMV Priya",
+    "Mr. S Vinod Manikantha",
+    "Dr. M Bhanu Sridhar",
+    "Ms. C Aparna"
+  ],
+  "CSE(AI&ML)-2::CAL & LA": [
+    "Dr. T Poornakantha",
+    "Dr. N Giribabu"
+  ],
+  "CSE(AI&ML)-2::ENGG.PHY": [
+    "Dr. B Nagarjun",
+    "Mr. VVV Satyanarayana"
+  ],
+  "CSE(AI&ML)-2::PPSTC": [
+    "Mr. M Anil",
+    "Dr. D Chandravathi"
+  ],
+  "CSE(AI&ML)-2::AITA": [
+    "Mr. K AyyaRaju",
+    "Mr. PK DAS"
+  ],
+  "CSE(AI&ML)-2::FAI & ML": [
+    "Ms. S Laxmi Aparna",
+    "Ms. K Swathi"
+  ],
+  "CSE(AI&ML)-2::ENV. STD.": [
+    "Mrs. G Sravani",
+    "Mr. V Bhaskar Rao"
+  ],
+  "CSE(AI&ML)-2::3DDA": [
+    "Ms. K Swathi",
+    "Ms. S Laxmi Aparna"
+  ],
+  "CSE(AI&ML)-2::ENGG. PHY. LAB": [
+    "Mr. VVV Satyanarayana",
+    "Dr. PV Rajeswari",
+    "Dr. R Praveena",
+    "Dr. B Nagarjun",
+    "Mr. PSS Appalacharyulu",
+    "Dr. Ch S Lakshmi"
+  ],
+  "CSE(AI&ML)-2::PPSTC LAB": [
+    "Mr. M Anil",
+    "Mr. Y Prasad Reddy",
+    "Mr. P Manikanta",
+    "Dr. D Chandravathi",
+    "Dr. A Ravi Shankar",
+    "Ms. PR Sri Satya"
+  ],
+  "CSE(AI&ML)-2::AITA LAB": [
+    "Mr. K AyyaRaju",
+    "Dr. V Adinarayana",
+    "Mr. V Bhaskar Rao",
+    "Dr. NSSV Raja Rao",
+    "Dr. B Nagarjun"
+  ],
+  "CSE(AI&ML)-2::FAI & ML LAB": [
+    "Ms. S Laxmi Aparna",
+    "Ms. K Swathi",
+    "Ms. C Aparna",
+    "Mr. A Dhanunjaya Prasad"
+  ],
+  "CSE (CS & DS)::CAL & LA": [
+    "Dr. S Ashok Kumar",
+    "Dr. T Poornakantha"
+  ],
+  "CSE (CS & DS)::ENGG.PHY": [
+    "Dr. Ch S Lakshmi",
+    "Dr. R Praveena"
+  ],
+  "CSE (CS & DS)::PPSTC": [
+    "Dr. Bh Padma",
+    "Mrs. DMV Priya"
+  ],
+  "CSE (CS & DS)::AITA": [
+    "Dr. MV Pankaj Lahari",
+    "Mr. PK DAS"
+  ],
+  "CSE (CS & DS)::FDS": [
+    "Dr. K Rohini"
+  ],
+  "CSE (CS & DS)::PCS": [
+    "Mr. CH VVD Prasad"
+  ],
+  "CSE (CS & DS)::ENV. STD.": [
+    "Mr. P Manikanta",
+    "Mr. V Bhaskar Rao"
+  ],
+  "CSE (CS & DS)::3DDA": [
+    "Ms. S Laxmi Aparna",
+    "Ms. K Swathi"
+  ],
+  "CSE (CS & DS)::ENGG. PHY. LAB": [
+    "Dr. Ch S Lakshmi",
+    "Mr. K AyyaRaju",
+    "Dr. PV Rajeswari",
+    "Dr. R Praveena",
+    "Dr. NSSV Raja Rao",
+    "Mr. PSS Appalacharyulu"
+  ],
+  "CSE (CS & DS)::PPSTC LAB": [
+    "Dr. Bh Padma",
+    "Mrs. DMV Priya",
+    "Ms. K Manikyakanthi",
+    "Mr. P Manikanta",
+    "Mr. NV Siva Krishna"
+  ],
+  "CSE (CS & DS)::AITA LAB": [
+    "Mr. PK DAS",
+    "Ms. Taj",
+    "Mr. PSS Appalacharyulu",
+    "Dr. MV Pankaj Lahari",
+    "Dr. G Santosh Kumar"
+  ],
+  "CSE (CS & DS)::FDS LAB": [
+    "Dr. K Rohini",
+    "Dr. Bh Padma"
+  ],
+  "CSE (CS & DS)::PCS LAB": [
+    "Mr. CH VVD Prasad",
+    "Dr. M Bhanu Sridhar",
+    "Mr. A Dhanunjaya Prasad"
+  ],
+  "ECE-1::CAL & LA": [
+    "Dr. Ch V Sreedhar",
+    "Dr. SS Ayyappa Sastri"
+  ],
+  "ECE-1::CAL & LA TUT": [
+    "Dr. Ch V Sreedhar",
+    "Dr. KVS Sarma",
+    "Dr. T Poornakantha",
+    "Dr. SS Ayyappa Sastri",
+    "Dr. A Suseelatha"
+  ],
+  "ECE-1::ESAM": [
+    "Dr. M Rama Rajeswari",
+    "Dr. B Santosh Kumar"
+  ],
+  "ECE-1::PPSTC": [
+    "Dr. M Bhanu Sridhar",
+    "Mr. A Dhanunjaya Prasad"
+  ],
+  "ECE-1::AITA": [
+    "Dr. G Santosh Kumar",
+    "Ms. P KiranMayi"
+  ],
+  "ECE-1::DLD": [
+    "Dr. I Srinivas Rao",
+    "Mrs. V Sridevi"
+  ],
+  "ECE-1::SUS. ENGG.": [
+    "Dr. B Vidya",
+    "Dr. G Santosh Kumar"
+  ],
+  "ECE-1::ESS. ENG. TUT": [
+    "Dr. Ch Alekya",
+    "Dr. J RajaRatnam",
+    "Dr. VVL Usha Ramani",
+    "Dr. I Rajasekhar"
+  ],
+  "ECE-1::ENGG. CHEM LAB": [
+    "Dr. M Rama Rajeswari",
+    "Dr. P Srinivas Rao",
+    "Dr. KV NagaLakshmi",
+    "Dr. Rani Nanda",
+    "Mr. S Ashok",
+    "Dr. KV Padmavathi"
+  ],
+  "ECE-1::PPSTC LAB": [
+    "Dr. M Bhanu Sridhar",
+    "Dr. A Ravi Shankar",
+    "Mr. VVV Satyanarayana",
+    "Mr. A Dhanunjaya Prasad",
+    "Ms. K Jhansi Rani"
+  ],
+  "ECE-1::AITA LAB": [
+    "Dr. G Santosh Kumar",
+    "Ms. P KiranMayi",
+    "Mr. V Bhaskar Rao",
+    "Ms. Taj"
+  ],
+  "ECE-1::DLD LAB": [
+    "Dr. I Srinivas Rao",
+    "Ms. B Divya Sati",
+    "Mrs. V Sridevi",
+    "Dr. M Neelima",
+    "Dr. DBV Jagannadham",
+    "Dr. V Adinarayana"
+  ],
+  "ECE-1::ESS. ENG. LAB": [
+    "Dr. VVL Usha Ramani",
+    "Mr. PBS Krishnamuraju",
+    "Dr. N Vijaya Lakshmi",
+    "Dr. Ch Alekya",
+    "Dr. I Rajasekhar"
+  ],
+  "ECE-2::CAL & LA": [
+    "Dr. Ch Appala Naidu",
+    "Dr. Ch V Sreedhar"
+  ],
+  "ECE-2::ESAM": [
+    "Dr. Rani Nanda",
+    "Mr. S Ashok"
+  ],
+  "ECE-2::PPSTC": [
+    "Mr. D Arun Kumar",
+    "Dr. K Rohini"
+  ],
+  "ECE-2::AITA": [
+    "Dr. S Padma",
+    "Dr. NSSV Raja Rao"
+  ],
+  "ECE-2::DLD": [
+    "Ms. K Jhansi Rani",
+    "Ms. PR Sri Satya"
+  ],
+  "ECE-2::SUS. ENGG.": [
+    "Dr. D Manasa",
+    "Dr. B Vidya"
+  ],
+  "ECE-2::ESS. ENG. TUT": [
+    "Dr. BM Florence",
+    "Dr. I Rajasekhar",
+    "Dr. Ch Alekya"
+  ],
+  "ECE-2::ENGG. CHEM LAB": [
+    "Dr. Rani Nanda",
+    "Dr. M Rama Rajeswari",
+    "Dr. KV NagaLakshmi",
+    "Mr. S Ashok",
+    "Dr. P Srinivas Rao",
+    "Dr. KV Padmavathi"
+  ],
+  "ECE-2::PPSTC LAB": [
+    "Dr. K Rohini",
+    "Dr. Anand Solanki",
+    "Mr. NV Siva Krishna",
+    "Mr. D Arun Kumar",
+    "Dr. M Neelima",
+    "Ms. B Divya Sati"
+  ],
+  "ECE-2::AITA LAB": [
+    "Dr. S Padma",
+    "Mr. PK DAS",
+    "Dr. BVS Arun Kumar",
+    "Dr. NSSV Raja Rao",
+    "Dr. B Nagarjun",
+    "Dr. D Santhosh Kumar"
+  ],
+  "ECE-2::DLD LAB": [
+    "Ms. K Jhansi Rani",
+    "Dr. DBV Jagannadham",
+    "Dr. V Adinarayana",
+    "Ms. PR Sri Satya",
+    "Mrs. V Sridevi",
+    "Ms. B Divya Sati"
+  ],
+  "ECE-2::ESS. ENG. LAB": [
+    "Dr. I Rajasekhar",
+    "Dr. Ch Alekya",
+    "Dr. J RajaRatnam",
+    "Dr. BM Florence",
+    "Dr. VVL Usha Ramani"
+  ],
+  "ECE-3::CAL & LA": [
+    "Dr. KVS Sarma"
+  ],
+  "ECE-3::ESAM": [
+    "Dr. B Santosh Kumar"
+  ],
+  "ECE-3::PPSTC": [
+    "Mr. CH VVD Prasad"
+  ],
+  "ECE-3::AITA": [
+    "Dr. MV Pankaj Lahari"
+  ],
+  "ECE-3::DLD": [
+    "Dr. M Neelima"
+  ],
+  "ECE-3::SUS. ENGG.": [
+    "Dr. B Vidya"
+  ],
+  "ECE-3::ESS. ENG. TUT": [
+    "Dr. VVL Usha Ramani",
+    "Dr. N Vijaya Lakshmi",
+    "Dr. J RajaRatnam"
+  ],
+  "ECE-3::ENGG. CHEM LAB": [
+    "Dr. B Santosh Kumar",
+    "Mr. S Ashok"
+  ],
+  "ECE-3::PPSTC LAB": [
+    "Mr. CH VVD Prasad",
+    "Mr. Y Prasad Reddy",
+    "Dr. N Giribabu"
+  ],
+  "ECE-3::AITA LAB": [
+    "Dr. MV Pankaj Lahari",
+    "Dr. M Bhaskar Kumar",
+    "Dr. B Rajesh Babu"
+  ],
+  "ECE-3::DLD LAB": [
+    "Dr. M Neelima",
+    "Ms. B Divya Sati",
+    "Dr. DBV Jagannadham"
+  ],
+  "ECE-3::ESS. ENG. LAB": [
+    "Dr. VVL Usha Ramani",
+    "Dr. BM Florence",
+    "Dr. J RajaRatnam"
+  ],
+  "MECH::CAL & LA": [
+    "Dr. S Ashok Kumar",
+    "Dr. KVS Sarma"
+  ],
+  "MECH::COM": [
+    "Dr. KV Padmavathi",
+    "Dr. Rani Nanda"
+  ],
+  "MECH::PPSTC": [
+    "Mr. CH VVD Prasad",
+    "Dr. Bh Padma"
+  ],
+  "MECH::AITA": [
+    "Ms. P KiranMayi",
+    "Mr. K AyyaRaju"
+  ],
+  "MECH::EME": [
+    "Dr. M Bhaskar Kumar",
+    "Dr. Anand Solanki"
+  ],
+  "MECH::SUS. ENGG.": [
+    "Dr. D Manasa",
+    "Dr. G Santosh Kumar"
+  ],
+  "MECH::ESS. ENG. TUT": [
+    "Dr. J RajaRatnam",
+    "Dr. I Rajasekhar",
+    "Dr. BM Florence",
+    "Mr. PBS Krishnamuraju"
+  ],
+  "MECH::CHEM LAB": [
+    "Dr. KV Padmavathi",
+    "Dr. KV NagaLakshmi",
+    "Dr. B Santosh Kumar"
+  ],
+  "MECH::PPSTC LAB": [
+    "Mr. CH VVD Prasad",
+    "Mrs. V Sridevi",
+    "Ms. K Jhansi Rani",
+    "Ms. PR Sri Satya",
+    "Dr. Anand Solanki"
+  ],
+  "MECH::AITA LAB": [
+    "Ms. P KiranMayi",
+    "Dr. NSSV Raja Rao",
+    "Dr. G Santosh Kumar",
+    "Mr. K AyyaRaju",
+    "Dr. Ch Rajesh",
+    "Dr. S Padma"
+  ],
+  "MECH::EME LAB": [
+    "Dr. M Bhaskar Kumar",
+    "Mr. Y Prasad Reddy",
+    "Dr. BVS Arun Kumar",
+    "Dr. Anand Solanki",
+    "Ms. K Manikyakanthi"
+  ],
+  "MECH::ESS. ENG. LAB": [
+    "Dr. J RajaRatnam",
+    "Dr. VVL Usha Ramani",
+    "Dr. BM Florence",
+    "Dr. I Rajasekhar"
+  ],
+  "EEE::CAL & LA": [
+    "Dr. K L Sai Prasad"
+  ],
+  "EEE::ESAM": [
+    "Mr. S Ashok"
+  ],
+  "EEE::PPSTC": [
+    "Ms. C Aparna"
+  ],
+  "EEE::AITA": [
+    "Dr. S Padma"
+  ],
+  "EEE::FEEE": [
+    "Dr. A Ravi Shankar"
+  ],
+  "EEE::SUS. ENGG.": [
+    "Dr. D Manasa"
+  ],
+  "EEE::ESS. ENG. TUT": [
+    "Dr. BM Florence",
+    "Dr. N Vijaya Lakshmi",
+    "Mr. PBS Krishnamuraju"
+  ],
+  "EEE::ENGG. CHEM LAB": [
+    "Mr. S Ashok",
+    "Dr. P Srinivas Rao",
+    "Dr. Rani Nanda"
+  ],
+  "EEE::PPSTC LAB": [
+    "Ms. C Aparna",
+    "Mrs. V Sridevi",
+    "Mr. VVV Satyanarayana"
+  ],
+  "EEE::AITA LAB": [
+    "Dr. S Padma",
+    "Mr. PSS Appalacharyulu",
+    "Dr. Ch S Lakshmi"
+  ],
+  "EEE::FEEE LAB": [
+    "Dr. A Ravi Shankar",
+    "Mr. PK DAS",
+    "Dr. MV Pankaj Lahari"
+  ],
+  "EEE::ESS. ENG. LAB": [
+    "Dr. BM Florence",
+    "Dr. N Vijaya Lakshmi",
+    "Dr. Ch Alekya"
+  ],
+  "CIVIL::CAL & LA": [
+    "Dr. SS Ayyappa Sastri"
+  ],
+  "CIVIL::COM": [
+    "Dr. P Srinivas Rao"
+  ],
+  "CIVIL::PPSTC": [
+    "Mr. B Bala Krishna"
+  ],
+  "CIVIL::AITA": [
+    "Dr. V Adinarayana"
+  ],
+  "CIVIL::S&G": [
+    "Mr. P Manikanta"
+  ],
+  "CIVIL::SUS. ENGG.": [
+    "Dr. G Santosh Kumar"
+  ],
+  "CIVIL::ESS. ENG. TUT": [
+    "Dr. N Vijaya Lakshmi",
+    "Dr. I Rajasekhar",
+    "Mr. PBS Krishnamuraju"
+  ],
+  "CIVIL::CHEM LAB": [
+    "Dr. P Srinivas Rao",
+    "Dr. KV Padmavathi",
+    "Dr. M Rama Rajeswari"
+  ],
+  "CIVIL::PPSTC LAB": [
+    "Mr. B Bala Krishna",
+    "Mr. Y Prasad Reddy",
+    "Dr. Anand Solanki"
+  ],
+  "CIVIL::AITA LAB": [
+    "Dr. V Adinarayana",
+    "Dr. D Santhosh Kumar",
+    "Ms. Taj"
+  ],
+  "CIVIL::S&G LAB": [
+    "Mr. P Manikanta",
+    "Dr. B Vidya"
+  ],
+  "CIVIL::ESS. ENG. LAB": [
+    "Dr. N Vijaya Lakshmi",
+    "Mr. PBS Krishnamuraju",
+    "Dr. I Rajasekhar"
+  ],
+  "CHEMICAL::CAL & LA": [
+    "Dr. A Suseelatha"
+  ],
+  "CHEMICAL::PAC": [
+    "Dr. KV NagaLakshmi"
+  ],
+  "CHEMICAL::PPSTC": [
+    "Mrs. DMV Priya"
+  ],
+  "CHEMICAL::AITA": [
+    "Mr. K AyyaRaju"
+  ],
+  "CHEMICAL::PCE": [
+    "Dr. S Padma"
+  ],
+  "CHEMICAL::SUS. ENGG.": [
+    "Dr. D Manasa"
+  ],
+  "CHEMICAL::ESS. ENG. TUT": [
+    "Mr. PBS Krishnamuraju",
+    "Dr. J RajaRatnam",
+    "Dr. N Vijaya Lakshmi"
+  ],
+  "CHEMICAL::PAC LAB": [
+    "Dr. KV NagaLakshmi",
+    "Dr. KV Padmavathi",
+    "Dr. B Santosh Kumar"
+  ],
+  "CHEMICAL::PPSTC LAB": [
+    "Mrs. DMV Priya",
+    "Mrs. V Sridevi",
+    "Ms. K Manikyakanthi"
+  ],
+  "CHEMICAL::AITA LAB": [
+    "Mr. K AyyaRaju",
+    "Dr. V Adinarayana",
+    "Mr. PK DAS"
+  ],
+  "CHEMICAL::PCE LAB": [
+    "Dr. S Padma",
+    "Dr. KV NagaLakshmi"
+  ],
+  "CHEMICAL::ESS. ENG. LAB": [
+    "Mr. PBS Krishnamuraju",
+    "Dr. N Vijaya Lakshmi",
+    "Dr. VVL Usha Ramani"
+  ],
+  "MECH-ROBOTICS::CAL & LA": [
+    "Dr. B Bharathi"
+  ],
+  "MECH-ROBOTICS::COM": [
+    "Dr. P Srinivas Rao"
+  ],
+  "MECH-ROBOTICS::PPSTC": [
+    "Mrs. DMV Priya"
+  ],
+  "MECH-ROBOTICS::AITA": [
+    "Dr. I Srinivas Rao"
+  ],
+  "MECH-ROBOTICS::EME": [
+    "Ms. K Manikyakanthi"
+  ],
+  "MECH-ROBOTICS::SUS. ENGG.": [
+    "Dr. B Vidya"
+  ],
+  "MECH-ROBOTICS::ESS. ENG. TUT": [
+    "Dr. Ch Alekya",
+    "Mr. PBS Krishnamuraju",
+    "Dr. VVL Usha Ramani"
+  ],
+  "MECH-ROBOTICS::CHEM LAB": [
+    "Dr. P Srinivas Rao",
+    "Dr. KV Padmavathi",
+    "Dr. M Rama Rajeswari"
+  ],
+  "MECH-ROBOTICS::PPSTC LAB": [
+    "Mrs. DMV Priya",
+    "Ms. B Divya Sati",
+    "Mr. VVV Satyanarayana"
+  ],
+  "MECH-ROBOTICS::AITA LAB": [
+    "Dr. I Srinivas Rao",
+    "Dr. Ch Rajesh",
+    "Dr. Ch S Lakshmi"
+  ],
+  "MECH-ROBOTICS::EME LAB": [
+    "Ms. K Manikyakanthi",
+    "Mr. Y Prasad Reddy",
+    "Dr. BVS Arun Kumar"
+  ],
+  "MECH-ROBOTICS::ESS. ENG. LAB": [
+    "Dr. Ch Alekya",
+    "Dr. N Vijaya Lakshmi",
+    "Mr. PBS Krishnamuraju"
+  ]
+}

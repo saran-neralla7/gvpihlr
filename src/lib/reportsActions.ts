@@ -2,6 +2,7 @@ import prisma from "./prisma";
 import { getCurrentSession } from "./auth";
 import { isSuperAdmin, isFaculty, isDeanOrDirector, isHOD } from "./rbac";
 import { AttendanceStatus } from "@prisma/client";
+import { resolveFacultyNames } from "./book3FacultyMap";
 
 export interface ReportFilter {
   academicYearId?: string;
@@ -179,13 +180,23 @@ export async function getSectionStudentAttendanceReport(filter: ReportFilter) {
   // Build subject columns strictly from sessions conducted for this specific section
   const subjectColumnsMap = new Map<
     string,
-    { id: string; name: string; code: string; shortName: string; type: string; conducted: number }
+    {
+      id: string;
+      name: string;
+      code: string;
+      shortName: string;
+      type: string;
+      conducted: number;
+      facultyNames?: string[];
+      facultyName?: string;
+    }
   >();
 
   sessions.forEach((s) => {
     const sub = s.assignment?.subjectOffering?.subject;
     if (sub) {
       if (!subjectColumnsMap.has(sub.id)) {
+        const facs = resolveFacultyNames(section.program.code, section.name, sub.shortName || sub.code, sub.name);
         subjectColumnsMap.set(sub.id, {
           id: sub.id,
           name: sub.name,
@@ -193,6 +204,8 @@ export async function getSectionStudentAttendanceReport(filter: ReportFilter) {
           shortName: sub.shortName || sub.code,
           type: sub.type,
           conducted: 0,
+          facultyNames: facs,
+          facultyName: facs.length > 0 ? facs.join(", ") : "—",
         });
       }
       subjectColumnsMap.get(sub.id)!.conducted += 1;
@@ -369,6 +382,8 @@ export interface AllSectionsReportItem {
     conducted: number;
     conductedHours: number;
     conductedSessions: number;
+    facultyNames?: string[];
+    facultyName?: string;
   }[];
   students: {
     studentId: string;
@@ -610,6 +625,8 @@ export async function getAllSectionsAttendanceReport(
         conducted: number;
         conductedHours: number;
         conductedSessions: number;
+        facultyNames?: string[];
+        facultyName?: string;
       }
     >();
 
@@ -648,13 +665,16 @@ export async function getAllSectionsAttendanceReport(
       }
     }
 
-    // Set conductedSessions for each subject (for LAB: 2 hours = 1 session)
+    // Set conductedSessions and faculty for each subject
     subjectColumnsMap.forEach((item) => {
       if (item.type === "LAB") {
         item.conductedSessions = Math.max(1, Math.round(item.conductedHours / 2));
       } else {
         item.conductedSessions = item.conductedHours;
       }
+      const facs = resolveFacultyNames(sec.program.code, sec.name, item.shortName, item.name);
+      item.facultyNames = facs;
+      item.facultyName = facs.length > 0 ? facs.join(", ") : "—";
     });
 
     const labsHeldCount = labSessionsSet.size;

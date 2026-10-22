@@ -62,7 +62,7 @@ const SUBJECT_DEFS: SubjectDef[] = [
     shortName: "ENV. STD.",
     type: SubjectType.THEORY,
     departmentCode: "CHEM_SCI",
-    aliases: ["ENVIRONMENTAL STUDIES", "ENV. STD.", "ENV. STD", "ES"],
+    aliases: ["ENVIRONMENTAL STUDIES", "ENV. STD.", "ENV. STD", "EVS"],
   },
   {
     code: "26CS104",
@@ -110,7 +110,7 @@ const SUBJECT_DEFS: SubjectDef[] = [
     shortName: "ESS. ENG.",
     type: SubjectType.THEORY,
     departmentCode: "ENG",
-    aliases: ["ESSENTIAL ENGLISH", "ESS. ENG.", "ESS. ENG", "EE"],
+    aliases: ["ESSENTIAL ENGLISH", "ESS. ENG.", "ESS. ENG", "EE", "ESS. ENG. TUT", "ESS. ENG. TUT.", "ESS. ENG TUT"],
   },
   {
     code: "26CH102",
@@ -382,7 +382,7 @@ function resolveSubjectDef(raw: string): SubjectDef | null {
   // 2. Prefix/Contains match on aliases
   for (const def of orderedDefs) {
     for (const alias of def.aliases) {
-      if (s.startsWith(alias) || alias.startsWith(s) || s.includes(alias)) {
+      if (s.startsWith(alias) || s.includes(alias)) {
         return def;
       }
     }
@@ -405,7 +405,12 @@ function resolveSubjectDef(raw: string): SubjectDef | null {
   if (s.includes("FWD")) {
     return isLab ? SUBJECT_DEFS.find((d) => d.code === "26CS103L")! : SUBJECT_DEFS.find((d) => d.code === "26CS103")!;
   }
-  if (s.includes("ENV") || s.includes("ES")) return SUBJECT_DEFS.find((d) => d.code === "26CH101")!;
+  if (s.includes("ESS. ENG") || s.includes("ESSENTIAL ENGLISH") || s.includes("ESS.ENG") || s.startsWith("ESS") || s.includes("ENG. TUT") || s.includes("ENG TUT")) {
+    return isLab ? SUBJECT_DEFS.find((d) => d.code === "26EN101L")! : SUBJECT_DEFS.find((d) => d.code === "26EN101")!;
+  }
+  if (s.includes("ENV. STD") || s.includes("ENVIRONMENTAL") || s.includes("ENV.STD") || s.includes("ENV STD") || s === "EVS" || s === "ENV") {
+    return SUBJECT_DEFS.find((d) => d.code === "26CH101")!;
+  }
   if (s.includes("FAI") || s.includes("ML")) {
     return isLab ? SUBJECT_DEFS.find((d) => d.code === "26AI101L")! : SUBJECT_DEFS.find((d) => d.code === "26AI101")!;
   }

@@ -169,12 +169,17 @@ export default function ReportsClient({
   const [allSectionsModalOpen, setAllSectionsModalOpen] = useState(false);
   const [allSectionsData, setAllSectionsData] = useState<AllSectionsReportResponse | null>(null);
   const [allSectionsMode, setAllSectionsMode] = useState<"consolidated" | "subject_wise" | "classes_held">("consolidated");
+  const [allSectionsSubMode, setAllSectionsSubMode] = useState<
+    "summary" | "section_faculty" | "delivery" | "theory" | "labs"
+  >("summary");
   const [isLoadingAllSections, setIsLoadingAllSections] = useState(false);
 
   // Section Classes & Labs Held Dedicated State
   const [classesHeldData, setClassesHeldData] = useState<AllSectionsReportResponse | null>(null);
   const [isLoadingClassesHeld, setIsLoadingClassesHeld] = useState(false);
-  const [classesHeldViewMode, setClassesHeldViewMode] = useState<"summary" | "subject_wise">("summary");
+  const [classesHeldViewMode, setClassesHeldViewMode] = useState<
+    "summary" | "section_faculty" | "subject_wise"
+  >("summary");
   const [classesHeldMetric, setClassesHeldMetric] = useState<"hours" | "classes">("hours");
   const [expandedSectionIds, setExpandedSectionIds] = useState<Set<string>>(new Set());
 
@@ -211,9 +216,13 @@ export default function ReportsClient({
     }
   }, [activeTab]);
 
-  const handleOpenAllSectionsPrint = async (mode: "consolidated" | "subject_wise" | "classes_held") => {
+  const handleOpenAllSectionsPrint = async (
+    mode: "consolidated" | "subject_wise" | "classes_held",
+    subMode: "summary" | "section_faculty" | "delivery" | "theory" | "labs" = "summary"
+  ) => {
     setIsLoadingAllSections(true);
     setAllSectionsMode(mode);
+    setAllSectionsSubMode(subMode);
     try {
       const params = new URLSearchParams();
       if (startDate && startDate.trim()) params.append("startDate", startDate.trim());
@@ -1170,57 +1179,61 @@ export default function ReportsClient({
   return (
     <div className="space-y-6">
       {/* =========================================================================
-          PRINT STYLES FOR NATIVE PRINT DIALOG
+          PRINT STYLES FOR NATIVE PRINT DIALOG (Only active when modal is closed)
           ========================================================================= */}
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: landscape;
-            margin: 6mm;
+      {!allSectionsModalOpen && (
+        <style jsx global>{`
+          @media print {
+            @page {
+              size: landscape;
+              margin: 6mm;
+            }
+            body {
+              background: white !important;
+              color: black !important;
+            }
+            header,
+            footer,
+            .no-print {
+              display: none !important;
+            }
+            .print-container {
+              width: 100% !important;
+              max-width: 100% !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              box-shadow: none !important;
+              border: none !important;
+            }
+            .print-table {
+              border-collapse: collapse !important;
+              width: 100% !important;
+              font-size: 10.5px !important;
+            }
+            .print-table th,
+            .print-table td {
+              border: 1px solid #475569 !important;
+              padding: 3px 4px !important;
+              text-align: center !important;
+              font-size: 10px !important;
+            }
+            .daily-matrix-page,
+            .print-page-break {
+              break-after: page !important;
+              page-break-after: always !important;
+            }
+            tr {
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+            }
           }
-          body {
-            background: white !important;
-            color: black !important;
-          }
-          header,
-          footer,
-          .no-print {
-            display: none !important;
-          }
-          .print-container {
-            width: 100% !important;
-            max-width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            box-shadow: none !important;
-            border: none !important;
-          }
-          .print-table {
-            border-collapse: collapse !important;
-            width: 100% !important;
-            font-size: 10.5px !important;
-          }
-          .print-table th,
-          .print-table td {
-            border: 1px solid #475569 !important;
-            padding: 3px 4px !important;
-            text-align: center !important;
-            font-size: 10px !important;
-          }
-          .daily-matrix-page,
-          .print-page-break {
-            break-after: page !important;
-            page-break-after: always !important;
-          }
-          tr {
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-          }
-        }
-      `}</style>
+        `}</style>
+      )}
 
-      {/* Top Banner (Hidden in Print) */}
-      <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 no-print">
+      {/* Main Page Content - Hidden completely when All Sections Print modal is open */}
+      <div id="reports-main-content" className={allSectionsModalOpen ? "hidden print:hidden" : "space-y-6"}>
+        {/* Top Banner (Hidden in Print) */}
+        <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 no-print">
         <div>
           <div className="text-[10px] font-extrabold uppercase tracking-wider text-[#0B2545]">
             Attendance Governance &amp; Examination Verification
@@ -3818,11 +3831,20 @@ export default function ReportsClient({
               </button>
               <button
                 type="button"
-                onClick={() => handleOpenAllSectionsPrint("classes_held")}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-xs"
+                onClick={() => handleOpenAllSectionsPrint("classes_held", "summary")}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-xs"
               >
                 <Printer className="w-4 h-4" />
-                <span>Print Portrait A4</span>
+                <span>Print Summary A4</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenAllSectionsPrint("classes_held", "section_faculty")}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-xs"
+                title="Print 1 Section per Page with Subject, Faculty, and Hours"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Print Faculty &amp; Hours (1 Sec/Page)</span>
               </button>
             </div>
           </div>
@@ -3870,7 +3892,7 @@ export default function ReportsClient({
 
             {/* View Mode & Metric Toggle Controls */}
             <div className="bg-white border border-slate-200/90 rounded-2xl p-3 shadow-xs flex flex-wrap items-center justify-between gap-3">
-              {/* Toggle 1: Summary vs Subject-Wise */}
+              {/* Toggle 1: Summary vs Section Faculty vs Subject-Wise */}
               <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
                 <button
                   type="button"
@@ -3882,6 +3904,17 @@ export default function ReportsClient({
                   }`}
                 >
                   Summary (Classes &amp; Labs)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setClassesHeldViewMode("section_faculty")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    classesHeldViewMode === "section_faculty"
+                      ? "bg-white text-slate-900 shadow-xs font-black border border-slate-200"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Faculty &amp; Hours (Per-Section)
                 </button>
                 <button
                   type="button"
@@ -4089,6 +4122,91 @@ export default function ReportsClient({
                     </tfoot>
                   </table>
                 </div>
+              ) : classesHeldViewMode === "section_faculty" ? (
+                /* PER-SECTION FACULTY AUDIT TABLE VIEW */
+                <div className="space-y-6">
+                  {(classesHeldData?.sections || []).map((sec) => {
+                    const subjects = [...sec.subjectColumns].sort((a, b) => {
+                      if (a.type !== b.type) return a.type === "THEORY" ? -1 : 1;
+                      return a.shortName.localeCompare(b.shortName);
+                    });
+                    const totalHours = subjects.reduce((acc, sub) => acc + sub.conductedHours, 0);
+
+                    return (
+                      <div key={sec.sectionId} className="rounded-2xl border border-slate-200 overflow-hidden shadow-xs bg-white">
+                        <div className="bg-slate-50 p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                              {sec.programName} ({sec.schoolCode})
+                            </div>
+                            <div className="text-base font-black text-slate-900 mt-0.5">
+                              {sec.courseDisplayName || sec.displayName}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-3 py-1 rounded-xl bg-emerald-50 border border-emerald-200 font-black text-emerald-800 text-xs">
+                              {totalHours} Total Hours Held
+                            </span>
+                            <span className="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 font-bold text-slate-700 text-xs">
+                              {subjects.length} Subjects Offered
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs text-left border-collapse">
+                            <thead>
+                              <tr className="bg-slate-100 border-b border-slate-200 text-slate-800 font-black">
+                                <th className="p-3 text-center w-12">S.No</th>
+                                <th className="p-3">Name of the Subject</th>
+                                <th className="p-3">Name of the Faculty</th>
+                                <th className="p-3 text-center w-36">No. of Hours Held</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {subjects.map((sub, idx) => (
+                                <tr key={sub.id} className="hover:bg-slate-50/70 transition">
+                                  <td className="p-3 text-center font-bold text-slate-400 font-mono">
+                                    {idx + 1}
+                                  </td>
+                                  <td className="p-3 font-bold text-slate-900">
+                                    {sub.name}{" "}
+                                    <span className="font-mono text-slate-500 font-bold">({sub.shortName})</span>
+                                    <span
+                                      className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-black uppercase ${
+                                        sub.type === "LAB"
+                                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                          : "bg-slate-100 text-slate-600 border border-slate-200"
+                                      }`}
+                                    >
+                                      {sub.type}
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-slate-800 font-semibold">
+                                    {sub.facultyName || "—"}
+                                  </td>
+                                  <td className="p-3 text-center font-black font-mono text-sm text-slate-900">
+                                    {sub.conductedHours}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                            <tfoot>
+                              <tr className="bg-slate-100 font-black text-slate-900 border-t border-slate-200">
+                                <td colSpan={3} className="p-3 text-right uppercase text-xs">
+                                  Total Hours Conducted ({sec.courseDisplayName || sec.displayName})
+                                </td>
+                                <td className="p-3 text-center font-mono text-sm text-blue-950 font-black">
+                                  {totalHours}
+                                </td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               ) : (
                 /* SUBJECT-WISE BREAKDOWN TABLE VIEW */
                 <div className="space-y-4">
@@ -4261,6 +4379,7 @@ export default function ReportsClient({
             </div>
           </div>
         )}
+      </div>
 
       {/* =========================================================================
           ONE-CLICK ALL SECTIONS PRINT MODAL (Portrait A4)
@@ -4269,6 +4388,7 @@ export default function ReportsClient({
         <AllSectionsPrintReports
           data={allSectionsData}
           initialMode={allSectionsMode}
+          initialSubMode={allSectionsSubMode}
           onClose={() => setAllSectionsModalOpen(false)}
         />
       )}

@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict LbUs0HeYaPULOIDMgzBs5KFw2ZZ3MRrTuBsmtQ1Ql1xhwCFsi5MFecQqDz2ENZs
+\restrict H7k1Oivndv2WjDeePALFsblfPIoCo3fUQHpm5azvyccJKgJ88WvaIDWt5mOfe4f
 
--- Dumped from database version 16.15
--- Dumped by pg_dump version 16.15
+-- Dumped from database version 16.14 (Homebrew)
+-- Dumped by pg_dump version 16.14 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -19,11 +19,36 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: pg_database_owner
+-- Name: public; Type: SCHEMA; Schema: -; Owner: saranneralla
+--
+
+-- *not* creating schema, since initdb creates it
+
+
+ALTER SCHEMA public OWNER TO saranneralla;
+
+--
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: saranneralla
 --
 
 COMMENT ON SCHEMA public IS '';
 
+
+--
+-- Name: ActivityCategory; Type: TYPE; Schema: public; Owner: saranneralla
+--
+
+CREATE TYPE public."ActivityCategory" AS ENUM (
+    'AUTH',
+    'NAVIGATION',
+    'MATERIAL_VIEW',
+    'MATERIAL_DOWNLOAD',
+    'QUIZ_INTERACTION',
+    'PROFILE_UPDATE'
+);
+
+
+ALTER TYPE public."ActivityCategory" OWNER TO saranneralla;
 
 --
 -- Name: AttendanceStatus; Type: TYPE; Schema: public; Owner: postgres
@@ -39,6 +64,62 @@ CREATE TYPE public."AttendanceStatus" AS ENUM (
 
 
 ALTER TYPE public."AttendanceStatus" OWNER TO postgres;
+
+--
+-- Name: DeliveryStatus; Type: TYPE; Schema: public; Owner: saranneralla
+--
+
+CREATE TYPE public."DeliveryStatus" AS ENUM (
+    'PLANNED',
+    'IN_PROGRESS',
+    'COMPLETED',
+    'RESCHEDULED'
+);
+
+
+ALTER TYPE public."DeliveryStatus" OWNER TO saranneralla;
+
+--
+-- Name: MaterialType; Type: TYPE; Schema: public; Owner: saranneralla
+--
+
+CREATE TYPE public."MaterialType" AS ENUM (
+    'LECTURE_NOTES_PDF',
+    'SLIDES_PPT',
+    'SYLLABUS_COPY',
+    'FORMULA_SHEET',
+    'REFERENCE_LINK',
+    'VIDEO_LECTURE'
+);
+
+
+ALTER TYPE public."MaterialType" OWNER TO saranneralla;
+
+--
+-- Name: QuestionDifficulty; Type: TYPE; Schema: public; Owner: saranneralla
+--
+
+CREATE TYPE public."QuestionDifficulty" AS ENUM (
+    'EASY',
+    'MEDIUM',
+    'HARD'
+);
+
+
+ALTER TYPE public."QuestionDifficulty" OWNER TO saranneralla;
+
+--
+-- Name: QuestionType; Type: TYPE; Schema: public; Owner: saranneralla
+--
+
+CREATE TYPE public."QuestionType" AS ENUM (
+    'MCQ',
+    'SHORT_ANSWER',
+    'DESCRIPTIVE'
+);
+
+
+ALTER TYPE public."QuestionType" OWNER TO saranneralla;
 
 --
 -- Name: RoleType; Type: TYPE; Schema: public; Owner: postgres
@@ -217,6 +298,49 @@ CREATE TABLE public."AuditLog" (
 ALTER TABLE public."AuditLog" OWNER TO postgres;
 
 --
+-- Name: CourseMaterial; Type: TABLE; Schema: public; Owner: saranneralla
+--
+
+CREATE TABLE public."CourseMaterial" (
+    id text NOT NULL,
+    "assignmentId" text NOT NULL,
+    "unitNumber" integer NOT NULL,
+    title text NOT NULL,
+    description text,
+    type public."MaterialType" DEFAULT 'LECTURE_NOTES_PDF'::public."MaterialType" NOT NULL,
+    "fileUrl" text NOT NULL,
+    "fileName" text NOT NULL,
+    "fileSize" integer,
+    "viewCount" integer DEFAULT 0 NOT NULL,
+    "downloadCount" integer DEFAULT 0 NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."CourseMaterial" OWNER TO saranneralla;
+
+--
+-- Name: CourseQuiz; Type: TABLE; Schema: public; Owner: saranneralla
+--
+
+CREATE TABLE public."CourseQuiz" (
+    id text NOT NULL,
+    "assignmentId" text NOT NULL,
+    title text NOT NULL,
+    "unitNumber" integer,
+    "durationMinutes" integer DEFAULT 20 NOT NULL,
+    "totalMarks" double precision DEFAULT 20.0 NOT NULL,
+    "startTime" timestamp(3) without time zone NOT NULL,
+    "endTime" timestamp(3) without time zone NOT NULL,
+    "isPublished" boolean DEFAULT false NOT NULL,
+    "allowReview" boolean DEFAULT true NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."CourseQuiz" OWNER TO saranneralla;
+
+--
 -- Name: Department; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -311,6 +435,28 @@ CREATE TABLE public."LabBatchStudent" (
 ALTER TABLE public."LabBatchStudent" OWNER TO postgres;
 
 --
+-- Name: LecturePlanTopic; Type: TABLE; Schema: public; Owner: saranneralla
+--
+
+CREATE TABLE public."LecturePlanTopic" (
+    id text NOT NULL,
+    "assignmentId" text NOT NULL,
+    "unitNumber" integer NOT NULL,
+    "topicSequence" integer NOT NULL,
+    "topicTitle" text NOT NULL,
+    "subTopics" text,
+    "plannedDate" timestamp(3) without time zone NOT NULL,
+    "actualDate" timestamp(3) without time zone,
+    status public."DeliveryStatus" DEFAULT 'PLANNED'::public."DeliveryStatus" NOT NULL,
+    "deliveryMode" text,
+    remarks text,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."LecturePlanTopic" OWNER TO saranneralla;
+
+--
 -- Name: Program; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -331,6 +477,62 @@ CREATE TABLE public."Program" (
 
 
 ALTER TABLE public."Program" OWNER TO postgres;
+
+--
+-- Name: QuestionBankItem; Type: TABLE; Schema: public; Owner: saranneralla
+--
+
+CREATE TABLE public."QuestionBankItem" (
+    id text NOT NULL,
+    "subjectId" text NOT NULL,
+    "assignmentId" text,
+    "unitNumber" integer NOT NULL,
+    difficulty public."QuestionDifficulty" DEFAULT 'MEDIUM'::public."QuestionDifficulty" NOT NULL,
+    type public."QuestionType" DEFAULT 'MCQ'::public."QuestionType" NOT NULL,
+    "questionText" text NOT NULL,
+    options jsonb,
+    "correctOption" integer,
+    explanation text,
+    "bloomsLevel" text,
+    marks double precision DEFAULT 1.0 NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."QuestionBankItem" OWNER TO saranneralla;
+
+--
+-- Name: QuizQuestionMapping; Type: TABLE; Schema: public; Owner: saranneralla
+--
+
+CREATE TABLE public."QuizQuestionMapping" (
+    id text NOT NULL,
+    "quizId" text NOT NULL,
+    "questionBankId" text NOT NULL,
+    marks double precision DEFAULT 1.0 NOT NULL,
+    "order" integer DEFAULT 1 NOT NULL
+);
+
+
+ALTER TABLE public."QuizQuestionMapping" OWNER TO saranneralla;
+
+--
+-- Name: QuizStudentAttempt; Type: TABLE; Schema: public; Owner: saranneralla
+--
+
+CREATE TABLE public."QuizStudentAttempt" (
+    id text NOT NULL,
+    "quizId" text NOT NULL,
+    "studentId" text NOT NULL,
+    score double precision NOT NULL,
+    "submittedAnswers" jsonb NOT NULL,
+    "tabSwitchCount" integer DEFAULT 0 NOT NULL,
+    "startedAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "completedAt" timestamp(3) without time zone
+);
+
+
+ALTER TABLE public."QuizStudentAttempt" OWNER TO saranneralla;
 
 --
 -- Name: Regulation; Type: TABLE; Schema: public; Owner: postgres
@@ -467,6 +669,31 @@ CREATE TABLE public."Student" (
 ALTER TABLE public."Student" OWNER TO postgres;
 
 --
+-- Name: StudentActivityLog; Type: TABLE; Schema: public; Owner: saranneralla
+--
+
+CREATE TABLE public."StudentActivityLog" (
+    id text NOT NULL,
+    "studentId" text NOT NULL,
+    "userId" text,
+    category public."ActivityCategory" NOT NULL,
+    action text NOT NULL,
+    "targetResource" text,
+    description text NOT NULL,
+    "ipAddress" text,
+    "deviceType" text,
+    "deviceModel" text,
+    os text,
+    browser text,
+    "userAgent" text,
+    metadata jsonb,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."StudentActivityLog" OWNER TO saranneralla;
+
+--
 -- Name: StudentEnrollment; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -569,7 +796,12 @@ CREATE TABLE public."User" (
     "lockedUntil" timestamp(3) without time zone,
     "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "updatedAt" timestamp(3) without time zone NOT NULL,
-    "deletedAt" timestamp(3) without time zone
+    "deletedAt" timestamp(3) without time zone,
+    "activeDeviceIp" text,
+    "activeDeviceSummary" text,
+    "activeSessionId" text,
+    "lastHeartbeatAt" timestamp(3) without time zone,
+    "sessionExpiresAt" timestamp(3) without time zone
 );
 
 
@@ -116879,6 +117111,22 @@ cmvj688fg00034s23t8twejs3	cmuzp7hsc000bbynpr08m4i25	ENABLE_STUDENT_LOGINS	User	c
 
 
 --
+-- Data for Name: CourseMaterial; Type: TABLE DATA; Schema: public; Owner: saranneralla
+--
+
+COPY public."CourseMaterial" (id, "assignmentId", "unitNumber", title, description, type, "fileUrl", "fileName", "fileSize", "viewCount", "downloadCount", "createdAt") FROM stdin;
+\.
+
+
+--
+-- Data for Name: CourseQuiz; Type: TABLE DATA; Schema: public; Owner: saranneralla
+--
+
+COPY public."CourseQuiz" (id, "assignmentId", title, "unitNumber", "durationMinutes", "totalMarks", "startTime", "endTime", "isPublished", "allowReview", "createdAt") FROM stdin;
+\.
+
+
+--
 -- Data for Name: Department; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -119124,6 +119372,14 @@ cmv0lfkgk07gi10e089qd3aqc	cmv0jpmg7002dmzmy3937ylji	cmv0lfkgg07eu10e0oyewne02	20
 
 
 --
+-- Data for Name: LecturePlanTopic; Type: TABLE DATA; Schema: public; Owner: saranneralla
+--
+
+COPY public."LecturePlanTopic" (id, "assignmentId", "unitNumber", "topicSequence", "topicTitle", "subTopics", "plannedDate", "actualDate", status, "deliveryMode", remarks, "createdAt") FROM stdin;
+\.
+
+
+--
 -- Data for Name: Program; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -119171,6 +119427,30 @@ cmuzuc7ji003580kto81y8vmd	cmuzu9ogi0007ydphw5isz2ha	BA-SANSKRIT-AND-CIVIL-SERVIC
 cmuzuc7jj003780kt5k1wcsx8	cmuzu9ogi0007ydphw5isz2ha	BA-ECONOMICS-AND-CIVIL-SERVICE-STUDIES	Economics and Civil Service Studies	UG	3	6	t	2026-10-08 17:59:14.479	2026-10-08 17:59:14.479	\N	cmuztcm1y00079z3dlq5k2hdd
 cmuzuc7jj003980ktmiyf0rhy	cmuzu9ogi0007ydphw5isz2ha	BA-TRIBAL-STUDIES-AND-CIVIL-SERVICE-STUDIES	Tribal Studies and Civil Service Studies	UG	3	6	t	2026-10-08 17:59:14.48	2026-10-08 17:59:14.48	\N	cmuztcm1y00079z3dlq5k2hdd
 cmuzuc7jk003b80ktbyrz72ls	cmuzu9ogi0007ydphw5isz2ha	MA-ASTROLOGY	Astrology	PG	2	4	t	2026-10-08 17:59:14.48	2026-10-08 17:59:14.48	\N	cmuztcm1y00079z3dlq5k2hdd
+\.
+
+
+--
+-- Data for Name: QuestionBankItem; Type: TABLE DATA; Schema: public; Owner: saranneralla
+--
+
+COPY public."QuestionBankItem" (id, "subjectId", "assignmentId", "unitNumber", difficulty, type, "questionText", options, "correctOption", explanation, "bloomsLevel", marks, "createdAt") FROM stdin;
+\.
+
+
+--
+-- Data for Name: QuizQuestionMapping; Type: TABLE DATA; Schema: public; Owner: saranneralla
+--
+
+COPY public."QuizQuestionMapping" (id, "quizId", "questionBankId", marks, "order") FROM stdin;
+\.
+
+
+--
+-- Data for Name: QuizStudentAttempt; Type: TABLE DATA; Schema: public; Owner: saranneralla
+--
+
+COPY public."QuizStudentAttempt" (id, "quizId", "studentId", score, "submittedAnswers", "tabSwitchCount", "startedAt", "completedAt") FROM stdin;
 \.
 
 
@@ -119434,6 +119714,7 @@ cmv0jr1fq0174mzmyc0su7ier	cmv0jr1fj014bmzmy90xglian	26UECSE0086	808467215331	\N	
 cmv0jr1g401cnmzmysqj83qed	cmv0jr1fy01abmzmyu1yq1jzs	26UECSE0102	404239713092	P AMAR SRINIVAS	9964150131	pin.ishaan0707@gmail.com	\N	Male	\N	ACTIVE	2026	2026-10-09 05:50:36.82	2026-10-09 06:37:40.149	\N	OC	38912	NON-EWS	89.1	86.05	210323	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0jr1g501czmzmyn5kp5we3	cmv0jr1fz01ajmzmyt88vl7vj	26UECSE0107	903187236884	POTNURU SURESH	9492417277	shyamasripotnuru@gmail.com	\N	Female	\N	ACTIVE	2026	2026-10-09 05:50:36.821	2026-10-09 06:37:40.149	\N	BC_D	41516	NON-EWS	95.4	70	\N	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0jr1gm01j4mzmypceytfl6	cmv0jr1gg01grmzmyh4zegu5g	26UECSE0136	664621273789	VEMPALI SRINIVASA RAO	8500631693	vempalianjannikhil@gmail.com	\N	Male	\N	ACTIVE	2026	2026-10-09 05:50:36.838	2026-10-09 06:37:40.164	\N	BC_D	4789	NON-EWS	97.6	90.32	150648	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
+cmv0jr1i10229mzmy41re2y2c	cmv0jr1hu01zkmzmyx1a6n9l8	26UECSE0211	983910772984	PERICHARLA VISWANADHA RAJU	7989116394	v819690@gmail.com	\N	Male	\N	ACTIVE	2026	2026-10-09 05:50:36.889	2026-10-09 06:37:40.214	\N	OC	119464	NON-EWS	77	\N	\N	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0jr1h301p3mzmyiqb48bop	cmv0jr1gx01mpmzmybpjnvina	26UECSE0152	339099353588	BHEEMARASETTI V S M K VARA PRASAD	8639193751	bheemarasettishyamanth@gmail.com	\N	Male	\N	ACTIVE	2026	2026-10-09 05:50:36.855	2026-10-09 06:37:40.176	\N	BC_D	\N	NON-EWS	73.9	43.88	911713	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0jr1h501pzmzmywrk23tg9	cmv0jr1gz01namzmybpn0igdj	26UECSE0165	225461912200	\N	8919718059	santhiram.07@gmail.com	\N	Female	\N	ACTIVE	2026	2026-10-09 05:50:36.857	2026-10-09 06:37:40.179	\N	BC_A	70449	NON-EWS	93.9	53.87	750199	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0jr1hk01vqmzmyly7o9f98	cmv0jr1he01t9mzmyckfkkojx	26UECSE0187	560638765210	\N	7702195187	kottakotagirishkumar@gmail.com	\N	Male	\N	ACTIVE	2026	2026-10-09 05:50:36.872	2026-10-09 06:37:40.194	\N	BC_D	154238	NON-EWS	66.2	83.27	261697	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
@@ -119466,7 +119747,6 @@ cmv0jr1h201ovmzmyscjqg5f3	cmv0jr1gx01mxmzmyyp9oqd51	26UECSE0151	621734300705	GAR
 cmv0jr1hk01vnmzmyy485k3wf	cmv0jr1hd01szmzmy53uk8cch	26UECSE0174	556959777201	\N	9618877666	kp.nittala@yahoo.co.in	\N	Male	\N	ACTIVE	2026	2026-10-09 05:50:36.872	2026-10-09 06:37:40.191	\N	OC	38590	EWS	93.3	54.1	\N	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0jr1hl01w0mzmy569g1bj7	cmv0jr1he01temzmybuo5939c	26UECSE0192	451195819554	PASUPUREDDI RAMU	7989349573	ramu.pasupureddispt@gmail.com	\N	Female	\N	ACTIVE	2026	2026-10-09 05:50:36.873	2026-10-09 06:37:40.194	\N	OC	19350	NON-EWS	95.5	84.3	243450	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0jr1hy021dmzmybluj7z8y	cmv0jr1ht01z6mzmyk7ssrl90	26UECSE0198	360320182028	TEKKALI MOHAN	9394239226	lashyatekkali@gmail.com	\N	Female	\N	ACTIVE	2026	2026-10-09 05:50:36.887	2026-10-09 06:37:40.211	\N	BC_D	138309	NON-EWS	78	\N	\N	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
-cmv0jr1i10229mzmy41re2y2c	cmv0jr1hu01zkmzmyx1a6n9l8	26UECSE0211	983910772984	PERICHARLA VISWANADHA RAJU	7989116394	v819690@gmail.com	\N	Male	\N	ACTIVE	2026	2026-10-09 05:50:36.889	2026-10-09 06:37:40.214	\N	OC	119464	NON-EWS	77	\N	\N	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0jr1j002exmzmy7m2nqqg0	cmv0jr1it02camzmy1nxx9kcj	26UECSM0028	392068361913	Jana Vara Prasad	9849775223	janavaraprasad16@gmail.com	\N	Female	\N	ACTIVE	2026	2026-10-09 05:50:36.924	2026-10-09 06:37:40.25	\N	BC_D	57071	NON-EWS	89.1	49.4	823023	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0jr1jg02lcmzmyru6xp3hp	cmv0jr1j902ibmzmyio84e6a6	26UECSM0035	573026597432	\N	9441713135	durgasaranyakarri@gmail.com	\N	Female	\N	ACTIVE	2026	2026-10-09 05:50:36.94	2026-10-09 06:37:40.261	\N	BC_D	60402	NON-EWS	72.21	78.61	\N	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0jr1jf02komzmyhfd7ejf9	cmv0jr1j702hxmzmy21kexyrs	26UECSM0032	968041394524	\N	9963343491	pbsowjanya2501@gmail.com	\N	Female	\N	ACTIVE	2026	2026-10-09 05:50:36.939	2026-10-09 06:37:40.261	\N	OC	66117	NON-EWS	90	62.57	605363	AU	CAP	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
@@ -119626,6 +119906,7 @@ cmv0jr1ij028umzmyq47cn2qe	cmv0jr1ia0260mzmyj914lma5	26UECSM0003	960885920513	BAL
 cmv0jr1je02k8mzmyni6nqo1s	cmv0jr1j702i0mzmyvx2sq22o	26UECSM0033	249125662893	\N	7013166118	karra.venkat29@gmail.com	\N	Male	\N	ACTIVE	2026	2026-10-09 05:50:36.938	2026-10-09 06:37:40.261	\N	BC_D	72264	NON-EWS	88.3	77.28	359919	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0jr1jf02kvmzmyvo87qg6r	cmv0jr1j902ifmzmyt1szkv4h	26UECSM0050	873868298517	MOHAMMED BASHA	9347045200	tawfeeqmd143@gmail.com	\N	Male	\N	ACTIVE	2026	2026-10-09 05:50:36.939	2026-10-09 06:37:40.264	\N	BC_E	\N	NON-EWS	71.3	35.3	4123549	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0jr1jv02qtmzmyx7rec1wb	cmv0jr1jo02oemzmy8zoa5551	26UECSM0065	365602948608	POTTURI BANGARRAJU	9885344077	bangarrajupotturi@gmail.com	\N	Male	\N	ACTIVE	2026	2026-10-09 05:50:36.955	2026-10-09 06:37:40.275	\N	OC	\N	EWS	94.8	60.88	633239	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
+cmv0lfkaf056n10e0h91we0kr	cmv0lfka9054310e0h9lqx291	26UEECE0167	336303308289	\N	9346896576	thrivenikimidi@gmail.com	\N	Male	\N	ACTIVE	2026	2026-10-09 06:37:40.6	2026-10-09 06:37:40.6	\N	BC_D	39964	NON-EWS	91.3	65	565837	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0jr1jw02r9mzmy5rz495n9	cmv0jr1jp02onmzmycckw5m7o	26UECSM0073	947815556727	SIRIKI APPALA NAIDU	9000260888	bhavanasirikii@gmail.com	\N	Female	\N	ACTIVE	2026	2026-10-09 05:50:36.956	2026-10-09 06:37:40.277	\N	BC_D	75340	NON-EWS	88.1	67.91	519523	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0jr1k902wumzmy7w5aqvcc	cmv0jr1k302ugmzmy75yr5ibl	26UECSM0079	497417242711	Tyahadi Soma Sundara Rao	9398078951	bullitehadi055@gmail.com	\N	Male	\N	ACTIVE	2026	2026-10-09 05:50:36.969	2026-10-09 06:37:40.289	\N	OC	39998	EWS	93.5	78.5	338562	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0jr1ka02xamzmyw70j9001	cmv0jr1k402utmzmykr85s12j	26UECSM0092	964501696690	\N	9885334269	mrsrisrujana84@gmail.com	\N	Female	\N	ACTIVE	2026	2026-10-09 05:50:36.971	2026-10-09 06:37:40.292	\N	OC	81171	NON-EWS	94.7	62.07	\N	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
@@ -120132,7 +120413,6 @@ cmv0lfk9i04th10e0t7j0n03e	cmv0lfk9c04rb10e04q4yv3x9	26UEECE0102	994353879539	\N	
 cmv0lfk9y04zk10e09eyd6b2w	cmv0lfk9s04xk10e0tyl3jjvz	26UEECE0127	930769499056	\N	9848195435	moonlight7329k@gmail.com	\N	Female	\N	ACTIVE	2026	2026-10-09 06:37:40.582	2026-10-09 06:37:40.582	\N	BC_D	\N	NO	834	\N	\N	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0lfka0050k10e08h5buopv	cmv0lfk9t04xt10e0g6m4ckaf	26UEECE0137	650175027455	\N	9866351896	mahesh.swamy26@gmail.com	\N	Male	\N	ACTIVE	2026	2026-10-09 06:37:40.584	2026-10-09 06:37:40.584	\N	OC	83469	EWS	69.6	82.4	278903	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0lfkae056910e0bcfe8te0	cmv0lfka8053x10e0gf8k6foj	26UEECE0158	622677702893	\N	7032836755	varalakshmiayyankala@gmail.com	\N	Male	\N	ACTIVE	2026	2026-10-09 06:37:40.599	2026-10-09 06:37:40.599	\N	BC_B	104147	NON-EWS	86	48.9	832410	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
-cmv0lfkaf056n10e0h91we0kr	cmv0lfka9054310e0h9lqx291	26UEECE0167	336303308289	\N	9346896576	thrivenikimidi@gmail.com	\N	Male	\N	ACTIVE	2026	2026-10-09 06:37:40.6	2026-10-09 06:37:40.6	\N	BC_D	39964	NON-EWS	91.3	65	565837	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0lfkaw05d410e0oa66ii0f	cmv0lfkap05ab10e0hxpn8j39	26UEECE0186	461727711427	YENNI SRINIVASA RAO	8919962088	srinuvasraoyenni6663@gmail.com	\N	Male	\N	ACTIVE	2026	2026-10-09 06:37:40.617	2026-10-09 06:37:40.617	\N	BC_D	30836	NON-EWS	98.7	75.57	387431	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0lfkba05io10e0z4g0eed6	cmv0lfkb405gb10e0ps085ojm	26UEECE0204	977796315283	AKULA JANAKESWARA RAO	9985337016	raoaj630@gmail.com	\N	Male	\N	ACTIVE	2026	2026-10-09 06:37:40.631	2026-10-09 06:37:40.631	\N	OC	77243	NON-EWS	90.6	75	393421	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0lfkbc05j710e0wu9tned4	cmv0lfkb505gp10e042erbgjk	26UEECE0216	945487697879	ESAI RAMA KRISHNA	9985432161	esaivishnuvardhan@gmail.com	\N	Male	\N	ACTIVE	2026	2026-10-09 06:37:40.632	2026-10-09 06:37:40.632	\N	BC_D	33085	NON-EWS	97.7	67.4	\N	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
@@ -120430,6 +120710,14 @@ cmv98chnr003v14e0h6kyev93	cmv98chnq003r14e05p2bi5ru	26UEMEC0096	\N	\N	8008642352
 cmv98chnu004214e0zfoext7v	cmv98chnt003y14e02myhd7jl	26UEMRB0030	\N	\N	8247526531	\N	\N	\N	\N	ACTIVE	2026	2026-10-15 07:41:17.802	2026-10-15 07:41:17.802	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv98chnx004914e0yd0d3ysn	cmv98chnw004514e0w0p2gv9q	26UEMRB0041	\N	\N	9640356809	\N	\N	\N	\N	ACTIVE	2026	2026-10-15 07:41:17.806	2026-10-15 07:41:17.806	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
 cmv0jr1b80049mzmydz4di9f7	cmv0jr1am002pmzmyhq3k4q28	26UECHE0001	884976182245	\N	9701546666	adiraju.pradyumna@gmail.com	\N	Male	\N	ACTIVE	2026	2026-10-09 05:50:36.637	2026-10-22 06:21:53.453	\N	OC	72721	EWS	92.5	55.23	729254	AU	\N	AP	YES	\N	\N	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	Indian	\N	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N
+\.
+
+
+--
+-- Data for Name: StudentActivityLog; Type: TABLE DATA; Schema: public; Owner: saranneralla
+--
+
+COPY public."StudentActivityLog" (id, "studentId", "userId", category, action, "targetResource", description, "ipAddress", "deviceType", "deviceModel", os, browser, "userAgent", metadata, "createdAt") FROM stdin;
 \.
 
 
@@ -122580,1276 +122868,1276 @@ cmvbzqbjr00rbymbgvxl51c13	cmuzp7hsm000ebynpfs5ze3wj	cmv0mpuee0023gu0bc4gefp5y	cm
 -- Data for Name: User; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."User" (id, username, email, "passwordHash", "fullName", phone, "isActive", "mustChangePassword", "lastLoginAt", "failedAttempts", "lockedUntil", "createdAt", "updatedAt", "deletedAt") FROM stdin;
-cmuzu9oo4003dydph8jx0miue	SP	sp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. S Padma	+91 9440112233	t	f	2026-10-08 18:00:31.18	0	\N	2026-10-08 17:57:16.709	2026-10-12 14:52:18.433	\N
-cmuzu9ooh003nydph6y8e5jp1	KVNL	kvnl@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. KV NagaLakshmi	+91 9440112233	t	f	2026-10-08 18:00:31.615	0	\N	2026-10-08 17:57:16.722	2026-10-12 14:52:18.438	\N
-cmuzu9ooj003sydph9ysvw492	KVP	kvp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. KV Padmavathi	+91 9440112233	t	f	2026-10-08 18:00:31.828	0	\N	2026-10-08 17:57:16.724	2026-10-12 14:52:18.438	\N
-cmuzu9ool003xydphdqvmbd0b	MRR	mrr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. M Rama Rajeswari	+91 9440112233	t	f	2026-10-08 18:00:32.041	0	\N	2026-10-08 17:57:16.726	2026-10-12 14:52:18.439	\N
-cmuzu9ooo0042ydph2cf7s60u	PSR	psr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. P Srinivas Rao	+91 9440112233	t	f	2026-10-08 18:00:32.255	0	\N	2026-10-08 17:57:16.728	2026-10-12 14:52:18.439	\N
-cmuzu9ooq0047ydphbogdnye1	RN	rn@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Rani Nanda	+91 9440112233	t	f	2026-10-08 18:00:32.47	0	\N	2026-10-08 17:57:16.731	2026-10-12 14:52:18.44	\N
-cmuzu9oos004cydphwkuc88w2	SA	sa@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. S Ashok	+91 9440112233	t	f	2026-10-08 18:00:32.683	0	\N	2026-10-08 17:57:16.733	2026-10-12 14:52:18.44	\N
-cmuzu9oou004hydphvofh0ip3	BV	bv@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. B Vidya	+91 9440112233	t	f	2026-10-08 18:00:32.899	0	\N	2026-10-08 17:57:16.734	2026-10-12 14:52:18.441	\N
-cmuzu9oov004mydphjg2s99np	DM	dm@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. D Manasa	+91 9440112233	t	f	2026-10-08 18:00:33.114	0	\N	2026-10-08 17:57:16.736	2026-10-12 14:52:18.441	\N
-cmuzu9ooz004wydph7tohke43	PM	pm@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. P Manikanta	+91 9440112233	t	f	2026-10-08 18:00:33.547	0	\N	2026-10-08 17:57:16.739	2026-10-12 14:52:18.442	\N
-cmuzu9op00051ydph57trnn42	VBR	vbr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. V Bhaskar Rao	+91 9440112233	t	f	2026-10-08 18:00:33.763	0	\N	2026-10-08 17:57:16.741	2026-10-12 14:52:18.443	\N
-cmuzu9op20056ydph0wtyy3la	GS	gs@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mrs. G Sravani	+91 9440112233	t	f	2026-10-08 18:00:33.979	0	\N	2026-10-08 17:57:16.743	2026-10-12 14:52:18.443	\N
-cmuzu9op4005bydphxwgxubzc	BHP	bhp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Bh Padma	+91 9440112233	t	f	2026-10-08 18:03:11.13	0	\N	2026-10-08 17:57:16.744	2026-10-12 14:52:18.443	\N
-cmuzu9op6005gydphddh9mtce	DC	dc@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. D Chandravathi	+91 9440112233	t	f	2026-10-08 18:00:34.411	0	\N	2026-10-08 17:57:16.746	2026-10-12 14:52:18.444	\N
-cmuzu9op9005qydpho4pjs8iq	ADP	adp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. A Dhanunjaya Prasad	+91 9440112233	t	f	2026-10-08 18:00:34.842	0	\N	2026-10-08 17:57:16.749	2026-10-12 14:52:18.446	\N
-cmuzu9opb005vydpha49v7tmk	BBK	bbk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. B Bala Krishna	+91 9440112233	t	f	2026-10-08 18:00:35.059	0	\N	2026-10-08 17:57:16.751	2026-10-12 14:52:18.447	\N
-cmuzu9opc0060ydphcbp9oo8l	DAK	dak@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. D Arun Kumar	+91 9440112233	t	f	2026-10-08 18:00:35.275	0	\N	2026-10-08 17:57:16.752	2026-10-12 14:52:18.447	\N
-cmuzu9opd0065ydphxdu1ouox	MA	ma@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. M Anil	+91 9440112233	t	f	2026-10-08 18:00:35.494	0	\N	2026-10-08 17:57:16.754	2026-10-12 14:52:18.447	\N
-cmuzu9opf006aydphzzilc6xg	DMVP	dmvp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mrs. DMV Priya	+91 9440112233	t	f	2026-10-08 18:00:35.713	0	\N	2026-10-08 17:57:16.755	2026-10-12 14:52:18.448	\N
-cmuzu9opg006fydphssjkc4go	CA	ca@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. C Aparna	+91 9440112233	t	f	2026-10-08 18:00:35.931	0	\N	2026-10-08 17:57:16.757	2026-10-12 14:52:18.448	\N
-cmuzu9opi006kydphjl44uiyy	GSL	gsl@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. G Sathee Laxmi	+91 9440112233	t	f	2026-10-08 18:00:36.147	0	\N	2026-10-08 17:57:16.758	2026-10-12 14:52:18.448	\N
-cmuzu9opj006pydphp024wu8u	KS	ks@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. K Swathi	+91 9440112233	t	f	2026-10-08 18:00:36.365	0	\N	2026-10-08 17:57:16.76	2026-10-12 14:52:18.449	\N
-cmuzu9opl006uydphxq8zd8up	SLA	sla@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. S Laxmi Aparna	+91 9440112233	t	f	2026-10-08 18:00:36.582	0	\N	2026-10-08 17:57:16.761	2026-10-12 14:52:18.449	\N
-cmuzu9opn006zydphae7jr1mr	DBVJ	dbvj@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. DBV Jagannadham	+91 9440112233	t	f	2026-10-08 18:00:36.8	0	\N	2026-10-08 17:57:16.763	2026-10-12 14:52:18.449	\N
-cmuzu9opo0074ydphr5czmqqq	ISR	isr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. I Srinivas Rao	+91 9440112233	t	f	2026-10-08 18:00:37.018	0	\N	2026-10-08 17:57:16.764	2026-10-12 14:52:18.449	\N
-cmuzu9opp0079ydph48ejt3tu	MN	mn@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. M Neelima	+91 9440112233	t	f	2026-10-08 18:00:37.234	0	\N	2026-10-08 17:57:16.766	2026-10-12 14:52:18.45	\N
-cmuzu9opr007eydphr66l82pw	VA	va@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. V Adinarayana	+91 9440112233	t	f	2026-10-08 18:00:37.453	0	\N	2026-10-08 17:57:16.767	2026-10-12 14:52:18.45	\N
-cmuzu9ops007jydph2w4telgt	VS	vs@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mrs. V Sridevi	+91 9440112233	t	f	2026-10-08 18:00:37.67	0	\N	2026-10-08 17:57:16.768	2026-10-12 14:52:18.45	\N
-cmuzu9opu007tydph3tkyvaxq	KJR	kjr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. K Jhansi Rani	+91 9440112233	t	f	2026-10-08 18:00:38.105	0	\N	2026-10-08 17:57:16.771	2026-10-12 14:52:18.451	\N
-cmuzu9opw007yydphn9klb1vx	PRSS	prss@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. PR Sri Satya	+91 9440112233	t	f	2026-10-08 18:00:38.324	0	\N	2026-10-08 17:57:16.772	2026-10-12 14:52:18.451	\N
-cmuzu9opx0083ydphujxl4qb4	ARS	ars@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. A Ravi Shankar	+91 9440112233	t	f	2026-10-08 18:00:38.542	0	\N	2026-10-08 17:57:16.773	2026-10-12 14:52:18.451	\N
-cmuzu9opz008dydphf45zjzey	PKD	pkd@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. PK DAS	+91 9440112233	t	f	2026-10-08 18:00:38.979	0	\N	2026-10-08 17:57:16.776	2026-10-12 14:52:18.452	\N
-cmuzu9oq1008iydphx72end76	CHS	chs@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ch Sowjanya	+91 9440112233	t	f	2026-10-08 18:00:39.199	0	\N	2026-10-08 17:57:16.777	2026-10-12 14:52:18.452	\N
-cmuzu9oq60092ydphh6540ixl	JRR	jrr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. J RajaRatnam	+91 9440112233	t	f	2026-10-08 18:00:40.079	0	\N	2026-10-08 17:57:16.783	2026-10-12 14:52:18.453	\N
-cmuzu9oqa009hydph4c12wqt6	PBSKR	pbskr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. PBS Krishnamuraju	+91 9440112233	t	f	2026-10-08 18:00:40.732	0	\N	2026-10-08 17:57:16.786	2026-10-12 14:52:18.454	\N
-cmuzu9oqc009rydph4a3z44gt	CHVVDP	chvvdp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. CH VVD Prasad	+91 9440112233	t	f	2026-10-08 18:00:41.171	0	\N	2026-10-08 17:57:16.788	2026-10-12 14:52:18.454	\N
-cmuzu9opt007oydphtvdybf62	BDS	bds@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. B Divya Sati	+91 9440112233	t	f	2026-10-08 18:00:37.888	0	\N	2026-10-08 17:57:16.77	2026-10-12 14:52:18.45	\N
-cmv989gfm0000jynf2ep5brs7	26UECHE0048	\N	$2a$10$UDNtNIk7I2dWc5NojiUIKusNfLdTLVZMIhTUC5zuSzP4IzMQ18ZOW	GORLE SREE CHARAN	9676727799	t	f	\N	0	\N	2026-10-15 07:38:56.242	2026-10-15 07:38:56.242	\N
-cmuzu9opy0088ydphf2ak7hvm	MVPL	mvpl@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. MV Pankaj Lahari	+91 9440112233	t	f	2026-10-08 18:00:38.761	0	\N	2026-10-08 17:57:16.775	2026-10-12 14:52:18.451	\N
-cmuzu9oq2008nydphukhr80tr	BMF	bmf@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. BM Florence	+91 9440112233	t	f	2026-10-08 18:00:39.416	0	\N	2026-10-08 17:57:16.778	2026-10-12 14:52:18.452	\N
-cmuzu9oq4008sydphhvcxhf7x	CHA	cha@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Ch Alekya	+91 9440112233	t	f	2026-10-08 18:00:39.643	0	\N	2026-10-08 17:57:16.78	2026-10-12 14:52:18.453	\N
-cmuzu9oq5008xydph5s3lk30w	IRS	irs@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. I Rajasekhar	+91 9440112233	t	f	2026-10-08 18:00:39.862	0	\N	2026-10-08 17:57:16.781	2026-10-12 14:52:18.453	\N
-cmuzu9oq70097ydphk9ko7f09	NVL	nvl@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. N Vijaya Lakshmi	+91 9440112233	t	f	2026-10-08 18:00:40.298	0	\N	2026-10-08 17:57:16.784	2026-10-12 14:52:18.453	\N
-cmuzu9oq8009cydph5icd3mme	VVLUR	vvlur@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. VVL Usha Ramani	+91 9440112233	t	f	2026-10-08 18:00:40.515	0	\N	2026-10-08 17:57:16.785	2026-10-12 14:52:18.454	\N
-cmuzu9oqb009mydphxpmnxv51	MBS	mbs@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. M Bhanu Sridhar	+91 9440112233	t	f	2026-10-08 18:00:40.952	0	\N	2026-10-08 17:57:16.787	2026-10-12 14:52:18.454	\N
-cmuzu9oqd009wydph37vthpub	SVM	svm@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. S Vinod Manikantha	+91 9440112233	t	f	2026-10-08 18:00:41.39	0	\N	2026-10-08 17:57:16.789	2026-10-12 14:52:18.455	\N
-cmuzu9oqe00a1ydphofwglgxa	ASL	asl@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. A Suseelatha	+91 9440112233	t	f	2026-10-08 18:00:41.611	0	\N	2026-10-08 17:57:16.791	2026-10-12 14:52:18.455	\N
-cmuzu9oqf00a6ydphz8r5sbiv	BB	bb@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. B Bharathi	+91 9440112233	t	f	2026-10-08 18:00:41.833	0	\N	2026-10-08 17:57:16.792	2026-10-12 14:52:18.455	\N
-cmuzu9oqh00abydphyrk6wo0i	CHAN	chan@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Ch Appala Naidu	+91 9440112233	t	f	2026-10-08 18:00:42.055	0	\N	2026-10-08 17:57:16.793	2026-10-12 14:52:18.455	\N
-cmuzu9oqj00agydpho3hnmh32	CHVS	chvs@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Ch V Sreedhar	+91 9440112233	t	f	2026-10-08 18:00:42.273	0	\N	2026-10-08 17:57:16.796	2026-10-12 14:52:18.455	\N
-cmuzu9oql00alydphrnz57sid	KLSP	klsp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. K L Sai Prasad	+91 9440112233	t	f	2026-10-08 18:00:42.491	0	\N	2026-10-08 17:57:16.797	2026-10-12 14:52:18.456	\N
-cmuzu9oqm00aqydphkyxl6nml	KVSS	kvss@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. KVS Sarma	+91 9440112233	t	f	2026-10-08 18:00:42.719	0	\N	2026-10-08 17:57:16.799	2026-10-12 14:52:18.456	\N
-cmuzu9oqo00avydphnyap4rgv	NGB	ngb@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. N Giribabu	+91 9440112233	t	f	2026-10-08 18:00:42.94	0	\N	2026-10-08 17:57:16.8	2026-10-12 14:52:18.456	\N
-cmuzu9oqq00b5ydphkng76q2y	SSAS	ssas@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. SS Ayyappa Sastri	+91 9440112233	t	f	2026-10-08 18:00:43.378	0	\N	2026-10-08 17:57:16.803	2026-10-12 14:52:18.457	\N
-cmuzu9oqs00baydphep82obna	TPK	tpk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. T Poornakantha	+91 9440112233	t	f	2026-10-08 18:00:43.597	0	\N	2026-10-08 17:57:16.804	2026-10-12 14:52:18.457	\N
-cmuzu9oqu00bfydphgpni5k4s	AS	as@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Anand Solanki	+91 9440112233	t	f	2026-10-08 18:00:43.818	0	\N	2026-10-08 17:57:16.806	2026-10-12 14:52:18.457	\N
-cmuzu9oqv00bkydphx9krsdp7	BVSAK	bvsak@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. BVS Arun Kumar	+91 9440112233	t	f	2026-10-08 18:00:44.036	0	\N	2026-10-08 17:57:16.807	2026-10-12 14:52:18.458	\N
-cmuzu9oqw00bpydph8durqqw8	MBK	mbk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. M Bhaskar Kumar	+91 9440112233	t	f	2026-10-08 18:00:44.256	0	\N	2026-10-08 17:57:16.809	2026-10-12 14:52:18.458	\N
-cmuzu9oqy00buydphmu6in27s	YPR	ypr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. Y Prasad Reddy	+91 9440112233	t	f	2026-10-08 18:00:44.474	0	\N	2026-10-08 17:57:16.81	2026-10-12 14:52:18.458	\N
-cmuzu9oqz00bzydph4zpmmvbe	KMK	kmk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. K Manikyakanthi	+91 9440112233	t	f	2026-10-08 18:00:44.694	0	\N	2026-10-08 17:57:16.811	2026-10-12 14:52:18.458	\N
-cmuzu9or000c4ydphqv593sn2	PKM	pkm@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. P KiranMayi	+91 9440112233	t	f	2026-10-08 18:00:44.913	0	\N	2026-10-08 17:57:16.812	2026-10-12 14:52:18.458	\N
-cmuzu9or100c9ydphnmpwh80l	TAJ	taj@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. Taj	+91 9440112233	t	f	2026-10-08 18:00:45.133	0	\N	2026-10-08 17:57:16.814	2026-10-12 14:52:18.459	\N
-cmuzu9or200ceydphygnpfuwb	BN	bn@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. B Nagarjun	+91 9440112233	t	f	2026-10-08 18:00:45.353	0	\N	2026-10-08 17:57:16.815	2026-10-12 14:52:18.461	\N
-cmuzu9or400cjydphst18nqf0	BRB	brb@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. B Rajesh Babu	+91 9440112233	t	f	2026-10-08 18:00:45.574	0	\N	2026-10-08 17:57:16.816	2026-10-12 14:52:18.462	\N
-cmuzu9or500coydphf8sxkt85	CHR	chr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Ch Rajesh	+91 9440112233	t	f	2026-10-08 18:00:45.795	0	\N	2026-10-08 17:57:16.817	2026-10-12 14:52:18.462	\N
-cmuzu9or600ctydph7010w0q9	CHSL	chsl@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Ch S Lakshmi	+91 9440112233	t	f	2026-10-08 18:00:46.013	0	\N	2026-10-08 17:57:16.818	2026-10-12 14:52:18.462	\N
-cmuzu9or700cyydph5yd0ba42	DSK	dsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. D Santhosh Kumar	+91 9440112233	t	f	2026-10-08 18:00:46.232	0	\N	2026-10-08 17:57:16.819	2026-10-12 14:52:18.463	\N
-cmuzu9or800d3ydph0v6t83c5	NSSVRR	nssvrr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. NSSV Raja Rao	+91 9440112233	t	f	2026-10-08 18:00:46.451	0	\N	2026-10-08 17:57:16.821	2026-10-12 14:52:18.463	\N
-cmuzu9or900d8ydphreapmzgd	PVR	pvr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. PV Rajeswari	+91 9440112233	t	f	2026-10-08 18:00:46.67	0	\N	2026-10-08 17:57:16.822	2026-10-12 14:52:18.463	\N
-cmuzu9ora00ddydphvr1vi0wp	RP	rp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. R Praveena	+91 9440112233	t	f	2026-10-08 18:00:46.89	0	\N	2026-10-08 17:57:16.823	2026-10-12 14:52:18.464	\N
-cmuzu9orc00diydphpybxtk7h	VSJ	vsj@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr.V Siva Jahnavy	+91 9440112233	t	f	2026-10-08 18:00:47.111	0	\N	2026-10-08 17:57:16.824	2026-10-12 14:52:18.464	\N
-cmuzu9ord00dnydphdwln95zi	KAR	kar@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. K AyyaRaju	+91 9440112233	t	f	2026-10-08 18:00:47.331	0	\N	2026-10-08 17:57:16.825	2026-10-12 14:52:18.464	\N
-cmv0jr1al002nmzmy4qn3dp3q	26UECHE0022	26ueche0022@student.gvpihlr.edu.in	$2a$10$Cpo3QST8B/sWtw7.kCcFOe1PavvaVyxHL6LhAbnVjZVs5jWO29reW	LANKA STEPHEN	7893721745	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.898	\N
-cmv0jr1af002gmzmyutljclbh	26UECHE0021	26ueche0021@student.gvpihlr.edu.in	$2a$10$6kJKtjpPg.8HdFGsh2VQfOFiYwZjwrT2PaAI8UTJ.luvtaRejPS6q	NOONELA SARATH CHANDRA	9298759573	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N
-cmv0jr1ah002imzmy871ufi1r	26UECHE0023	26ueche0023@student.gvpihlr.edu.in	$2a$10$mQmecLoN1kAaco//4ceNkeSZitXz.H6eUCc14QdI/A687iN7w/56u	BONUGU DINESH	7382473690	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N
-cmv0jr1ai002jmzmykm1z53il	26UECHE0024	26ueche0024@student.gvpihlr.edu.in	$2a$10$1WEKfm3OZ5N27qQUMzzg6.DVWEWXDkV8AXVnZYyhB7fztLC64cbJG	PENTAKOTA GOWTHAM	8341361889	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.898	\N
-cmv0jr1ae002fmzmydvmpw0l6	26UECHE0006	26ueche0006@student.gvpihlr.edu.in	$2a$10$.FODIAy/ojnGYKvZ65vWE.gOWzyH59E/S7j/XcgHQsXPSvtlA6PWK	J NIKHIL SAI	9000597053	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.897	\N
-cmv0jr1ag002hmzmy8acxzo92	26UECHE0004	26ueche0004@student.gvpihlr.edu.in	$2a$10$B.R538KSb5dob4QWlungZOfyZmuXNseIM80s9CEyiILYmPdiOPNOO	BATTULA TEJASWINI	9949553232	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.897	\N
-cmv0jr1ai002kmzmybqxjcl9g	26UECHE0025	26ueche0025@student.gvpihlr.edu.in	$2a$10$ckJKvAj7f..QMRp.DdFwPut4hP2dFVOs6D7gnjqJleNDfgdsyz5aG	GIDUTURI CHAITANYA KUMAR	8465094281	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.898	\N
-cmv0jr1aj002lmzmy70pr7ifw	26UECHE0013	26ueche0013@student.gvpihlr.edu.in	$2a$10$3huzHPHKuaQbTl2dv2Xy6.vs8K0eF.tZlKR7Gw8ItWc4wa3uQUeBm	R CHARISHMA	9052334886	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.898	\N
-cmv0jr19z002emzmyd5zpihkg	26UECHE0002	26ueche0002@student.gvpihlr.edu.in	$2a$10$czYM05f0LgmAE5X7ZP4mUO4x/Ab0kGN2Hyo/ts1urWdnNZMf3kdg6	ANAPARTI HEMA AMRUTHASRI	7780375160	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N
-cmv0jr1ak002mmzmyml7sr464	26UECHE0010	26ueche0010@student.gvpihlr.edu.in	$2a$10$KCwdWLdfiIKKUbd5rlFCm.z0vUoH925aK5wxNZ9sGc3UVr.TtRSjW	MADICHARLA SRI CHARAN	9866569376	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.897	\N
-cmv0jr1b3003zmzmyx06ovo5d	26UECHE0005	26ueche0005@student.gvpihlr.edu.in	$2a$10$wN8Z.YhNC5bu8fs/p7HnauYjjWqNKPjQX2JJOaL.rsIcMX6fH4Sce	GARE BHUVANA SREE PANNA	9160885161	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N
-cmv0jr1ap002tmzmy2j8ovwkd	26UECHE0018	26ueche0018@student.gvpihlr.edu.in	$2a$10$7ZYr4.rxj7sJfRQYR9TudeOw8UmczroD7w.12/HP42VwimAQYmoee	MEDAPALLI THANUSH KUMAR	8074285898	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N
-cmv0jr1b9004dmzmys413oyv8	26UECHE0012	26ueche0012@student.gvpihlr.edu.in	$2a$10$IG37aJMrDnjY/N/PM5D2jeLT/3YJxZY6vRysvmAt.r89zLLrKjL1e	OMMI GREESHMA	9849601979	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.897	\N
-cmv0jr1an002qmzmysy279aw5	26UECHE0015	26ueche0015@student.gvpihlr.edu.in	$2a$10$6vQYdRJJdjO.hTk1FtyTueQmCoJNdGfIYtPXdUHv/MNB6s0ZnxJFu	SARAGADAM ASHVIK	7780527369	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.897	\N
-cmv0jr1al002omzmyral3hro5	26UECHE0008	26ueche0008@student.gvpihlr.edu.in	$2a$10$tU1VXnRosykXyH9HTByy/ODECGQbdN1qV8rn.7aW.Q1NY7V7cU7Me	KARINKI NAGA VENKATA SAI SURYA KARTHIK	7989080306	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.897	\N
-cmv0jr1bm005hmzmyc4n1frv8	26UECHE0020	26ueche0020@student.gvpihlr.edu.in	$2a$10$macYVtEMmm4OArdouLB6YeeKAVJHx/J4TUOvyXoW8RGXks0ZDX7be	VAJRAPU SHANMUKHA	7702641912	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N
-cmv0jr1bm005gmzmy1z6noegq	26UECHE0019	26ueche0019@student.gvpihlr.edu.in	$2a$10$KJ0mpgJBrCFFt3gAfPzF/uPdA8QKaRCAQ5NM7Bp/Ax9JS3BOlzZzO	TRIVEDULA AKSHAYA	9704585257	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.897	\N
-cmv0jr1be0056mzmy7uq4abht	26UECHE0017	26ueche0017@student.gvpihlr.edu.in	$2a$10$Tp8/QhRxdQDQ8PzZBfougut7Ye8JA3c5izX2CMLR97ZOCxNBrpUf6	ALAJANGI SRIYATHI	7658945749	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N
-cmv0jr1an002rmzmyjasrt9ev	26UECHE0014	26ueche0014@student.gvpihlr.edu.in	$2a$10$ZSDVd3JqFEPbcFaZ1gkDrOx8FUN0q1LsI57feFrbjNisiStKFUZoS	YANDAMURI STEPHEN TANISH ROY	7330877559	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.897	\N
-cmv0jr1cc008qmzmyaditphgn	26UECHE0033	26ueche0033@student.gvpihlr.edu.in	$2a$10$LrLHc37U8d1f0hPVPGGvUuxEiz3cUuElS9EpNsgcRm4g2BZNc3gGK	KANDIPILLI PALLAVI PRANATHI SRI	9666610617	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N
-cmv0jr1cc008ymzmyizf1zi80	26UECHE0029	26ueche0029@student.gvpihlr.edu.in	$2a$10$liFP4ZTK7mMAsmW0pzYHOuRMlWdQQkvxBAbcsMXWET.jCWLiI8FY2	CHITTA AMRUTHA	9290269636	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N
-cmv0jr1cc008omzmyyi37u3rq	26UECHE0030	26ueche0030@student.gvpihlr.edu.in	$2a$10$oA5w1GoYZ7E5IUQHHbEri.iOK735hseAhTEVoiEGyIr.LDCmAsMJW	PALETI SAI YASHWANTH	8688439396	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N
-cmv0jr1cc008vmzmyn0phgub3	26UECHE0027	26ueche0027@student.gvpihlr.edu.in	$2a$10$LClLo3j3ME1RRBIFowYfl.X9vIXq8M5dVSpjpz9BaioTYqJmZpW7e	SABBAVARAPU TARUNA KEERTHI	9989720503	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N
-cmv0jr1bk005bmzmypv7n6va2	26UECHE0016	26ueche0016@student.gvpihlr.edu.in	$2a$10$2GMQ2dPtBMYMOk10SrLccOm4634eraX.T558HZ9xqnBT3YfTJkH1O	SHAIK RIZWAN	8500095508	t	f	2026-10-09 08:31:32.316	0	\N	2026-10-09 05:50:36.599	2026-10-09 08:31:32.317	\N
-cmv0jr1cd0098mzmy03aw4iw8	26UECHE0047	26ueche0047@student.gvpihlr.edu.in	$2a$10$6tF1PkUb4qVK8jld2d69BeECxt2kj9L1UwDU7gsW7btwOZM2ZFRgu	BOKKA AKARTHIK	9515138974	t	f	\N	0	\N	2026-10-09 05:50:36.685	2026-10-09 06:37:40.052	\N
-cmv0jr1d200exmzmyxrmu9axh	26UECIV0007	26ueciv0007@student.gvpihlr.edu.in	$2a$10$ixUiuWlJGk54Ihcl9clST.pZW3JnxnhP3OD1p4rTbSY3b/jUM140C	LADI ROHIT	8520060099	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N
-cmv0jr1d300f9mzmyovyfdqyi	26UECIV0017	26ueciv0017@student.gvpihlr.edu.in	$2a$10$zdzYl6Wj8L1XJlzATsELK.fq9Z4c4mZZfcfuPnIObFcGrGW21gkd2	SINGUPURAM MANOJ KUMAR	9121488898	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N
-cmv0jr1ds00ldmzmyh6aqaxvm	26UECSE0003	26uecse0003@student.gvpihlr.edu.in	$2a$10$h6RRqdXQmvi9BHFqyurII.ataffSIPo9dxo7xbWzekFU81nQsgyo.	ATTULOORI YASASWINI	9701574499	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.086	\N
-cmv0jr1dt00ljmzmy9bl2wx7e	26UECSE0007	26uecse0007@student.gvpihlr.edu.in	$2a$10$3YcXmgu3J5weXTQcAFEA.uMpn0aWmZkm6e1yUCU2Eikdpjhaq/xc2	ROUTHU SASANK	9063892997	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N
-cmv0jr1eb00rimzmyeh8jb5we	26UECSE0019	26uecse0019@student.gvpihlr.edu.in	$2a$10$PwflZMvBe7/7/2hhGq0fCulVwcddFdtBktKm1eUpV1wRIo03CiLwy	CHEEKATI NAVITHA	9704217074	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmv0jr1ed00rvmzmyua7dwhac	26UECSE0037	26uecse0037@student.gvpihlr.edu.in	$2a$10$l5Sjj1rEkAi75vy4/hyyVOwmwmhWvrCrkj6SFHt4aQd6ITbgiA.0K	GOGINENI SRI GANA SRAVANI	6300796589	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmuzu9op7005lydphc9foztkf	KR	kr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. K Rohini	+91 9440112233	t	f	2026-10-09 05:10:51.011	1	\N	2026-10-08 17:57:16.748	2026-10-12 14:52:18.444	\N
-cmuzu9oqp00b0ydphx5t2pbfg	SAK	sak@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. S Ashok Kumar	+91 9440112233	t	f	2026-10-08 18:00:43.159	0	\N	2026-10-08 17:57:16.802	2026-10-12 14:52:18.456	\N
-cmuzu9orf00dxydphmg1iayhn	PSSA	pssa@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. PSS Appalacharyulu	+91 9440112233	t	f	2026-10-08 18:00:47.768	0	\N	2026-10-08 17:57:16.827	2026-10-12 14:52:18.465	\N
-cmuzu9org00e2ydphu05asr0i	VVVSN	vvvsn@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. VVV Satyanarayana	+91 9440112233	t	f	2026-10-08 18:00:47.987	0	\N	2026-10-08 17:57:16.828	2026-10-12 14:52:18.465	\N
-cmv0jr1et00xomzmyko4eicb7	26UECSE0045	26uecse0045@student.gvpihlr.edu.in	$2a$10$lRThSmXiMJKXOvbf/SrQYOJZY4mvN8DXNacYhAFGRjs4BYiA7Dn1C	INDUKURI SAI AMRUTHA	9866364696	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N
-cmv0jr1eu00y1mzmyq5suuqzy	26UECSE0059	26uecse0059@student.gvpihlr.edu.in	$2a$10$hxxYAms9ORVPFdAFcW/BKeUhao9JmrqprhqUFCrcoWB95nNdZATYy	KARTHIKA HARSHINI	9490637937	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N
-cmv0jr1fh0141mzmyklk8zbmm	26UECSE0076	26uecse0076@student.gvpihlr.edu.in	$2a$10$hJeIJnSP5vF6TkD5bv2KAepBVHkUIa5T.2suMptuviivAXXCcSU.u	MAHADASYAM RITHVIKESH	9000040957	t	f	\N	0	\N	2026-10-09 05:50:36.798	2026-10-09 06:37:40.13	\N
-cmv0jr1fj014bmzmy90xglian	26UECSE0086	26uecse0086@student.gvpihlr.edu.in	$2a$10$gASvHiux2F1NRDbaY.qKYe3wavaQ2iagdbQKzMdSznatbcBB/6NNm	NAGIREDDY NAGA VENKATA LAKSHMI CHARISHMA	8688871526	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N
-cmv0jr1fy01a8mzmyc3j9rxkj	26UECSE0099	26uecse0099@student.gvpihlr.edu.in	$2a$10$pBGGiI0DcUj/v5vlKX08XeOAiNeXg1P87N0xBwRYbzVZMQmwsc6dO	PIDUGU LAKSHMI PRASANTH	9963021855	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N
-cmv0jr1fz01ajmzmyt88vl7vj	26UECSE0107	26uecse0107@student.gvpihlr.edu.in	$2a$10$a/8kgJZ7OJShOXz9xVixne37E6v06CjpCob3U.C/.oee5eb/7JKpu	POTNURU SHYAMA SRI	8341088727	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N
-cmv0jr1gh01gzmzmy412zedn3	26UECSE0121	26uecse0121@student.gvpihlr.edu.in	$2a$10$5BYFZcRBuT2XE/GCrK094.w5IfXf9sV1WdGEsbHwZ94LvmN9xBdMW	ALLA YOGESH YESHWANTH	90325579670	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N
-cmv0jr1gx01mrmzmygv4upgmv	26UECSE0147	26uecse0147@student.gvpihlr.edu.in	$2a$10$hkYeTa7113r3VehvCxioJufnhFQP15amhC1zrMqL1nybVuviYfRTq	POTHULA SAI KIRAN	9705313284	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N
-cmv0jr1gy01n9mzmyat1bxiee	26UECSE0168	26uecse0168@student.gvpihlr.edu.in	$2a$10$ZKaM8lUnJlFLYbiYzZidX.DVxF.RtMnRpGIIVhWyNjR3wcVBo3j5y	JALLEPALLI JAYA CHANDRA	8919729409	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N
-cmv0jr1hd01swmzmylv4ym3a4	26UECSE0176	26uecse0176@student.gvpihlr.edu.in	$2a$10$7UDYquTO2Flq.osSj.nz1OoXZD.v5bf5k/NL4AbN.B7Z63LkGD57u	AYUSHI PATNAIK	8801809615	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N
-cmv0jr1he01t9mzmyckfkkojx	26UECSE0187	26uecse0187@student.gvpihlr.edu.in	$2a$10$PNgiGaONPuGv.KvD1U2Ma.BTJ/29rtxSSzKrUdaGi7hkqEzUWWj.K	KOTTAKOTA GIRISH KUMAR	9704336976	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N
-cmv0jr1hu01zrmzmyicml3gck	26UECSE0215	26uecse0215@student.gvpihlr.edu.in	$2a$10$BI/jPXgJhAIOIkqueU4N2um5IX0tps.avZ0DFNlv.jkGwWrYDXvv6	MOHAMMAD SHABEER AMAN	9848608335	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N
-cmv0jr1ht01z7mzmy5if6oc6t	26UECSE0199	26uecse0199@student.gvpihlr.edu.in	$2a$10$1ng5oP29Y/QWcYNH.LQB0ujvTAmDmSSV5eBZCoB96gP6wtIHMG3/C	VARANASI PRABHAV SRI SAI	8886959222	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N
-cmv0jr1ia0262mzmy3qze5n9s	26UECSE0231	26uecse0231@student.gvpihlr.edu.in	$2a$10$pqJDg8/UfI.VtLbyIlBY..aLtCnoGBABYLwQ9fIgd.srRNiTx.cl.	GARAPATI VAMSI	9533266296	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.225	\N
-cmv0jr1i9025mmzmyugpvth54	26UECSE0232	26uecse0232@student.gvpihlr.edu.in	$2a$10$4UOdKMW385aqFpMiRx7tiuVjr9WGYnVtd/xLPPttquo2gBmWIrCOK	KANCHIPATI VASU VARDHAN	9247179469	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N
-cmv0jr1ir02bwmzmy4jdtaldo	26UECSM0006	26uecsm0006@student.gvpihlr.edu.in	$2a$10$Mmpx2ANtqmLjv6ZeWftKguVhYFpNpbUAo1HBbEpKV8Bj3mC5PKJae	BHAGYARAJU BARATAM	9490223499	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N
-cmv0jr1is02c3mzmyryvm1s4z	26UECSM0022	26uecsm0022@student.gvpihlr.edu.in	$2a$10$wPPYFD82YveCDebLN2exMOltLYKbR5zJNPPmDKjTVLQrdjlqi/Y5y	GARBHAM SAI JESWITHA	9866381994	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N
-cmv0jr1j702i1mzmyd0iqtbl1	26UECSM0038	26uecsm0038@student.gvpihlr.edu.in	$2a$10$Iduq27zc7PyAsGxKxGJ0zO1bDL1wy0cN49fIZSK2sKACoc8W99Xza	KELLA LAVANYA	7780229339	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N
-cmv0jr1j902igmzmyeod9z5kc	26UECSM0046	26uecsm0046@student.gvpihlr.edu.in	$2a$10$57WI66PWtO0pQVT7/OtSsekyvFNiBALwIu7NM2JngcQtYTR6FMXtW	MANUKONDA LOHITH MOHAN	7989656466	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N
-cmv0jr1jo02o9mzmy6dq7au8k	26UECSM0060	26uecsm0060@student.gvpihlr.edu.in	$2a$10$5f4bzRtlSx8gJpl615BFyeYoVneRnkfez9iIRt7weqVR7xWjyasVq	NOWDU TEJASWINI	9705729473	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.27	\N
-cmv0jr1jp02olmzmyfc90nz17	26UECSM0072	26uecsm0072@student.gvpihlr.edu.in	$2a$10$J61PH3PPjIPPXY7E.9XoZehGnfNvg0grf.yB.D8SUCVSUX.MF6F5O	SURAMPUDI SANJAY RAHUL PRASAD	9848281030	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N
-cmv0jr1k302ummzmyx3oiutew	26UECSM0085	26uecsm0085@student.gvpihlr.edu.in	$2a$10$BHqSkDvn875lSJJSsyn6rOdXJCVTrsFw9SwMZ8WZZZfxjVPXKoMsC	YELLUMAHANTHI SAI SARATH	6302230034	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1k402uumzmyc3acfqyv	26UECSM0096	26uecsm0096@student.gvpihlr.edu.in	$2a$10$GXxVMqi.G.Nx8kTwG0qm8ecoUVIi.YwTkZoJw2XtD4ev/La4TbSPO	AKELLA NAGA SAI MEGHANA	9866176526	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1kj030zmzmy4qt0dild	26UECSM0116	26uecsm0116@student.gvpihlr.edu.in	$2a$10$Sc6PVXRN.VYLCoRKfnZEauPjt7x9xwoQ1NPHGXBnPKoST9JCWi7cu	KARRI YASHASWANI	9456377805	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N
-cmv0jr1kj0317mzmy2cg9lqqo	26UECSM0124	26uecsm0124@student.gvpihlr.edu.in	$2a$10$Cty7WnmKKP3UVDtjEVmeru5Y7x3I6UrVrNXZjlLNQ2p7qfopcB6rq	ADDALA TEJASWANI	8121560002	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N
-cmv0jr1cd008zmzmy91lay2eb	26UECHE0036	26ueche0036@student.gvpihlr.edu.in	$2a$10$46VvwQP4Hf6pFFgn1MQ/Veb7FadQ75N9lpX4o7Mjcm6CAIISbavey	BANDARU RAGADEEPTHI	8639932928	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.051	\N
-cmv0jr1d200f4mzmy0eph2sjm	26UECIV0009	26ueciv0009@student.gvpihlr.edu.in	$2a$10$t6xBTPEXIenLfEf/x2DbEOJDAckPkoVMMo5RafcpjEQDPDkO3w/6W	METTA PRAHARSHINI	9032539527	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N
-cmv0jr1d300famzmyj60x439y	26UECIV0021	26ueciv0021@student.gvpihlr.edu.in	$2a$10$685fzDuISlQYOKoG.EduAup2HaK9.qPedZf2v.2sk3Cn9S78wrqte	GURIVILLI KOMALI	8125760419	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N
-cmv0jr1ds00lbmzmy6vmgdnyd	26UECSE0005	26uecse0005@student.gvpihlr.edu.in	$2a$10$VG6rSY3xamreGmy3u8PNheL9oYSiy/D.pByAB2QVCDsrsNZChg2kK	BONUMUDDULA JAHNAVI	9491569580	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.086	\N
-cmv0jr1dt00limzmyvzjuirde	26UECSE0006	26uecse0006@student.gvpihlr.edu.in	$2a$10$bqLvXyWRzXq5UO54CtbbjukoL7cOX9FkQ950Nve2iHzUzHeYSk.7u	BALLA SANJANA	7674913156	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N
-cmv0jr1eb00rmmzmyma8i9tt4	26UECSE0027	26uecse0027@student.gvpihlr.edu.in	$2a$10$XZhUhhD.kxn9y7iSp5U.3.zEI7IykFKjUdqjoopABX9QM906RcIJu	DOKULA VARSHINI	7670987328	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmv0jr1ed00rwmzmyqmm7smpp	26UECSE0042	26uecse0042@student.gvpihlr.edu.in	$2a$10$RrQf/NceN3y5X058s5y4N.oMIs8AU0.tmyVTfNSGhw.ba0BJRoiX.	GURIVELLI CHETANA	6304344878	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.103	\N
-cmv0jr1et00xymzmy1fzeacct	26UECSE0055	26uecse0055@student.gvpihlr.edu.in	$2a$10$GeG/HPiuQfp09OB3alpVku0icF3xq.c5oDT/fmicb2v7IrLZL6SN6	KANDULA HOMAJA VEERA	9347334494	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N
-cmv0jr1eu00y8mzmy4wh50pm7	26UECSE0068	26uecse0068@student.gvpihlr.edu.in	$2a$10$baYKAFAJ0vbquE0LdZBmAexafsRHEWvifJrfWak7DJu8ZhOU.uCaO	ANTHARAKONDA HARIKA	8328081246	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N
-cmv0jr1fh0140mzmyji02tjk1	26UECSE0072	26uecse0072@student.gvpihlr.edu.in	$2a$10$TNQmK1r8BOV24/Gl2pT.KuOUJqKTRrLSksQiGKHMMCklzR6KEEK5O	MAJJI CHARITA PADMAZ	9063756504	t	f	\N	0	\N	2026-10-09 05:50:36.797	2026-10-09 06:37:40.13	\N
-cmv0jr1fj0149mzmy5bjhcw27	26UECSE0084	26uecse0084@student.gvpihlr.edu.in	$2a$10$sUXtCc1Z/PRJFw0l/fBGT.p2GgtXNGY/YMA4lDhX79RfqZo/4guK.	MULLAPUDI BINDHU SRI	9949611789	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N
-cmv0jr1fy01aemzmyrv2wpsf7	26UECSE0105	26uecse0105@student.gvpihlr.edu.in	$2a$10$slavCOnE5EuOL6/otqHsie5V9lu0ZYAJ0e8hRDZi1FwGULguwN6mS	POTHINA LIKHIL AKSHAY	7013927973	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.144	\N
-cmv0jr1fz01akmzmy6tqxscpj	26UECSE0109	26uecse0109@student.gvpihlr.edu.in	$2a$10$7pffsUIP8SUXa2APQXNRj.7DltAj0ZpYZ3Z9kOZqBFRjzezq.cPNy	REDDY SAI VENKATA PUSHPAK	7981215765	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N
-cmv0lfk6r03w610e0ix1rwcr6	26UEEEE0040	26ueeee0040@student.gvpihlr.edu.in	$2a$10$FMWZEXOihaJpgYgb33Ld1eHVBozG/4YcstFrnMJ6SR83x2OYxYk.q	RAMPILLI VAMSI KUMAR	7013730486	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0jr1gf01gjmzmyw00xlw1n	26UECSE0128	26uecse0128@student.gvpihlr.edu.in	$2a$10$pM3sIWl6KDV/3XC3p4dM8O2QNNkeNmRA.MCplvAnURs2u8oPPnX9W	TANIKELLA V N L SURYA SANJAY BHARADWAJ	6281209634	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N
-cmv0jr1gh01h0mzmy58wfo517	26UECSE0142	26uecse0142@student.gvpihlr.edu.in	$2a$10$tMesv0BZO1DMpdK8WgDRUu4CyVI7CnKw6Gi8WQwSihHLoQlU.nzRW	CHILUKURI MANOGNA	9494400742	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N
-cmv0jr1gx01mvmzmyyey3dn87	26UECSE0150	26uecse0150@student.gvpihlr.edu.in	$2a$10$N./9XIeg2EIhyV/kIUhWNe4gzeNGKswQ6C2frzPBRGRHfjhfe9XY.	BHEESETTY V N CHAKRA PRAHAAS	9948748737	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N
-cmv0jr1gy01n3mzmyfrek2ivj	26UECSE0159	26uecse0159@student.gvpihlr.edu.in	$2a$10$iP00J6/gFFg8z8CB0zZcT.jGagsHubSdpQvkKmWGWOxumpmjT4OiS	KALLA SUDHEER	7993679248	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N
-cmv0jr1hd01t1mzmyhxk8yjnh	26UECSE0178	26uecse0178@student.gvpihlr.edu.in	$2a$10$XzoOCU5LdUtfcNeHs1pK5.b8nXDw84Y1oygELdx3uuaqSEjY4vkmC	PAMPANBOYINA SAHITHI	9121994139	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N
-cmv0jr1he01tamzmymwz99zf8	26UECSE0189	26uecse0189@student.gvpihlr.edu.in	$2a$10$d1GUySEZjQ.POB6Op9YRnuqcXBE6YWoD8Uiu2q5csAOq48VaG/n8W	L SARANYA LAKSHMI	8179013662	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N
-cmv0jr1hu01zpmzmyvr0mj96g	26UECSE0214	26uecse0214@student.gvpihlr.edu.in	$2a$10$BgqN38M.EaGdypQNnm/DZeLTKGDBYqIYu.TptvCKgxjDzfLfAWX8C	TOPALLI DHARANI KEERTHIKA	9392831088	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N
-cmv0jr1ht01z5mzmyndqjbrf0	26UECSE0195	26uecse0195@student.gvpihlr.edu.in	$2a$10$qbyshZNoSja9mUrNr3ZRUuxmfCiA6owfUF/xGwPnUULRvmZ.kIPFq	SAI YUKTA SATVIKA PRAGADA	6305321076	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N
-cmv0jr1i9025jmzmyr47rzton	26UECSE0227	26uecse0227@student.gvpihlr.edu.in	$2a$10$g4zf1OTneTe8sZ70eawuzud36UmhLNbSxtfCZeqardILlHxxf8rkC	DOKKARI VAISHNAVI	9441032497	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N
-cmv0jr1ia025tmzmyuz3kccyr	26UECSE0237	26uecse0237@student.gvpihlr.edu.in	$2a$10$JCEPtnA1ksZFjrvtr/tZA.mVcDAvuBQJiXqwP86DYm/ImQQypii2O	MEESALA CHAITANYA RAM	9490971398	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N
-cmv0jr1is02c0mzmycde5rriz	26UECSM0018	26uecsm0018@student.gvpihlr.edu.in	$2a$10$OSQAgLq.HLjJmIsGEKhUNeooPlaB1AgSsH5CFzdL0FLraZJFRuLci	DOMATHOTI SAI VENKATA MRUDL SATHVIK	9985330150	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N
-cmv0jr1ir02btmzmyspubfqjm	26UECSM0017	26uecsm0017@student.gvpihlr.edu.in	$2a$10$Fn1yKFNDGihaAhAK1wIl8.u2Ig2voirGGIOzmsP2BAqymBHBSF22u	DEVATHA SUSRITHA	6281757554	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N
-cmv0jr1j702hxmzmy21kexyrs	26UECSM0032	26uecsm0032@student.gvpihlr.edu.in	$2a$10$wgTOBCTCulDzwHYkg1P2/OTEK8Ccy2p8BibLF2PeNeP.PTjtnskjO	KANDALAM SRI RANGA ANANYA LAASYASRI	9963414500	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N
-cmv0jr1j902ikmzmyb8ptjzqf	26UECSM0053	26uecsm0053@student.gvpihlr.edu.in	$2a$10$9SKrma4V.DYX9IFa0/L4c.Hng0uUV0mHIH84qN5d1iHsJMlDXYZiq	MUDIGANTI SASHI KIRAN	9398068843	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N
-cmv0jr1jo02oamzmytzfcsz3q	26UECSM0057	26uecsm0057@student.gvpihlr.edu.in	$2a$10$8y6q81msKvZuS4EJNmsk3eVYqezzf70GcS4HuDcwLB5b7p1jRYyQC	NARAMSETTI YOGENDRA	6006607548	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.27	\N
-cmv0jr1jp02oimzmyehavjskh	26UECSM0067	26uecsm0067@student.gvpihlr.edu.in	$2a$10$4TPX20nNYjIvcWf.Pz.kDe13Dkh.2ltmh/2ZbbA7gxfpMlVadD.Ty	RAGI SAI SASANKA CHOWDARY	9177691639	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N
-cmv0jr1k302unmzmybcub5k67	26UECSM0090	26uecsm0090@student.gvpihlr.edu.in	$2a$10$KYtDYBEIyxKXyWOlU1GD/.z1PoKALyTMYRorayfT0xk4l1mvr0PHe	ILLA RUPESH	9951974863	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1k502v2mzmy0h4ugq0w	26UECSM0100	26uecsm0100@student.gvpihlr.edu.in	$2a$10$HhiP4I/UMaZm4XTa6pTNO.0cz0jwZFQqgpw5ohfQhukrcUqXTYtnK	MASARAPU PRANEETHA SAI SREE	9642010043	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1ki030omzmycwoo9dcr	26UECSM0105	26uecsm0105@student.gvpihlr.edu.in	$2a$10$0MX3qMUcyJuh1RS3l9QhVeZYps1FkoRaQJadkoAke1e0oL0gP1dhq	HOTA SAI MEGHANA	9440535761	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N
-cmv0jr1kj0312mzmylh99qu5r	26UECSM0120	26uecsm0120@student.gvpihlr.edu.in	$2a$10$tTyAIVIDKjjE3l71UM92F.o5nH4kWDV9szTDB6TEnFusE5btfGsT2	MANTHENA JASHMITHA	6302017543	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N
-cmv0jr1cd009amzmy0y0djxpi	26UECHE0038	26ueche0038@student.gvpihlr.edu.in	$2a$10$AD49EjzUFJy3WjpxwOdKj.0maB8l5iZktsf3Bzn8Jb2k5Wb2tJwne	NUKALA SAI RANGA HARA RIDHEEV	6303608826	t	f	\N	0	\N	2026-10-09 05:50:36.685	2026-10-09 06:37:40.052	\N
-cmv0jr1d200f2mzmyandssth5	26UECIV0010	26ueciv0010@student.gvpihlr.edu.in	$2a$10$xmuJ0O.hVO.KIIsk5XdC2edn6LGk8SLNBVUgYm9.6wHx/P/Ri.sYu	P. BHANU PRASAD	7095199651	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N
-cmv0jr1d400fdmzmyi73invo6	26UECIV0024	26ueciv0024@student.gvpihlr.edu.in	$2a$10$Q3z96D3ytkaZGEMZCU0jG.7RjWojR0fEbjOuKN02BJi8FfRvYK2c6	LOLLA VASU DEV	9666737356	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N
-cmv0jr1ds00lcmzmyewu8kkof	26UECIV0036	26ueciv0036@student.gvpihlr.edu.in	$2a$10$9O8VPKQLY2ROUknFV.tHTOhnwmq.zfXjq.X2xqcdWWOeRy6e8M.x6	MUNAKALA DEVA HARSHA	8919766559	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.085	\N
-cmv0jr1dt00llmzmyp3jdjwes	26UECSE0008	26uecse0008@student.gvpihlr.edu.in	$2a$10$tZsu5VS8jTRJrEsbS9GUOuJIP.4Ooit2Oio2.mVpZhiTWH.iwRvaC	BANDARU REVANTH	9246615264	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N
-cmv0jr1eb00rkmzmycuhdlwva	26UECSE0021	26uecse0021@student.gvpihlr.edu.in	$2a$10$wKUkELHOXTv2/3.FpztCfu75WdtfPtyqwAwUtlrTfXqecDGwSX4HK	CHALLA DAKSHINYA	9494922289	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmv0jr1ed00s0mzmy4en4oi2s	26UECSE0041	26uecse0041@student.gvpihlr.edu.in	$2a$10$4EIlFRm3VSzlCgakaO8lQuMk7XRRIQUrG8qFyDDkJZRgIcCG95Uv6	GUNTREDDI MEENAKSHI	9392420847	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.103	\N
-cmv0jr1et00xxmzmy07ic879b	26UECSE0054	26uecse0054@student.gvpihlr.edu.in	$2a$10$ufdCrO2a5ca372SYlb..zeYteXrVr./oPkRjZCrGqDUk3ke9VMRl2	KANDARAPA INDU BHARGAVI	9515664006	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N
-cmv0jr1eu00y4mzmy8107yu58	26UECSE0064	26uecse0064@student.gvpihlr.edu.in	$2a$10$70vQHR7sga2D1HF3FoPizu2oMcbvwCuGuEFf3mn.wKu.Qe3dIPHPe	KORADA SATISH KUMAR	6305543438	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N
-cmv0jr1fh0143mzmytbo0x38y	26UECSE0075	26uecse0075@student.gvpihlr.edu.in	$2a$10$.wPCWhVzm4vOud5FD9Rkmesa03DThIeCo3VxYNWG5m45l0pxwH6c6	MADDALA VASHIST	9966680388	t	f	\N	0	\N	2026-10-09 05:50:36.798	2026-10-09 06:37:40.13	\N
-cmv0jr1fj014gmzmyldr8np1f	26UECSE0089	26uecse0089@student.gvpihlr.edu.in	$2a$10$vIz4x1MjEv0pSiS8ZrMWS.32Vex10WohKGp85NOBSmGARztMvm2XW	NANDA HEMA SUNDAR	9866841440	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N
-cmv0jr1fy01a6mzmyw5s7qjgp	26UECSE0095	26uecse0095@student.gvpihlr.edu.in	$2a$10$QV3Cf0ToczA1jNubWitAeO6JlssxDadpOyuFZmihpgHBhhSbQ4BqG	PANCHIKATLA GAGAN	9866109946	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N
-cmv0jr1fz01asmzmymz1mjxfh	26UECSE0117	26uecse0117@student.gvpihlr.edu.in	$2a$10$b/Bx1.Qnsbj/KBrtvvsZN.XmV0KbqvClwcUpp.Y1ivXufi6vlTI5C	SOMAROUTHU RUPESH	7921579297	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N
-cmv0jr1gf01ggmzmy65uuo6aj	26UECSE0119	26uecse0119@student.gvpihlr.edu.in	$2a$10$KUcyZ2TKnk7nO9204SamoOZN8JzbAAhE1JMRei2hlbeE2VHdDEhJC	SANGINEEDI VENKATA SATYA DEVI VARUN	7780291719	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N
-cmv0jr1gg01gsmzmyijka9vs2	26UECSE0130	26uecse0130@student.gvpihlr.edu.in	$2a$10$YrNPGz5nu7OW8TbasZru5egImN7g/8t2xN.ZKxerU4Hrnfj6Wx0uW	MUTHIREDDY TEJESH	9492230335	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N
-cmv0jr1gx01mumzmys5ze8j5j	26UECSE0149	26uecse0149@student.gvpihlr.edu.in	$2a$10$HtSv/bwmFvDKrMz0fAAqce02oxQI1w7HH6tz8p1vDiIvoJ9qcqWaa	V.AMRUTHA VARSHINI	8008170916	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N
-cmv0jr1gy01n8mzmyzrrct8z8	26UECSE0167	26uecse0167@student.gvpihlr.edu.in	$2a$10$zGFpeXX97JcOjooyaATj8Ojf9sgEb9OGS/HpTiCnCXTQ3Il4QfcHq	MARRAPU DAYANA	9985964534	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N
-cmv0jr1he01t8mzmyfr6v1vfe	26UECSE0169	26uecse0169@student.gvpihlr.edu.in	$2a$10$pvCZ6ihCBPdVG9KiLaMPu.iBRKRn6nZ.ywwXzPN2hLV2Ss16xr1Mu	PAIDI AMRUTHA	9347659128	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N
-cmv0jr1hf01tkmzmy8seh3n70	26UECSE0194	26uecse0194@student.gvpihlr.edu.in	$2a$10$I5wiFis2azWaqEAedl5tvOoHZ1epYYM8tVc32v/D06U1PYNPskig6	PONDURU DIVYA	9391264955	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N
-cmv0jr1hu01zhmzmyc45t1vnr	26UECSE0196	26uecse0196@student.gvpihlr.edu.in	$2a$10$S2AlKde6MoUYnECTru5zj.Z.rwdjJxocmYatuVdEorp5R5lLfbBS2	SMITA PANDA	9993562287	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N
-cmv0jr1i9025hmzmybijauumw	26UECSE0226	26uecse0226@student.gvpihlr.edu.in	$2a$10$ajCFvYimD7E4TQ7rElSY7ePc/QVUvuTpl9yGNr6hVBni6KP4zImsS	BOKKA SAI NISHANTH	9573594399	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N
-cmv0jr1ia025zmzmyeaq121cw	26UECSM0001	26uecsm0001@student.gvpihlr.edu.in	$2a$10$ADdm59sUOtUuFLczTKMZa.z9mDkaeA9/gynRs8B9mLQpwn5Jrh9LC	ALAPATI YASWANTH	8886731626	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N
-cmv0jr1ir02bpmzmy46964ltr	26UECSM0004	26uecsm0004@student.gvpihlr.edu.in	$2a$10$Nu1UXWG3OzoUfPrXOoHSTevmxmJ8f3UIvVSvEG7bmuBislznjUYxy	BHAMIDIMARRIL S S N CHANDRA MOULI	9885076812	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N
-cmv0jr1is02c5mzmy365jod9a	26UECSM0023	26uecsm0023@student.gvpihlr.edu.in	$2a$10$Fbd6ilfd1.sah68YMQ3xaOwxCcEyEbr9Rpvh3OqPUdQD.si.BzsCy	GOPARAJU DWARAKA SATYA	9948988774	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N
-cmv0jr1j802i8mzmyqz2r2i7x	26UECSM0031	26uecsm0031@student.gvpihlr.edu.in	$2a$10$Sk5XktgFla58yJuq9HF27ukcJocaAhezmEPi1irdFD6L4e39/nb7e	KAMISETTI RAVI MANI KUMAR	9963710533	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N
-cmv0jr1j902iamzmyntayupz9	26UECSM0044	26uecsm0044@student.gvpihlr.edu.in	$2a$10$P2vUf55wyvdhNRYgiqT5HOM/4I2QKI.k2G0vqEbTpepi62hZot1qm	KUPPILI MADHU VAISHNAV REDDY	6303058826	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N
-cmv0jr1jo02oemzmy8zoa5551	26UECSM0065	26uecsm0065@student.gvpihlr.edu.in	$2a$10$nEP4HaqVKj1DUiO72by3TuDa8XxeSJLaAy68UHjHm1kvd79rsKVKW	POTTURI SAI VIGNESH	9885344077	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N
-cmv0jr1jq02otmzmyyhnubyvg	26UECSM0078	26uecsm0078@student.gvpihlr.edu.in	$2a$10$9YYm14yNIANk0gA.EV/F.OTztyQGuFZTVHh6O7LGO.xae.9O9S4Oq	TULUGU BHAVYASRI	9491935654	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N
-cmv0jr1k402uwmzmy35nsxl01	26UECSM0093	26uecsm0093@student.gvpihlr.edu.in	$2a$10$9LXxgVXtcTPwKFGCWO18rudWgGDQvTQqbMdZgnIQ93.34KcoacNPW	KOVILA SWATHI PRIYA RAMANI	9849544454	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1k302ulmzmy78adlo54	26UECSM0087	26uecsm0087@student.gvpihlr.edu.in	$2a$10$ZE51DiZeNjc5stzxgvQpUOyClIVkBqcxme5alus03D.IUPXrAhi1W	TAMMANA SAI PREETHAM	9948902226	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.285	\N
-cmv0jr1kj030ymzmytgpn7wre	26UECSM0110	26uecsm0110@student.gvpihlr.edu.in	$2a$10$tIIgChwVZJwo0TXZRzWYu.w0xJw0QDdBcBdK.VoS.Rw1lQ7FvKaZC	DADI VINAY VASANTH	6300755383	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N
-cmv0jr1kk031bmzmy4glxgjcm	26UECSM0128	26uecsm0128@student.gvpihlr.edu.in	$2a$10$1gBK0wEeSPteGzY87dqScuRBqlldFUn2DaIAyQyM1U6MHDHmrLQKO	VASANTADA SIVA SAI RAJ	9014095568	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N
-cmv0jr1ce009bmzmy95dvc0f8	26UECIV0002	26ueciv0002@student.gvpihlr.edu.in	$2a$10$RCsauOAZ14nM3oJgpMeCrOvNy9vePQmmFys9NQzuYSXBCiYfFy892	TIMADANI NANDINI	7989295774	t	f	\N	0	\N	2026-10-09 05:50:36.685	2026-10-09 06:37:40.052	\N
-cmv0jr1d200f3mzmyz3lwhpat	26UECIV0014	26ueciv0014@student.gvpihlr.edu.in	$2a$10$Yb2N5lLWl8hBOD6unRGTIuqm9yoThS0OWsgCAo.crUGOm10bzPVZy	RAVUPALLI ESWAR SAI PUNEETH	6300253943	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N
-cmv0jr1d400ffmzmyu16z6255	26UECIV0025	26ueciv0025@student.gvpihlr.edu.in	$2a$10$GWkpZYA3RkUf11q8lZnFwe58Nnh4PaMJXbMbvOzg2I3sUWKJV8//6	BOMMAREDDY DAYANA REDDY	9515499416	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N
-cmv0jr1ds00l5mzmy8ogojgeb	26UECIV0031	26ueciv0031@student.gvpihlr.edu.in	$2a$10$wx0P3qR4BCjQWmMaQGHk8OzMKgM7kyShFt4jr2UglEVTevyebg0C2	MATHI ANKIT	8179425705	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.085	\N
-cmv0jr1dt00lpmzmy4niar14o	26UECSE0013	26uecse0013@student.gvpihlr.edu.in	$2a$10$9Mh0YcnFweVLh6KaipJJfOHOqRfVoCd6tgwbw3fSvloyxP9gcNH32	BOGADI YOKANTHI TEJESWANI	9392837691	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N
-cmv0jr1ec00rpmzmyessn6mau	26UECSE0031	26uecse0031@student.gvpihlr.edu.in	$2a$10$c2OikXRbhfIznzyiCgxgteJgtFMtEW4OFlkarp4VdtTIRWozOutea	GARUGU VENI ANANYA	9849798399	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmv0jr1ed00rxmzmynfjpu8we	26UECSE0040	26uecse0040@student.gvpihlr.edu.in	$2a$10$VgpcbmwuxiGOyET5mHZjGugQlG7XFenExkZ.zO4guD2gjdTuPjP6S	PUVVALA GOWTHAM NAIDU	9618050869	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.103	\N
-cmv0jr1et00xvmzmyj55znump	26UECSE0052	26uecse0052@student.gvpihlr.edu.in	$2a$10$tQbgncTYXcn3C.HWcPma/eUJCAJkI2CmKc/V9cd2cdFODIAJTlDgS	KANCHANA PREM SAI	8309618295	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N
-cmv0jr1eu00ybmzmyh6m5nj04	26UECSE0056	26uecse0056@student.gvpihlr.edu.in	$2a$10$bw3JO8eYYAOQFHNqqCwHmulLx7.YLgaDxuzP11ezgZ3cVeBTemrzq	KANKATALA VISWESH	9989264278	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N
-cmv0jr1fh013zmzmy4o2ub38u	26UECSE0073	26uecse0073@student.gvpihlr.edu.in	$2a$10$NZaNljCDgMf108mzARk6ROPvAtMRqKq2JNkoos1RlcWcXcWWNwfSi	KOTHARI YUDHIRA	8247672465	t	f	\N	0	\N	2026-10-09 05:50:36.797	2026-10-09 06:37:40.13	\N
-cmv0jr1fj014fmzmyqdt6c325	26UECSE0088	26uecse0088@student.gvpihlr.edu.in	$2a$10$BmPPWfTzm/vimFWweLGzjet9HSeIgWZLttbVGM71cPzMDSlSV6Inm	NAMBARI PRASANTH	7569691699	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N
-cmv0jr1fy01a7mzmyrmtv1b6k	26UECSE0096	26uecse0096@student.gvpihlr.edu.in	$2a$10$Jf5q2MN4M636b.1tjN1RIuy1DidQDdWyL4dzJHNrC15hZIMfYMVeW	PANDIRIPALLI LIKHITHA	7893381774	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N
-cmv0jr1fz01anmzmygoipd21g	26UECSE0114	26uecse0114@student.gvpihlr.edu.in	$2a$10$uexNg.xeOl37.R4zYD/B/.QQsIXM0GhnU5o1PsFkYq5KOUsBxUN5a	RAVIPATI MOHAL SAMPATH	8464855559	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N
-cmv0jr1gg01gpmzmygdzzeycx	26UECSE0123	26uecse0123@student.gvpihlr.edu.in	$2a$10$Z8t2jUfeNRFOCFkbZitbcOOUsxKiHi6GlEpW3GPzt5msASd/RJSia	SIRIVELLA TARUN KUMAR	9059516034	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N
-cmv0jr1gh01h2mzmy4pmdw353	26UECSE0134	26uecse0134@student.gvpihlr.edu.in	$2a$10$4RgbGQ8kDHmLgztdS3IrbunUxs/vDandKGxvTDytDAjkDMXmIuYf.	VANDANA MANOJ KUMAR	7842653722	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N
-cmv0jr1gx01mtmzmyc4scqkv6	26UECSE0154	26uecse0154@student.gvpihlr.edu.in	$2a$10$ybGVGEU5L70CrYAFy5j2ZuF/8ZL2w7S.C1KE4XGW7TzdKGeYcl1OO	ALLURI SREE PRASEEDA	8500003002	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N
-cmv0jr1gy01n5mzmymb1bgqo2	26UECSE0161	26uecse0161@student.gvpihlr.edu.in	$2a$10$yOxKP9RyfGraeRSks2RPDeh8T5gSO/HV9A4tg2q.lqQ4JWC3sIhYO	MUDDAPU RITHIKA	8978104155	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N
-cmv0jr1he01timzmyevvk3pvb	26UECSE0173	26uecse0173@student.gvpihlr.edu.in	$2a$10$fJFYDTO5DMgGYWIjK4nBduklxjSjjrMcaTrnloqbb.7g4GJ/nVpYa	KOTIKALAPUDI SRIDHARI	7032249239	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N
-cmv0jr1hd01t6mzmyremb94r6	26UECSE0183	26uecse0183@student.gvpihlr.edu.in	$2a$10$aA0ybGNtn/5kRBP.GlbQsu9OVeyUPyiS4CGmumGJhrnNjviCKkKIO	GUNTREDDI BHARATH KUMAR	9676679433	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.188	\N
-cmv0jr1ht01z8mzmy2lccahd1	26UECSE0201	26uecse0201@student.gvpihlr.edu.in	$2a$10$ltyM9qPds.pPnkPBnkfM/.ksIgXtabhfeCaOZlBcYrbIrKUyyd/MO	KOTHAPALLI HARSHIT	8143045899	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N
-cmv0jr1hu01zqmzmylgon9saw	26UECSE0217	26uecse0217@student.gvpihlr.edu.in	$2a$10$ry0/2LAanWOxQ73M8C156um/m9somm4h9XJqm0s7S8v6au1lYnHVO	KARANAM RISHI PAVAN	9182853142	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N
-cmv0jr1i9025omzmy5eyq5r0v	26UECSE0220	26uecse0220@student.gvpihlr.edu.in	$2a$10$x4hv7OekUJyViKev/F./HukzwquOYJU7wQgnBPhcZJBnOA14Lz.AG	VASIREDDY DHARMATEJA	9682374856	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N
-cmv0jr1ia025xmzmy5napoyrx	26UECSE0228	26uecse0228@student.gvpihlr.edu.in	$2a$10$ezTxV391dmhmOaNk3N1Ise1oP54FQjY0KydoG.i56qaLPigHOVMUy	KODAVALI VENKATA KARTHIK	9390959785	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N
-cmv0jr1ir02bsmzmyfq017yvk	26UECSM0012	26uecsm0012@student.gvpihlr.edu.in	$2a$10$CR6szfgb/UaCB6Eom6OTu.Cb54sF3zMWT40yRTqc8SJnSSkyQAW3S	CHHAVI CHAUHAN	9014882797	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N
-cmv0jr1is02c7mzmypwopzjyh	26UECSM0015	26uecsm0015@student.gvpihlr.edu.in	$2a$10$FKnyIDzUZW7OyiAaxoW/oukF1r3tQMXEH6NzA.EPkxpsckzC.NNCm	DANTULURI LAASYA SRI	8019018313	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N
-cmv0jr1j902ibmzmyio84e6a6	26UECSM0035	26uecsm0035@student.gvpihlr.edu.in	$2a$10$ZYfeySMT8Rsdj6/NdffMl.KGde3mGS5BzoNMbjjVAEkr./x7TNLae	KARRI DURGA SARANYA	7995761428	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N
-cmv0jr1j802i7mzmym6qsbpb4	26UECSM0037	26uecsm0037@student.gvpihlr.edu.in	$2a$10$NIEK9sjcfXhuTASnmu.HHOLZTpb9DXUCtlmZrIJSKGAs4HU0SHKLe	KEERTHI CHINNARI	7675908579	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N
-cmv0jr1jp02ogmzmycwss741r	26UECSM0066	26uecsm0066@student.gvpihlr.edu.in	$2a$10$xd3lfDooYi7giXTznU3WSOKhM2pVZ3imbVeZccChwLyxrzM9WMsCa	PUSAPATI VEDA SAMHITA	9908856964	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N
-cmv0jr1jp02oqmzmydt0eknls	26UECSM0075	26uecsm0075@student.gvpihlr.edu.in	$2a$10$y2qht10p4RCS.NdYZeTr2O8VmL/lv0ozwIbJEP0ANAu1d5GVwsj9C	TANDYALA ROSHINI	8185091181	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N
-cmv0jr1k402usmzmywum5qiwf	26UECSM0094	26uecsm0094@student.gvpihlr.edu.in	$2a$10$QHgAWnTQYxPzdDZlYuqA9.bl140K2E4J3K0UwPjqkazo6E6qWY/ne	BILLA VENKATA SAI DEVA AKHIL VARMA	9848486769	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1k302uemzmyfr2oxyqa	26UECSM0083	26uecsm0083@student.gvpihlr.edu.in	$2a$10$KZnxB58Soo0gEQ8pok1G.esFXUw/3/nlMniPobbW7Ya4pdhXqnekq	VERUKONDA DONY VIGNESH PAVAN	7981378159	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1ki030nmzmyzp1cl4bu	26UECSM0109	26uecsm0109@student.gvpihlr.edu.in	$2a$10$hJiXmJuDCkapayWdXSPrIO0xsNNsHorWjTfr/ospeBUkodM2D5.Si	PENKI DHARMIK	6304988047	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N
-cmv0jr1kj0311mzmybil8ldyl	26UECSM0121	26uecsm0121@student.gvpihlr.edu.in	$2a$10$zVJZ72QfFXGpSEouOZtBrODJF5BZd7GJn4CTnKavS0R.XRtoEanDu	KARRI JASWANTH	8884515819	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N
-cmv0jr1cd0099mzmyb8v14luk	26UECIV0003	26ueciv0003@student.gvpihlr.edu.in	$2a$10$YZD2kP6s3wVq.XwNEPZg0eZb1OCSei6dR2ghTslCDqw7rnalylT96	GUTTULA LOHITH	7569307945	t	f	\N	0	\N	2026-10-09 05:50:36.685	2026-10-09 06:37:40.052	\N
-cmv0jr1d200f7mzmy0ezzy6ns	26UECIV0015	26ueciv0015@student.gvpihlr.edu.in	$2a$10$cxX6Dnil1isx5lYc/PY4t.ERQFjBg8kCtwBuhcfDNgge9P8c9sbGm	SHAIK ASHRAD	8639334493	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N
-cmv0jr1d400fimzmyq2gifhfa	26UECIV0018	26ueciv0018@student.gvpihlr.edu.in	$2a$10$lgZnqWJE3.whCudT6nuwZeYEi97kiaWQmW0Ednn9hITxoaF2JYBgq	PITHANI NITISH KUMAR	7997634819	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N
-cmv0jr1ds00lgmzmya4jscrc2	26UECIV0037	26ueciv0037@student.gvpihlr.edu.in	$2a$10$Sj5TaZZ9z8Y.vKyzH2sVt.jt.ITua6ue8Wlbp4RZxD1UY.w6QTHr.	MANDADI JAYAVENKATA JASWANTH REDDY	8074001975	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.085	\N
-cmv0jr1dt00lnmzmykxixaqjm	26UECSE0011	26uecse0011@student.gvpihlr.edu.in	$2a$10$18NZUfAm.UyTwl0KGJKO..ESrkTcAjzVRaUsXBteGrCxGVjYcZiii	BESETTY LIKITH KUMAR	8977174410	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N
-cmv0jr1eb00rnmzmygwv0miw9	26UECSE0028	26uecse0028@student.gvpihlr.edu.in	$2a$10$3lFH9Y.lRfFAH45vPQTL8uvcgvDZehZB8maclZbyGlkT7uNiS7yqm	DONKADA SOWMYA PATNAIK	8341406235	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmv0jr1ed00rtmzmy8n4kaf38	26UECSE0035	26uecse0035@student.gvpihlr.edu.in	$2a$10$uTj5vgsIlc6qfcHGYG8pweNamB4VDlwByahOiioKdkYUhnboVG112	GODAVATHI UPENDRA SASHANK	9154576846	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmv0jr1eu00y2mzmyzx287m7r	26UECSE0066	26uecse0066@student.gvpihlr.edu.in	$2a$10$qiEIUtTVmN5x3.nSed3ype0P4w12aWprIgF2w7dIrwp9FWibAezaW	KOTA MAANASA	\N	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N
-cmv0jr1et00xumzmyald6g8o4	26UECSE0053	26uecse0053@student.gvpihlr.edu.in	$2a$10$OCPJXOiWbp6Np96J8PViUewF/qrswEw13CIJUoZn6.tMKATlfSLaa	KANCHUGUMMAM JNANA VIGHNESH	9908799208	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.117	\N
-cmv0jr1fi0144mzmyzqyqk7sx	26UECSE0074	26uecse0074@student.gvpihlr.edu.in	$2a$10$0e3X.Z5VGL7K.K0ReN2w/uq4mnuaY5SEKLcDsNV49GAOMnMtJyJ2m	MUDADLA JAHANIVI	6304151857	t	f	\N	0	\N	2026-10-09 05:50:36.798	2026-10-09 06:37:40.13	\N
-cmv0jr1fj014jmzmy36l2qkl4	26UECSE0091	26uecse0091@student.gvpihlr.edu.in	$2a$10$cg5yRm3BLbshgsEOwxkpwuOhYeGaFaR8ySti4Cc0znn5bLRZruD4C	NARTHU BHARGAVA YADAV	8074367215	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N
-cmv0jr1fy01aamzmyv3dfifzk	26UECSE0101	26uecse0101@student.gvpihlr.edu.in	$2a$10$sMiiegwzOnq7i4LS7.ol0eeE7PcHmBPfM9sPiBCVDlaUcm5p53Y.q	PININTI YOGENDRA SAI	9441921248	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N
-cmv0jr1fz01apmzmyg34d27h0	26UECSE0113	26uecse0113@student.gvpihlr.edu.in	$2a$10$h9vQI/TfvSWTRrMr4Hfj8O1dS17EPN6stfLVyAW5LX15zpIWlcON2	RASILLA BHUVANESH	8341176531	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N
-cmv0jr1gf01gemzmy0glovxtl	26UECSE0125	26uecse0125@student.gvpihlr.edu.in	$2a$10$nmNbqrYOsVTR7KSgJQymi.5BQqUK9IFgtkFKCnq2g9CbL4avhF5NG	PATIVADA GOVIND SRICHARAN	8074981680	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N
-cmv0jr1gg01gvmzmyj1lm7aud	26UECSE0138	26uecse0138@student.gvpihlr.edu.in	$2a$10$wsLV0L9N56Glza9SWflMxuaS1DtqmMcf0YbScbdio0GFZbbIJNNOO	YANAMANDRA VARUN TEJA	8247786619	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N
-cmv0jr1gx01mnmzmyrosftj4i	26UECSE0144	26uecse0144@student.gvpihlr.edu.in	$2a$10$1bd25Hfk8Zq6O3vAIFX6Iey7iWI4WqxD4td6eWv.mM1X35ux.7Iwi	BOLLA SAI CHARAN	7674900109	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N
-cmv0jr1gy01n1mzmy85s0vsvm	26UECSE0158	26uecse0158@student.gvpihlr.edu.in	$2a$10$Tno9BL8lxSC9DJh4srdFWucBFo9mdUpFJ1RPGtCmKmfenG.E3.I5u	MALYAKULA UMA SAI CHARAN	6301016253	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N
-cmv0jr1he01tfmzmylfxnif7g	26UECSE0179	26uecse0179@student.gvpihlr.edu.in	$2a$10$hp0ffN02U5n3SZK5g2kJhO7dvKJx1e44CUAyDPv7GvDSbGMpNxaPe	CHAVALI  VENKATA MANI KOUSIK	9441756345	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.187	\N
-cmv0jr1hd01t5mzmy3s1mm7by	26UECSE0172	26uecse0172@student.gvpihlr.edu.in	$2a$10$6gAGdnudtXXJi4kDZxB0PuRFV70wwKnDGHlec52KNiusfP/Nw9Mcq	KARRI LAKSHMI YASHIKA	6303065624	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N
-cmv0jr1hu01znmzmyc4bn8qdg	26UECSE0213	26uecse0213@student.gvpihlr.edu.in	$2a$10$6KfbZ6jNSak.V3n0l4Q6XuxdZ6Dg4/YxFftN4KojJyM2cBWxmG5c2	SURAVARAPU ADITYA	7842334233	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N
-cmv0jr1ht01zamzmy2uv5r1js	26UECSE0202	26uecse0202@student.gvpihlr.edu.in	$2a$10$GCw3oU1Z9y5AkFR2TOlwk.vtNFbt62D/O/Tsyldyak.kGYUyDNbZu	KORLA AMRUTHA	8985021150	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N
-cmv0jr1ia025ymzmyzynjpm5j	26UECSM0002	26uecsm0002@student.gvpihlr.edu.in	$2a$10$lG9LtGYJJ5B3Xk9H2wD7aeMymbu7ll/jXUyJ33UMqZy3zpAM8TlIe	HARSHADA PATIL	7995972353	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N
-cmv0jr1i9025pmzmynzc0mdjh	26UECSE0230	26uecse0230@student.gvpihlr.edu.in	$2a$10$rHehAP8YZapKYkvT20OL4eBt.TEDe05slQHXH73xRa7vEK7PiAjtC	GANIVADA DESHIK	9948826128	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.226	\N
-cmv0jr1ir02bnmzmy5sikaabk	26UECSM0008	26uecsm0008@student.gvpihlr.edu.in	$2a$10$mWVBUJiMQm5WueRVsUxdqu/fpelgtx4fO35zH/.suIcgRa7P6A0SW	PULAPA BHUVANESH HARINADH	9676656348	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N
-cmv0jr1is02c1mzmy9grgzr04	26UECSM0019	26uecsm0019@student.gvpihlr.edu.in	$2a$10$wKfl2SyT5PRP3jGItP00ueKeL2cLzZds.4/o1E5G/kjrumQVzOFGW	DONTHALA MAMATHASRI	9398819629	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N
-cmv0jr1j702i0mzmyvx2sq22o	26UECSM0033	26uecsm0033@student.gvpihlr.edu.in	$2a$10$YoumGgjqE.Wt9Nd7EFhIXuwjiiInASsbs84FJcMFAQpC5HA9iTHam	KARRA SHYAM VIJAY	9948132844	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N
-cmv0jr1j902icmzmy0g5glpq3	26UECSM0047	26uecsm0047@student.gvpihlr.edu.in	$2a$10$j8A4Wd76O6xLAOEH/GOlDe7XoQJLTLcVeZnccbsInL2YzhK5piMF.	MARADA SHANMUKHA SAI	9989888759	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N
-cmv0jr1jo02o6mzmyh5thtczt	26UECSM0055	26uecsm0055@student.gvpihlr.edu.in	$2a$10$LbOpiYeVL/gxfFagdsplaeY0tVnqde98alvUYBGBKAjI/gc1.BtNq	NAKKANA SAI SURYA	9885311945	t	f	\N	0	\N	2026-10-09 05:50:36.948	2026-10-09 06:37:40.27	\N
-cmv0jr1jp02ommzmyfxs0d44p	26UECSM0077	26uecsm0077@student.gvpihlr.edu.in	$2a$10$e7Ki1ziWT7kZcEFRcdSgkO5Tgp03a/mcsqg3Fn3jiB3.Ug78pHTBi	TENTU JOSHNA	8949338076	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N
-cmv0jr1k302upmzmy4akx5gp2	26UECSM0088	26uecsm0088@student.gvpihlr.edu.in	$2a$10$hY.1jm/qqaEZPN1bjzwKTuqoSB8.t1Rw7WiKQT5ZavR80npbUggf6	PORAPU HARSHAVARDHAN	7801082685	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1k502v0mzmy1tayawg6	26UECSM0101	26uecsm0101@student.gvpihlr.edu.in	$2a$10$5In.LAKnIgrB4wwl5PQaFuqOYwrN4x6bXU9dnY4PrnS4esi0MrWPy	ABOTHULA KARTHIK KUMAR	9441390183	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1ki030xmzmyffvt20gq	26UECSM0108	26uecsm0108@student.gvpihlr.edu.in	$2a$10$nwzA0XUUYQxFAQm4oozwAudwZVx9UFKC96XpAEe4NHZF75NtmawwC	SHRAVANTH KRISHNA KUMAR BEESAPU	9177245571	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N
-cmv0jr1kj0319mzmy797kewe5	26UECSM0127	26uecsm0127@student.gvpihlr.edu.in	$2a$10$PPYzlZpR7iLgmEG0kwqbNeJo7x.PEQ29zhQ1qqAScAF2TOPjRt2/S	SIGIREDDY TEJASRI	9346145666	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N
-cmv0jr1d200eymzmyr05ubryk	26UECIV0006	26ueciv0006@student.gvpihlr.edu.in	$2a$10$eubEsbcr1W1SuTcBhfN4Bec1.EAEeE1R0m.YeTWlNkjNKaQXktmzC	KUTIKUPPALA SARAT	7506778096	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N
-cmv0jr1d400fgmzmyrfo0y1op	26UECIV0027	26ueciv0027@student.gvpihlr.edu.in	$2a$10$Q/5QXBwr/p7NNVnGr/5bjuAD4n2FTH8yJFim32xmIC8mVvneQ9k9C	GONUGUNTALA BALA VENKATA KISHORE	9381980594	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N
-cmv0jr1ds00lamzmysgjd45mo	26UECIV0033	26ueciv0033@student.gvpihlr.edu.in	$2a$10$YtuQlUuDY2EnL7bpMTs8r.MtIzybigzRJ.59w3d5hZp0hiiujXQpa	JAMMA GOWTHAM	9030337586	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.085	\N
-cmv0jr1du00lsmzmyndttd323	26UECSE0015	26uecse0015@student.gvpihlr.edu.in	$2a$10$XNRGxLy0.3RqNaBKT8Gl0.IV29oH9N9M8wpEMFledTfVHZaOYmAZy	BONUGU KUNDAN	6301888904	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N
-cmv0jr1eb00romzmyaqq8j7nh	26UECSE0030	26uecse0030@student.gvpihlr.edu.in	$2a$10$NUbPBgDOXXSUKcWjtRl5VeCxOXbF/QjIOU95zi610HSM1W655y4Yu	DURGA VENKATA SAI HANUMA SRAVAN KOTIPALLI	9866355747	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmv0jr1et00xqmzmy09qi1yc9	26UECSE0048	26uecse0048@student.gvpihlr.edu.in	$2a$10$szFb9mbKJyclsnkr1IBRMePqPsQVOJ/AIsdtxWEgLQ6QWhyFB2rfm	K TANOOJA	7981082204	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N
-cmv0jr1eu00y3mzmyibiaoiso	26UECSE0061	26uecse0061@student.gvpihlr.edu.in	$2a$10$jxEo/I8X97GlN8Kbe5D9v.RepATQdJtzAHTslH7GppxXE0h4vCQQ.	KONDA DURGA HARSHITH	7981284595	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N
-cmv0jr1fi0148mzmyqq7pz8wa	26UECSE0078	26uecse0078@student.gvpihlr.edu.in	$2a$10$CJ5aVFfQUJXcLwGKjCS8OOK3GJB9W4Df03Ledx8xbfBZ3HeGCInxm	MAJJI LAXMI VAIDEHI	8522840400	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.13	\N
-cmv0jr1fj014emzmyg5qwbh41	26UECSE0081	26uecse0081@student.gvpihlr.edu.in	$2a$10$8gH005oma4GPP8f9WXeuLeM/D.OvtJHUgtbcGsgrb.pRS6GYTzAUW	MOHITH SATYA SANDEEP REDDY MEDAPATI	9963610304	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N
-cmv0jr1fy01abmzmyu1yq1jzs	26UECSE0102	26uecse0102@student.gvpihlr.edu.in	$2a$10$Q04zxzuIy8KcEQiRafBia.uZ0xXYA2ha9io3jkxaFE8YlRLNYmU.q	PINNITLA ISHAAN REDDY	7842341737	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N
-cmv0jr1fz01aomzmy9zga18xe	26UECSE0111	26uecse0111@student.gvpihlr.edu.in	$2a$10$fuqbp5Fvj8u1T4KD9m0F3OCTKPNpRqOExMAlBUyAHiZ6mO1ADG79u	RAGHUPATRUNI PRAKYATHI	7981187207	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N
-cmv0jr1gg01grmzmyh4zegu5g	26UECSE0136	26uecse0136@student.gvpihlr.edu.in	$2a$10$BO0apiRFCHlJzbabxi09SOWK8H004GBjnLWagpYQrqU6a4/E0EeXq	VEMPALI ANJAN NIKHIL	9490640178	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N
-cmv0jr1gf01gmmzmyqzhljst1	26UECSE0133	26uecse0133@student.gvpihlr.edu.in	$2a$10$TgYB310mzOEAqxoZ2exCpeI8.geWWvxpCCnRYsR5UNeCUpiM0V0BK	VADLAMANI NAVYA SRI	9949963004	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N
-cmv0jr1gx01mwmzmy89nqml0p	26UECSE0156	26uecse0156@student.gvpihlr.edu.in	$2a$10$VTXSUtBLvcQllW82uACn4uOnLLWkTcWODC.HiyrEwlpix4C4Mu1ri	SARIKA YASWANTH KUMAR	9440977656	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N
-cmv0jr1gy01n7mzmyszssi8v5	26UECSE0166	26uecse0166@student.gvpihlr.edu.in	$2a$10$95QYZgVBOz.18Aa0H8rg8umK3BOLYcQZ.LyDJ7QLd6mcHmoSACiCO	BAMMIDI AJAY	9441117544	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N
-cmv0jr1hd01symzmy5bz9h3r5	26UECSE0180	26uecse0180@student.gvpihlr.edu.in	$2a$10$NbqONxWTwuKFDpvrr4X8m.tElmLMCeQG8/kyUIWHtC1lGrh.LTzba	DONTHIKURTHI SAI AASRITH	9885897228	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N
-cmv0jr1he01tdmzmylyqu1i8j	26UECSE0191	26uecse0191@student.gvpihlr.edu.in	$2a$10$p9PeMwjvPot.fUZlfoTtLORD1W6HPXmELQ5kAoAcnbvBmMq7NyNZW	PAPADASU SHANMUKHA HARSHITH REDDY	8985678317	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N
-cmv0jr1hv01zsmzmygw02bqpq	26UECSE0218	26uecse0218@student.gvpihlr.edu.in	$2a$10$kP9GygtsCpSOb1XV9VAPjegEYWUn9oT94nSJU1mIwDD2ExBBmzP9K	KUMILI CHAITHANYA SWAROOP	8247004586	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N
-cmv0jr1ht01zfmzmyefkxeeyz	26UECSE0197	26uecse0197@student.gvpihlr.edu.in	$2a$10$M1z/gM.sLKcml5eieMVeuuuFthZQCoTuzibZl59wOxRKYzB8dJIei	TAMMINANA HASINI	9441097017	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N
-cmv0jr1i9025fmzmyaclv4pmw	26UECSE0225	26uecse0225@student.gvpihlr.edu.in	$2a$10$EVkHrEDXSlnLyk48zzYTZukADmHvVaf/./QLRKnml.2Ic56.CwSBa	BONTHU OMKAR	7093316221	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N
-cmv0jr1ia025vmzmyn2fmz58b	26UECSE0241	26uecse0241@student.gvpihlr.edu.in	$2a$10$mv7ek8AJhjIO9TxCPGMqduDO4Ul6El.E2.zE077iJlTfQSIognYra	JAMMU KARTHIK	\N	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N
-cmv0jr1ir02bumzmygbsopqgo	26UECSM0016	26uecsm0016@student.gvpihlr.edu.in	$2a$10$sPm2UdU7n1soOv66EKUTp.WibralWvx1hI48RisOTNhDRdoZjAJxe	DEVARASETTI NEETHA SAI PRADEEPTHI	9441610624	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N
-cmv0jr1is02c6mzmyvq33eqjw	26UECSM0025	26uecsm0025@student.gvpihlr.edu.in	$2a$10$7BIRiF33H6Hni7PSd0J/Luv6c.hqOZJ/GkWT/ATWt2pjxs1yOMqKm	GOVINDARAJU LAKSHMI VAISHVAVI	7981645539	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N
-cmv0jr1j702hwmzmymoc8x6zw	26UECSM0034	26uecsm0034@student.gvpihlr.edu.in	$2a$10$pGNJQTn.xO1D1T.u1vXE0On81ktZkwz3T7G/4sOBe36eNZw.QMMne	KARRI NAGA SATYA KANAKA LAKSHMI	9290527207	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N
-cmv0jr1j902idmzmy1tix6ktw	26UECSM0045	26uecsm0045@student.gvpihlr.edu.in	$2a$10$xjP.qxv3nMUR3gaF6koazeL8xLe03KKzhFGC85AfGTSDNWyt0BuJm	KURAKULA LIKHITHA	9392390560	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N
-cmv0jr1jp02ohmzmy4wbt92z8	26UECSM0056	26uecsm0056@student.gvpihlr.edu.in	$2a$10$DfZRn5g5n7YbNafzaERqiOHkPktk9wc93.7MkrCSv7NRSB0TNs08q	NAMALA VEERA VENKATA GIRI CHARAN	8019794203	t	f	\N	0	\N	2026-10-09 05:50:36.948	2026-10-09 06:37:40.27	\N
-cmv0jr1k402uqmzmyqs8mgisi	26UECSM0091	26uecsm0091@student.gvpihlr.edu.in	$2a$10$IK.3ox8sURgOx.Zs/G7YWOxN2SCyQr9MCyuW3fpnWZ2f68Bh.YsBq	MALLUBHATLA JAYA GANA SAI AKHILA	9885334269	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1ki030wmzmyv3m4sik2	26UECSM0104	26uecsm0104@student.gvpihlr.edu.in	$2a$10$.fPI8VTunIAqLcRxlIv/ou3c5lnzKc27VrCKQc7JOhWbJCRnJUH/K	KILLARI MANOHAR NAIDU	8331933241	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N
-cmv0jr1d200ewmzmy8mc81dpk	26UECIV0005	26ueciv0005@student.gvpihlr.edu.in	$2a$10$dAyCHYmK4DWrq5SyWgmFiOHpAZM6y3cY36n7MGz.RHPlaDzqY.m8.	GORTHI RAJA SANTHOSH	9912535943	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N
-cmv0jr1d400fcmzmyuayrz8mp	26UECIV0023	26ueciv0023@student.gvpihlr.edu.in	$2a$10$GmIhYiccUiI2Nw0ZJrpEyuHAr3Ose/6jwtTwr0Ynhem45BVw.B.Gi	ARANGI SUMANTH	9182624196	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N
-cmv0jr1dt00lhmzmyqq7640n7	26UECIV0030	26ueciv0030@student.gvpihlr.edu.in	$2a$10$S9mYrKwwOHhE08cdi5CB4.yTG3ZIv6bsI2a0tTVXTPd50v7Nr0fcO	KILLADA NIKHIL	6304538159	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.085	\N
-cmv0jr1ed00rumzmyuw6bx6ul	26UECSE0034	26uecse0034@student.gvpihlr.edu.in	$2a$10$mCWJlR4BzjPxHlIPMFL7b.PENbuFpQstL3ltVmyUBQUei5UUYIKkO	KOTHAPALLI GNAN SAMPATH	9866043273	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmv0jr1ec00rqmzmyxxjbruoz	26UECSE0032	26uecse0032@student.gvpihlr.edu.in	$2a$10$JZDGvAsL3Zl4UpcaTa24r.SnEmzc0IzWShxOXmpaZqz2bDxUFMXB2	GONNABHAKTULA ANURADHA PRANAVI	9290835183	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmv0jr1et00xwmzmyajtsjss8	26UECSE0050	26uecse0050@student.gvpihlr.edu.in	$2a$10$q.gCv2uaN6rQOQJm2K/9yeEk1H3o1yPr5I/Ne/Iek2UYXD7iIYOlS	KALLA JISHITHA HAASINI	7842667599	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N
-cmv0jr1eu00y5mzmyttq9uvam	26UECSE0060	26uecse0060@student.gvpihlr.edu.in	$2a$10$fijhkljMRKv5gEOJHH5Jtu.h7qcD0sJku0mkTx7xtKCEnqgoH4kfi	K JYOSHNIKA	9912771404	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N
-cmv0jr1fi0146mzmylszspfy5	26UECSE0080	26uecse0080@student.gvpihlr.edu.in	$2a$10$YYnKBfoHiXfHt432sR5uwej39IvZeRBUcCqBj9D0.KjWw5znDygo2	MOGILI MANIDEEP	9441805021	t	f	\N	0	\N	2026-10-09 05:50:36.798	2026-10-09 06:37:40.131	\N
-cmv0jr1fy01a9mzmyydfof17x	26UECSE0097	26uecse0097@student.gvpihlr.edu.in	$2a$10$Re8hv8CQGm8CY/7R/bhtQu01v8K4J0pQc9OOP8YVVU7AGXEU.E1B2	PANGA BHARGAV SAI	7989650799	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N
-cmv0jr1fz01armzmy05ss3tza	26UECSE0116	26uecse0116@student.gvpihlr.edu.in	$2a$10$zXn7xrcFC5PpD3PQWtQhyuBGJ5DDvRGcGMbcf3TxUVdG5EnGyGRDC	RAYIPUDI AKSHAY	9652690379	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N
-cmv0jr1gg01gomzmyur2fp01a	26UECSE0122	26uecse0122@student.gvpihlr.edu.in	$2a$10$YdrXMVgmuFWj4iMObIRMfe4HkSZ1V0hS2BJsdoVxnLJ6VrZz72jhK	BAKI MAMATHA	9550418596	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N
-cmv0jr1gh01h1mzmy16pit23x	26UECSE0143	26uecse0143@student.gvpihlr.edu.in	$2a$10$2nyzLyVb9VW5HNIPgSj65.Dp9eM3.f9WMfogMCaA.FfdqUFwVZTeq	NUNNA BHAVYA MANI MANVITHA	6303630658	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N
-cmv0jr1gx01mxmzmyyp9oqd51	26UECSE0151	26uecse0151@student.gvpihlr.edu.in	$2a$10$i.cwH1E68IBbvWt6IdAhku918I6p1R.w6wev.d67dGkGo9.cR2MDO	GARE SAIRAM SURI	7288966778	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N
-cmv0jr1gy01n2mzmy2466pss6	26UECSE0160	26uecse0160@student.gvpihlr.edu.in	$2a$10$ZdYIlzZy1f6hZ11EeI9aXezsoGlqgewyyiwK4OwFVET0v6u09CBOa	GANTA NISSI MARK	8919549727	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N
-cmv0jr1hd01t3mzmy6nwe5bjy	26UECSE0171	26uecse0171@student.gvpihlr.edu.in	$2a$10$vOqmZd5lZ7pIDvOyAQAa7emvJZjPeJ5hGbYvMeEHx0ngXvGVWJeDK	ALLAM PRANAY SAI	9502359095	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.187	\N
-cmv0jr1he01tgmzmyisyiq5k8	26UECSE0182	26uecse0182@student.gvpihlr.edu.in	$2a$10$KNcec/Tpho3UqrJAEOzabORvPoInx/Io9nrewpmNqZMEhPKj0azMC	GEDILA VIVEK REDDY	7337080907	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N
-cmv0jr1hu01zjmzmyz7wz82nz	26UECSE0209	26uecse0209@student.gvpihlr.edu.in	$2a$10$TqyFBZ2lKV5HyRqTDd48Ye9zOpu86e4G.iaguqe.oPnphy1q/.kFq	KURIMINELLI TEJESWAR NAIDU	8074048360	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N
-cmv0jr1ht01zcmzmyyj78yr23	26UECSE0206	26uecse0206@student.gvpihlr.edu.in	$2a$10$IAY9oOpXYXLymuqnIf3Uq.sGsw7Hvl8ANM4kFhTKBgCZZche.ZO9m	KALIDINDI AKSHARA	8328009392	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.203	\N
-cmv0jr1i9025imzmy8wvi1flo	26UECSE0222	26uecse0222@student.gvpihlr.edu.in	$2a$10$WfkjugCBt8a.REyQ5XXs7ek1hdGMa4rIfABMLiLPb.MQ.B7BdJHT6	ATTADA CHARAN	8897067195	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N
-cmv0jr1ia025wmzmyh6hrq3xg	26UECSE0238	26uecse0238@student.gvpihlr.edu.in	$2a$10$O3XqsCh7wBV0Ul5KY8XX5uGCK/FK72pgGqf1EI5v7fKZnelsEoaym	NIMMANA SAHITH	9885969632	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N
-cmv0jr1is02bxmzmyxfbq3tqs	26UECSM0009	26uecsm0009@student.gvpihlr.edu.in	$2a$10$TeHVWAo4OQARzT5MHZiVfuTKzd0kT36ine4nFXd.6EyYFxSq/d04K	BOPPANA VARSHINI	9494941931	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N
-cmv0jr1it02camzmy1nxx9kcj	26UECSM0028	26uecsm0028@student.gvpihlr.edu.in	$2a$10$xc3ihv3jzBpvVGJOoQoPe.gSOTV2fbECKt.0l3vb/62u3nanJstQq	JANA SOWMYA SRI	6302475223	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N
-cmv0jr1j702hzmzmybjq4zkzv	26UECSM0036	26uecsm0036@student.gvpihlr.edu.in	$2a$10$GZkT5vZkXFyRoPI5/aRGE.id8T3LULQ4FpNY8ZHDnDyWXff711XzO	KATIKITALA SHINY	7989440722	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N
-cmv0jr1j902iimzmyccol85m8	26UECSM0052	26uecsm0052@student.gvpihlr.edu.in	$2a$10$dBJZuRk5hyqkSVy8lGWL6O4V3x2tltG5bLxN0zu5qokwFT8bLG4Ey	MUDDADA USHA SRI	9866836221	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N
-cmv0jr1jo02o8mzmyrictyox5	26UECSM0054	26uecsm0054@student.gvpihlr.edu.in	$2a$10$GgCXoQbgVAEC598aT4Sy/.UQRZQ8OS/lKEZPf7Olc4pbIOUih9t16	MUKALLA BALA ADITYA NAIDU	9392448071	t	f	\N	0	\N	2026-10-09 05:50:36.948	2026-10-09 06:37:40.27	\N
-cmv0jr1jp02opmzmyqvggpqx2	26UECSM0074	26uecsm0074@student.gvpihlr.edu.in	$2a$10$SiLKwM4PJYzW5sX5Y/xs0OBpWRwuho0bmABVPDIuHagKYVtv79dmi	MIRIYALA RADHA KEERTHANA	9063381941	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N
-cmv0jr1k302ujmzmyt8o9w9xa	26UECSM0084	26uecsm0084@student.gvpihlr.edu.in	$2a$10$l9yDDopP.rgTbltSUFdj8.d7X5f2L777gZ87L2pZrI6006XGxNFy.	YAGALLA PRANEETHA	8179423989	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1k402uvmzmy90mayxcg	26UECSM0098	26uecsm0098@student.gvpihlr.edu.in	$2a$10$5uy7ChohdTq79mUHHWubUu1lArpl44evGLHcPEhYLW5uKksWvjQou	ADDALA VENKATA SAIRAM AASHRITH	9966284598	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1ki030umzmywheuo288	26UECSM0113	26uecsm0113@student.gvpihlr.edu.in	$2a$10$7nstGy1sXd5lczzPmX1dRO0VG.0sFEo0R1/fNdWstTS4RUmOSzT5G	KARRI BHASHINI	6300171352	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N
-cmv0jr1kj0314mzmy0akxkpbn	26UECSM0122	26uecsm0122@student.gvpihlr.edu.in	$2a$10$0pH5NHWnCvDSVBcLlLcKke1G63q1/jdsvNT4Ch244nU3AZYX8kV1e	KONDALA RESHMA	8332828299	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N
-cmv0jr1d200f1mzmyxmk5srd1	26UECIV0008	26ueciv0008@student.gvpihlr.edu.in	$2a$10$OXr9iumCA19M4HVReiCyF.Sgc4SqUPxVPDdW1XcOD56ZHNoblmL3.	MOLLETI RAJU TEJESH NITESH MANIKANTA	6300168505	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N
-cmv0jr1d400fhmzmyy60zkd5q	26UECIV0029	26ueciv0029@student.gvpihlr.edu.in	$2a$10$1I/Lqnw0pku71y/nOU0pRu.PF8eGkAaoWfwgrdFxcfUHg53pSU./u	KIKKURU SIVATHMIKA	9347056979	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N
-cmv0jr1ds00l7mzmyjiw83jfk	26UECIV0032	26ueciv0032@student.gvpihlr.edu.in	$2a$10$aITTTfiatJkBG1oRsXEwe.zq10cLwAGwfiNBl1yGgzcS6eTtlqfou	TAMMINAINA DINESH	\N	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.085	\N
-cmv0jr1dt00lmmzmyvmryg2n5	26UECSE0010	26uecse0010@student.gvpihlr.edu.in	$2a$10$VhCxegoro99yU0RoOQIQBejLjq9/VOuyXYZNhUVfzq94d6tavT0by	BATTULA EEKSHITHA	9848427370	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N
-cmv0jr1ed00rzmzmynw1tyh0c	26UECSE0029	26uecse0029@student.gvpihlr.edu.in	$2a$10$WBwwv/3TJbkB.cMBsqsjIuK2Kv3s9ikBXV/0WAMdfZ/YmIxRqIE/m	DUNNA TANMAYI	7013566266	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmv0jr1eb00rjmzmy39ozqlhy	26UECSE0026	26uecse0026@student.gvpihlr.edu.in	$2a$10$cCuffsMPaXWp3oj.phmIruNiUrQSuNjMhgcFd89Digs8xwnkEaPbe	CHITRAPU YEKSHITHA	7386121356	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmv0jr1et00xrmzmyyopejoh1	26UECSE0051	26uecse0051@student.gvpihlr.edu.in	$2a$10$slS9v0BUz3BFMnVhHy89Z.QDXr3Vh.72O6UzotZC5ZKLDIIG8TtW.	KAMMARI SHASHANK	6302084904	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N
-cmv0jr1eu00yamzmytosuiob7	26UECSE0067	26uecse0067@student.gvpihlr.edu.in	$2a$10$RIogO9bmQKx/y186CZH8ie1P/.BItinpV5lta4PQEM/3Uv.3SAsE6	KOTTALI BHAGYA ABHINAV	8985383448	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N
-cmv0jr1fg013ymzmy6u9tgp8z	26UECSE0070	26uecse0070@student.gvpihlr.edu.in	$2a$10$zoDSCbKRr4fXh3MGrcd6EuC0OimlYA3RxmZHmdD6M74ZiTmYrxsnm	LAKKOJI JASWANTH SAI	9281191749	t	f	\N	0	\N	2026-10-09 05:50:36.797	2026-10-09 06:37:40.13	\N
-cmv0jr1fj014dmzmyhjjs5z4w	26UECSE0087	26uecse0087@student.gvpihlr.edu.in	$2a$10$wHnrR3Hh7sz4cuEFRGaheu/Te0esX00D4cF.xLAb0SKfOfUAmNxQm	NALLA THANMAI	7671889391	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N
-cmv0jr1fy01agmzmy813id4zr	26UECSE0104	26uecse0104@student.gvpihlr.edu.in	$2a$10$qchQrcEopojCjnkBkW4FheZl2CWEjGHJIqqqvxNCGqkita4eTJtva	POTHALA MOKSHITA	7675885142	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.144	\N
-cmv0jr1fz01almzmylods01m6	26UECSE0110	26uecse0110@student.gvpihlr.edu.in	$2a$10$ggLpgFne.B/nAlxiDEpGz.rea1amBoiK9YGqCUeKc1qb.9sD8FOzO	PYLA BALA SUBRAMANYAM	9291671260	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N
-cmv0jr1gf01gkmzmy7pg6yb4v	26UECSE0132	26uecse0132@student.gvpihlr.edu.in	$2a$10$wfXIPoaCxFvcQcIYlNEvUuOTCn8pfQ6qD1v91VjeZMp.e1OctztiK	MADABATHULA NIRAJ KUMAR	9550319123	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N
-cmv0jr1gg01gxmzmyerape048	26UECSE0140	26uecse0140@student.gvpihlr.edu.in	$2a$10$5SLI.QNSZvW81adzSrAxm.T081krmSQ4prAMbfG0iRMEuGsL7u1ey	YENNI SUMA	9014776580	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N
-cmv0jr1gx01momzmy6brzgvyr	26UECSE0145	26uecse0145@student.gvpihlr.edu.in	$2a$10$lUvMByYkyjY.lPJgULe0NeLxhc3pLcrJ3fmw2shLc4rfGJiRofPRK	MEESALA MADHURI	8317613835	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N
-cmv0jr1gz01nbmzmyisshhcrq	26UECSE0164	26uecse0164@student.gvpihlr.edu.in	$2a$10$GFYlLZdKU1JZmxNOK/sfpe5gH2Ly2u6.htJUkvdSHl9TUmDqCR8mS	KALLA SAIMIHIRA	9494332995	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N
-cmv0jr1hd01sxmzmyfp2f98sd	26UECSE0170	26uecse0170@student.gvpihlr.edu.in	$2a$10$mIuFTLhtvGb3jK2atiM5d.lBdNZg9J2Z28VircfTpt9flx9PrixxC	GUJJU VAMSI	9908034218	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N
-cmv0jr1he01tbmzmy8wolsv0n	26UECSE0188	26uecse0188@student.gvpihlr.edu.in	$2a$10$4Gpzyqag8Ey/8ZVRO9U5AuNK75NLa/eNPb8tW/tzqOdVLRCV4SM6S	KOTYADA NAMITH NANDAN	9390139772	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N
-cmv0jr1ht01z9mzmyos63f3l9	26UECSE0200	26uecse0200@student.gvpihlr.edu.in	$2a$10$8n3.k3akPF/yGxUll2gLa.mq5.bH3EC9i0bgnE0JDWA5ZyKJNjOba	YELLA MADHULIKA	8008201280	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N
-cmv0jr1hu01zimzmyrr8ycf8o	26UECSE0210	26uecse0210@student.gvpihlr.edu.in	$2a$10$h0REvEJ4nE.9NdUtuk6GVePyOHTFB55RfI6kYdsS.f7QIjWxlLo2S	MANTRIPRAGADA NAGA SAI CHARAN	9948154888	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N
-cmv0jr1i9025kmzmy80tru2x6	26UECSE0229	26uecse0229@student.gvpihlr.edu.in	$2a$10$hrYzjlJUwLil76IruylA2eR09PXH8.KD3qmbzYeKI6tUh79NmZn0e	BHAMIDI KRISSHNNA NAVINA	9666081718	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N
-cmv0jr1ia025rmzmyxnf8i9ql	26UECSE0236	26uecse0236@student.gvpihlr.edu.in	$2a$10$1fpym9YaEAkeqRp8QY/6oeQJAPcfOwkd9os4.m88ABA2k8rhbIaAe	BODIREDDY CHANDHANA DEEKSHITHA REDDY	8885282645	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N
-cmv0jr1it02c9mzmycbqjz2ay	26UECSM0005	26uecsm0005@student.gvpihlr.edu.in	$2a$10$vqGqMIjNbwVVcYtRtkSC2.4HvF0V/2oHWSxpIwit5/bqis/CRONuS	BALAGA NITHIN PRANAVA SAI	9348060225	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N
-cmv0jr1j702i6mzmygqfdb0hc	26UECSM0041	26uecsm0041@student.gvpihlr.edu.in	$2a$10$aIV0pe.mFeZED2pA2tJHK.aNetQzftjgS7TBTuE7WWJEbnU33MMxG	KUDIPUDI VIKAS SURYA SAI	6301639744	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N
-cmv0jr1j902ifmzmyt1szkv4h	26UECSM0050	26uecsm0050@student.gvpihlr.edu.in	$2a$10$1Vxhhl8a97sKifVPgiJ2n.6LfW2n7xKIJLrqMtPVMUr4gJUa22ENS	MOHAMMED TAWFEEQ	9347045200	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N
-cmv0jr1jo02ocmzmy59zd0vwo	26UECSM0063	26uecsm0063@student.gvpihlr.edu.in	$2a$10$Cf0ehhNZbyQ3VbdwgD2OH.dBj5U7L1kgLad58KFbrrOQwaQN3usW2	PONNADA GOWRI DHAMOJ	9966356005	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.27	\N
-cmv0jr1jp02ojmzmy7nwa2yth	26UECSM0070	26uecsm0070@student.gvpihlr.edu.in	$2a$10$lFHtU0N7XmtBqW0yBMkwjeDQXkrvbBssYbH2/oThXbwHmCT27SFBy	SALADI SAI HEMANTH KUMAR	7396214164	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N
-cmv0jr1k502v1mzmyg648qt9g	26UECSM0103	26uecsm0103@student.gvpihlr.edu.in	$2a$10$QO.RX.5CE3RgON7x0uS/JOoVmb1NunKwzscq55Wh9.FviF6uJHrPW	KURIMINENI ROHITH	8008332792	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1k302uomzmymyiyaehd	26UECSM0089	26uecsm0089@student.gvpihlr.edu.in	$2a$10$l4RMY/Mt/3QiOe95IeK6Ru31dUhcRbd3A4MgQxE/jVBeyW3J9H0UK	KOTHURI CHARAN	7288810535	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.285	\N
-cmv0jr1ki030tmzmy25zyy562	26UECSM0111	26uecsm0111@student.gvpihlr.edu.in	$2a$10$CLw0wm60UbR/n6kGRnPkoeSn5Pu5/HTaZpsDQsVyZELiQipT4WBqK	KATUPALLI SRIJA GAYATHRI	8977335143	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N
-cmv0jr1kk031amzmypxlllilq	26UECSM0125	26uecsm0125@student.gvpihlr.edu.in	$2a$10$yo8QWS0LGuQPT7bOBAzI2uRUu6aCnznyWISz7TrFNbHigQ6SlEfg6	EARLE LOHITA	8247258339	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N
-cmv0jr1b50040mzmyuxku5gga	26UECHE0007	26ueche0007@student.gvpihlr.edu.in	$2a$10$8SvuqBpwA95HY7p3hTuE3O06Ej8uTpY6fbA8blcXJAo4FJ33wih5e	ANGA VENKATA RAJESH ABHISHEK	9059588526	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N
-cmv0jr1as002umzmyhjom7z9h	26UECHE0011	26ueche0011@student.gvpihlr.edu.in	$2a$10$ahj7wkTg6KQ.8i7wXEc68e4ItTNOoH.dmoFN088FSfB5pf8wNQmeq	MENDA YASWANTH NAIDU	9701709562	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N
-cmv0jr1cd0096mzmyb55v8tx4	26UECHE0046	26ueche0046@student.gvpihlr.edu.in	$2a$10$AwhGqUy9mRvzworbkjXcTuG0Mn0DA3.76W/mNt1ciLANA6e9Mwxna	ROBBI SURYA TEJASWINI	8096112022	t	f	\N	0	\N	2026-10-09 05:50:36.685	2026-10-09 06:37:40.052	\N
-cmv0jr1cd0090mzmyjn4kvk8r	26UECHE0040	26ueche0040@student.gvpihlr.edu.in	$2a$10$16heGKXZyObKHfHHQQz7Eee7cd/yLSwaiCa3y.N73C0XzwlqCWQ0O	PASUMARTHI VENKATESH	8555924350	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.052	\N
-cmv0jr1ds00lemzmyczyk668m	26UECSE0002	26uecse0002@student.gvpihlr.edu.in	$2a$10$vP7mfd/X6ZnnbaO/FQQiauX.TB6qNDyhPbgHXb7c9PDUMVpLDbsGO	ALLAM LAKSHMI SAI KRISHNA PRANATHI	9490005043	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.086	\N
-cmv0jr1du00ltmzmy5djb3kog	26UECSE0017	26uecse0017@student.gvpihlr.edu.in	$2a$10$QBqbx5YrE7pietSV1dyYvuwPqeDLqD3DnXNCfzrKe294eIaNWLA2G	BULUSU VENKATA KRISHNA GAUTHAM	9440466199	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N
-cmv0jr1eb00rhmzmy2p0eauwx	26UECSE0022	26uecse0022@student.gvpihlr.edu.in	$2a$10$234rcdCI4fUOb4UvM6ejW.gFz2H41B.uRc2NpgMuLwmxAgCRcPUvW	THOKALA CHARAN	7981686532	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmv0jr1ed00rymzmylaibxxct	26UECSE0038	26uecse0038@student.gvpihlr.edu.in	$2a$10$9iPDjlVhPnpCR4GUN9xHS.zwHI3LSW92T/WR7WLdOHLYByeuD369C	KOLLI VENKATA SATYA KARTHIK	9502593594	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.103	\N
-cmv0jr1et00xzmzmyp9o5f0m3	26UECSE0057	26uecse0057@student.gvpihlr.edu.in	$2a$10$GgnjYdvkW5JzBvSEqMk9qOP52Zv7hP2Gw53FNBEIiitf.MHK27aH6	KANTIMAHANTI GURUDATT ANISH	9440767759	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N
-cmv0jr1fg013wmzmyca73c420	26UECSE0069	26uecse0069@student.gvpihlr.edu.in	$2a$10$EsfpqOd84c7fvaluKUfX0uk/7oNBfxcVUjjsSo2EPYAfg6eNOv7nS	KUPPILI TANMAYI	8374541543	t	f	\N	0	\N	2026-10-09 05:50:36.797	2026-10-09 06:37:40.13	\N
-cmv0jr1fj014amzmy8bft6qkr	26UECSE0085	26uecse0085@student.gvpihlr.edu.in	$2a$10$r.WiX2QgghtxoEnk.3f4R.cHA5SVy9gBM0fcIjaAD0g.E9QdW0qmm	NAGIREDDYPALLI HEMANTHI REDDY	8008888759	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N
-cmv0jr1fy01admzmy6lej7z4b	26UECSE0103	26uecse0103@student.gvpihlr.edu.in	$2a$10$hNDAZJH3A9oXI2lDCKDaUO6pYEil0WNlm/hAEhEf0u5gYvdjWeKGW	POLISETTI VENKATA MANIKANTA LOKESH	7416719297	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N
-cmv0jr1fz01ammzmylcq7lsgv	26UECSE0112	26uecse0112@student.gvpihlr.edu.in	$2a$10$rL6Yu6bwvvYAeim/M65OG.WDRlVeySwVoLfak6eNN5p42JM/7.04.	RAGOLU HEMALATHA	8790974831	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N
-cmv0jr1gf01gfmzmy5me5lngg	26UECSE0120	26uecse0120@student.gvpihlr.edu.in	$2a$10$dQFdcxlNuQScayx.0HiDbuduHC1kJD7E6So4GK2110prJPLw.fkhO	SARIKI LEKHANA SAMHITHA	8374802367	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N
-cmv0jr1gh01gymzmy1bga12va	26UECSE0141	26uecse0141@student.gvpihlr.edu.in	$2a$10$rIhLaUSjLQEEJXnxX9R0COKajFsp0r32KXd3JD1Ffit58AoLRTvO2	PATOJU YUVATEJA	9573026467	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N
-cmv0jr1gx01mymzmym1qhb0y5	26UECSE0153	26uecse0153@student.gvpihlr.edu.in	$2a$10$PP/XwkzhXquIehwDwSL9yeLhYicLTuSv5XvnWnBIeS5cMmGvQHH6e	DADI DANUSH	9505530555	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N
-cmv0jr1hf01tjmzmyw1fr8v1i	26UECSE0184	26uecse0184@student.gvpihlr.edu.in	$2a$10$moy98FrGtlBa9.13D8SWsOy2aavfa2fywNlpZz0Er/DJDqrZs7X7S	RAMPILLA SAI YASHWANTH	9885881464	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N
-cmv0jr1he01t7mzmyb1f4346k	26UECSE0186	26uecse0186@student.gvpihlr.edu.in	$2a$10$AHe2zv7VIu/IjzvrtytE/O70iLv61DiIIkquQ0KFfYOMF6Lj58UbC	KARRI SUDEEPTI	9440501072	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N
-cmv0jr1ht01zemzmyqct148m8	26UECSE0204	26uecse0204@student.gvpihlr.edu.in	$2a$10$Lwz/2oVTSxHgfHdQkaGHwuMtGp6.Gu.KQcOySFK45tvzHwGQVBi2C	ADIMULAM VEDA VARSHINI	9948412127	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N
-cmv0jr1hu01zomzmy8uhnzvzm	26UECSE0216	26uecse0216@student.gvpihlr.edu.in	$2a$10$HQNMbakm/rHvQ7vP1Hsa0uuuu6yij8skLlRRAnuQ0yXKlKXFHVZvS	KAMUNI SATWIK	8341704380	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N
-cmv0jr1i9025emzmyb8s43kti	26UECSE0223	26uecse0223@student.gvpihlr.edu.in	$2a$10$LcsvKGPmtVN8CJW20oWzUObI6sDeXl8zfXThgphtg.ZWWOdOL/6Ze	KAGITHA PARTHIV	8150901252	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N
-cmv0jr1ir02bomzmyz4894xlg	26UECSM0013	26uecsm0013@student.gvpihlr.edu.in	$2a$10$XbtqjSb1h3WvoYbyWNTf.upKcGuu6QLNeWbWPo.QsmrFRrGDCQkK.	CHINTHALA PUDI CHAKRADHAR	9849246000	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N
-cmv0jr1is02c8mzmyhxry29d5	26UECSM0026	26uecsm0026@student.gvpihlr.edu.in	$2a$10$gUWfcBatxLnjYJqg/0pa5.dawOID/1VIJPAp6WhZAEX2PPAzcF286	GUTHI SRIVALLIKA SWETHA	9849219125	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N
-cmv0jr1j702i5mzmy9vpsjozi	26UECSM0042	26uecsm0042@student.gvpihlr.edu.in	$2a$10$Zzp70zbhaB1VJ08w6G2oo.LCCfLzQhUeGVPjDTMC138wdEgOOZpdW	KUJJA AKHIL	8978710342	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N
-cmv0jr1j902iemzmy30bqjleg	26UECSM0048	26uecsm0048@student.gvpihlr.edu.in	$2a$10$2nZujwR/.XZYI6dDcWxRJezhC5xBPKhHPGDlSsgEXXeiXY1vUTOnS	MARPU JOSHITHA MANOGNYA	8464885193	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N
-cmv0jr1jo02odmzmypmh031uq	26UECSM0062	26uecsm0062@student.gvpihlr.edu.in	$2a$10$5LPXKmGVapF1NpyeuXOrMupzcd/bci5lza3iJn2ZN9bImd1RDL6ii	PALLIKONDA KALYANI	9441209246	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.27	\N
-cmv0jr1jp02oomzmyryxo0f7l	26UECSM0071	26uecsm0071@student.gvpihlr.edu.in	$2a$10$Ysfd/R28T5./9ryoGGWLreSwAfIAM3rTHK6b3.FZmrWKnHpGMWTSq	SANCHANA SHYAM VARDHAN	9391307538	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N
-cmv0jr1k302ukmzmyzi3emgqx	26UECSM0086	26uecsm0086@student.gvpihlr.edu.in	$2a$10$MidsI5yFQY7Bo5kqcQMsieHxd2RPH7pZy.H6Qm1n3I/CbCoN/Dlha	YENAMANDRA SRINIDHI	6300661800	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1k402uymzmyr8ro109e	26UECSM0099	26uecsm0099@student.gvpihlr.edu.in	$2a$10$C/QdMyfegfhMxbvkk9b7a.pQQlQofAciWxUG78mvaUBGlN7bnVmi6	GARI SAI RAKSHITHA	8179774735	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1ki030rmzmyhalxamc0	26UECSM0107	26uecsm0107@student.gvpihlr.edu.in	$2a$10$jv3NzJkCxwD8fw/Gj2XN5ugUi./rDgVvys39wIIbLt.CDjWdbMirm	Rakshita Ravi	9491572913	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N
-cmv0jr1kj0315mzmy0cn4n942	26UECSM0123	26uecsm0123@student.gvpihlr.edu.in	$2a$10$C8pznT6HNTqjjJx39OjK5.KXdO0ynd1n8PiW3GpiFDxzrJNyjOnK.	PEESAPATI SRI VENKATA SATYA SAI VAISHNAVI	8341643603	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N
-cmv0lfk3002i010e0zhen3tpw	26UECSM0131	26uecsm0131@student.gvpihlr.edu.in	$2a$10$jvs4SCzc0XOBK.f9SaZE3uQEsKrEV0NvJ1U5mLWeeyFmbIvkLRoOq	SIMHADRI SUHITHA	8328160980	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3002i610e0e276jj9p	26UECSM0139	26uecsm0139@student.gvpihlr.edu.in	$2a$10$6/wjikX2ELbh5y0Y/UeHHeZIgRPE/6MXxeaNaYSuu/GP1/QvBtZzi	GUNTREDDI SWATHI	7569488823	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0jr1d200f0mzmy59hrnmny	26UECIV0012	26ueciv0012@student.gvpihlr.edu.in	$2a$10$ZJH6S3Ly1XB74yKj2coglOCpolZMS8oalbc1wnZr0M1qmHbWXeMJC	PILLA KUMAR RAJA	9154568777	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N
-cmv0jr1d400femzmye39duzwn	26UECIV0028	26ueciv0028@student.gvpihlr.edu.in	$2a$10$kBRwIIWl/BKMV/JtQ4min.P5SkyDXynpuo4OkrlSzj9AAv5z7FeAG	BOTTA GANESH NAIDU	9959524555	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N
-cmv0jr1ds00l9mzmyejplw9nk	26UECIV0034	26ueciv0034@student.gvpihlr.edu.in	$2a$10$FX.gAkad0BQbTqtMlerYQutVGOnKaDRbq7EnpvJ1NtSii2E0ZMP8e	JAGANA HARSHITA	7075006643	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.085	\N
-cmv0jr1dt00lomzmy577e5cwt	26UECSE0014	26uecse0014@student.gvpihlr.edu.in	$2a$10$5FiO2OlZTWcmwlJLyxlOy.R/jMf/SkCExGy20UZbRYZUFH02x5Tci	BONAM VEERA NARENDRA KOWSHIK	7013810129	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N
-cmv0jr1eb00rgmzmypicza96q	26UECSE0023	26uecse0023@student.gvpihlr.edu.in	$2a$10$xQyPPcCI5K.ks8n/EMdwr.FlPGW72pPEYL9418FvEnzokIxsdefNu	CHEGIREDDY JAYAVANTH ESWAR REDDY	8179249162	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmv0jr1ed00rrmzmyopjyplen	26UECSE0033	26uecse0033@student.gvpihlr.edu.in	$2a$10$7MfxRq/BlSXB50G6Qk6ZsOhyOfbTymstnvR8UxJPMDjGe/DvWtOwW	GANAPATHI RAMA ADITYA	7013290932	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmv0jr1et00xsmzmywwiam5ou	26UECSE0046	26uecse0046@student.gvpihlr.edu.in	$2a$10$scVZMZzuIL.XLThFHKvWf.idzKxH5jebV6Uo3Wp2oELsViF/q6tKG	JALADI SIRI HARSHITHA	9703796333	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N
-cmv0jr1eu00y0mzmyo6c7iivi	26UECSE0058	26uecse0058@student.gvpihlr.edu.in	$2a$10$lLTwKE4ULlR7zpWCfgjKjOWziMvIAddT/oXEI/R5CzmdEtIEZWWVC	KANUKOLLU SAI CHARAN	8555805417	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N
-cmv0jr1fi0147mzmyftxm50h2	26UECSE0082	26uecse0082@student.gvpihlr.edu.in	$2a$10$XqfpQgK/QY./KceL1HhiQ.NPtQeeqDXJTnnNrEcZ45Lrl4ZrBFv12	PAKKURTHI MONISHA SREE	9849069421	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N
-cmv0jr1fj014kmzmyk37tt39v	26UECSE0092	26uecse0092@student.gvpihlr.edu.in	$2a$10$YkRinkCPWj3xUTRW7j6iqe/gbaMA28XGbTkET1Nu9j3t3ITKiNGDm	PACHAMALLA SAI BUNNY	9000077077	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N
-cmv0jr1fy01afmzmyci4ap9oh	26UECSE0106	26uecse0106@student.gvpihlr.edu.in	$2a$10$zqUfwcWC2B6Yd7ccJC4iJeqIcFRLatPw5MbW369/kYs7NfQf0CjJy	POTNURU HEM CHAITANYA	9867725165	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.144	\N
-cmv0jr1g001atmzmy8trf7w8t	26UECSE0118	26uecse0118@student.gvpihlr.edu.in	$2a$10$wrCyWe/PZW9PKksU31/n9OSwjWSJqIydXBxIXnOROkaS6y22TUJ8m	SANABOINA EBENEZER	9160270408	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N
-cmv0jr1gg01gtmzmyfitdr10y	26UECSE0137	26uecse0137@student.gvpihlr.edu.in	$2a$10$/NvNu1NEUdVOnmMkvQQxf.R0iGkPYAaUhYJGlwxe/s3ZGPKr66.dG	VIREPALLI SAI BABU	9618023422	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N
-cmv0jr1gf01gnmzmyhp4o8kv8	26UECSE0131	26uecse0131@student.gvpihlr.edu.in	$2a$10$mCqkimTfgp2ebMXMSa6KoOuwQcBV2gLw4N98PScl//hpgwmwYnt6G	THAMMINEEDI SRI SARAN	9849457975	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N
-cmv0jr1gx01mqmzmymaifcuom	26UECSE0148	26uecse0148@student.gvpihlr.edu.in	$2a$10$D7WugKVjs1nrkYw2KcKBne46zjEfu6Y/cena0Bu.Kv3zNUyBaUw0m	MALASANI SRI GANESH SAI AKHIL	8519861973	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N
-cmv0jr1gy01n0mzmy2wjm3lbo	26UECSE0157	26uecse0157@student.gvpihlr.edu.in	$2a$10$NLygpc9dwH6vx/QO68u4/unqsw5/ESuymqBm0cvfTltg1wdxCMV8W	MANAPURAM CHAITRA SRI	8919719966	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N
-cmv0jr1hd01t2mzmysxsp5j88	26UECSE0185	26uecse0185@student.gvpihlr.edu.in	$2a$10$r1rqaidiMARuCQKh6JYP9OjQ3XTqAOTKwYy1xiVOEbYhpzhKIy9zy	KALIGATLA NISHITHA	9618363699	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.188	\N
-cmv0jr1he01tcmzmyb318dm0g	26UECSE0190	26uecse0190@student.gvpihlr.edu.in	$2a$10$9D3drEg8V6lK/47g6avcAuFZC8sigxaH8B0b/bDXTc/WObOIYD.Lq	METTA TEJA SWAROOP	9246782727	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N
-cmv0jr1hu01zmmzmyigaen9y3	26UECSE0212	26uecse0212@student.gvpihlr.edu.in	$2a$10$WPnWfZ1Pkp3J2QTZ4RDnxuYvpYLs8F6mjWI8H92pmn7yFh071A5ym	PONNADA HARIKA	8790605070	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N
-cmv0jr1ht01zbmzmy45nw11ey	26UECSE0205	26uecse0205@student.gvpihlr.edu.in	$2a$10$lCe56EzujiCWcviUEjW0kOq1nobiaeb5gKO1hF8S3wd9AewhfuVIm	DARISETTI PRADEEP	6305614928	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N
-cmv0jr1i9025lmzmyyj8nwdb2	26UECSE0233	26uecse0233@student.gvpihlr.edu.in	$2a$10$3IAjF.uQYfr2IyuW2WYej.EPo4c7Y4wCsqUO5np821aGJkT.S6C6.	KOSURU NIKHILESH	8977419984	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.226	\N
-cmv0jr1ia025smzmydqfztg48	26UECSE0240	26uecse0240@student.gvpihlr.edu.in	$2a$10$qCUzEMinPtn7HiK5YvgNeuxVIYApTojIUMT5nhZVnq.9VGrHHcoey	SHAIK WAJID NAWAZ	9502110789	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N
-cmv0jr1ir02brmzmywec908g3	26UECSM0011	26uecsm0011@student.gvpihlr.edu.in	$2a$10$c5eASkFJmHHeyMEmjV8ubeQey5tyWkCTWMFqJQ6EVbLAueVBwu/H6	CHENNAMSETTI SURYA TEJA	9391841973	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N
-cmv0jr1is02bymzmy5xogiplh	26UECSM0014	26uecsm0014@student.gvpihlr.edu.in	$2a$10$UX0/4PWlkpu6NXtmkblgyuGmNcvKSpbOBdSOCHBKEoB90OorbBdcW	CHODIPILLI GUNA SEKHAR	8074298164	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N
-cmv0jr1it02cbmzmyjiigxpdv	26UECSM0027	26uecsm0027@student.gvpihlr.edu.in	$2a$10$Iz.zcn4VyAhrN/DV07bKUe8KiV5M61/4nIYAjFKrxvWmF74XZjAAy	JERRIPOTHULA ROHIT KUMAR	9912207906	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N
-cmv0jr1j702hymzmyrzh21wgs	26UECSM0030	26uecsm0030@student.gvpihlr.edu.in	$2a$10$F9ogGJ1oV9CGE3nyoXcDcO8np3SvBnm66QlngUS9N/4nKDRYb89rW	KALLURI KUMARI PADMAVATHI	9492258866	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N
-cmv0jr1j802i9mzmysprz7cmy	26UECSM0043	26uecsm0043@student.gvpihlr.edu.in	$2a$10$7zQaPCCBh6EAahAF6rGrjeE22aktLDnXrcK6VF830KleFv1O4sLOu	KUKKALA VENKATA SAI SIVA TEJ PRATAP REDDY	9949984708	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N
-cmv0jr1jo02obmzmy7q6sj9sm	26UECSM0061	26uecsm0061@student.gvpihlr.edu.in	$2a$10$RYazxF/mb5CF6e7YaEuKRuKBdB2WSaHjNn3Ml6GvYEuVLe35nA5mm	PALLI VEDA PRIYA RAMA ANUDEEPA	8008696766	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.27	\N
-cmv0jr1jq02osmzmyu80xoxq6	26UECSM0076	26uecsm0076@student.gvpihlr.edu.in	$2a$10$r67HBrUrL1A9fp4eNpgUrOjTHwUHTb0BKUboVvrfrS.67WPFfRNrq	SALAPU SAI TANMAYEE	9866095364	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N
-cmv0jr1k302uhmzmydyxoc8wo	26UECSM0080	26uecsm0080@student.gvpihlr.edu.in	$2a$10$4GZ8MSqDuFWLLqi7e0iY9uJaZLibx6xd2yGQXdO1HHuyDzpllsC3u	AKIRI BHAGYA SREE	9701706579	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1k402uxmzmyio8b6jzo	26UECSM0097	26uecsm0097@student.gvpihlr.edu.in	$2a$10$J8fxBTg.i9o4jFgOUzL7ueNuNf2LxXyBLaijHIe.bEKmEFK/.TvmS	KUNDI SAHITHI	8639075661	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1kj0313mzmy0kvqi5nm	26UECSM0119	26uecsm0119@student.gvpihlr.edu.in	$2a$10$CFH88MMxJ70BzLVL1AzmFeDFlUACsujMo2z7FLPX0CnZNjRqyr2xe	SAMANA CHARANJEET VEERABHADRA MITHRAKSHAY	9393110799	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N
-cmv0jr1ki030smzmy4p3dmetp	26UECSM0114	26uecsm0114@student.gvpihlr.edu.in	$2a$10$sh9oDc3ZYDUfXkA0gKmz3eWY7JlAwHsqIjnKX8qUrgwfAfeWZkNxu	TAMARALA KEERTHI PRASAD	9000727611	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.304	\N
-cmv0jr1bp005xmzmy4wd5hi4l	26UECHE0009	26ueche0009@student.gvpihlr.edu.in	$2a$10$g8xwobJQcwSnj/KnLatnL.wcWhYucH78TX/fzM3eQiuw9A1D08S7G	KORADA SRI SWAROOP	9052820526	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N
-cmv0jr1cc008tmzmy6ja23ls6	26UECHE0032	26ueche0032@student.gvpihlr.edu.in	$2a$10$z6O//UwqGT2NfHqGnAVkReBBRRKfRq.hKIjxJ7/hW2X1fnln5jdTC	JAGARAPU GOUTHAM ARJUN	9985096502	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N
-cmv0jr1cc008wmzmyh6ik7xb6	26UECHE0039	26ueche0039@student.gvpihlr.edu.in	$2a$10$yTe97mdVfBwmJeMuEjQ6gON1zouXO8RzEZ6aTsZkhX1ODKxYjpksy	KORUPROLU YOGITHA	9063384597	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.052	\N
-cmv0jr1cd0093mzmydbgg32go	26UECHE0042	26ueche0042@student.gvpihlr.edu.in	$2a$10$w.FFi/oD6AFLYOwRgiaMdOgd3yR0eaDpkredyirsOU.e2CGIzHwlW	BURLA BOBBY	8106799320	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.052	\N
-cmv0lfk3002i210e0lia4ijn4	26UECSM0137	26uecsm0137@student.gvpihlr.edu.in	$2a$10$Zb92qM7HToZ65Ou/fBRc7OJ67a.Kb2mW1bknekT88sSsevquI8Pfm	BANGARU JAGANNADHA SRI SAMPATH	9849592472	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3002hx10e0l25epgqg	26UECSM0129	26uecsm0129@student.gvpihlr.edu.in	$2a$10$eBccprn0LQLWfD6wJ9fZzOoGYHa0RRKv67c2zxLwaq6Hb2qP6Fw7e	KATTALA GOWTHAM	6305367267	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3202id10e0wm4hzh20	26UECSM0153	26uecsm0153@student.gvpihlr.edu.in	$2a$10$SZyr9cCxPQw0.vCa4PDYH.DqJsLjL4JPODDtwonPEl72m3VpIqdRG	VIJAPURAPU ABHISHIKTHA	7981476218	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3202ik10e0n84ifrtp	26UECSM0145	26uecsm0145@student.gvpihlr.edu.in	$2a$10$z/c/Ej4djFsbXSizmSI57.TQExCpgL8o9JJbn3kWmPimDYDWk.CiO	NAIDU PAVAN NIHAL	9346615046	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3m02oa10e0rcp8nnmt	26UECSM0165	26uecsm0165@student.gvpihlr.edu.in	$2a$10$ulEmV1Ej57Y3hpyKTmt2qOXdl4euqKwFmT7.Mo9eHtZ4VsVvhL8JK	BONU DILESWARA RAO	9603029217	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N
-cmv0lfk3m02o510e0hubtir1t	26UECSM0154	26uecsm0154@student.gvpihlr.edu.in	$2a$10$keCLMWtR.9UOmQu4RcYKnuPmYWWWJVLu5poMP9ZpeRJaUcTNqQDlS	YELAKA VENKATA SAI PRIYANKA	9848184556	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N
-cmv0lfk3n02ok10e05cbkjz1i	26UECSM0172	26uecsm0172@student.gvpihlr.edu.in	$2a$10$kZv0.a5MMnbNZwEccTfJROPpbRjZqcLnXWH8ay3ZTA6Q7D1gE95Fu	UPPADA TEJ DEEP	9966619783	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N
-cmv0lfk3n02or10e0k3mn66cg	26UECSM0178	26uecsm0178@student.gvpihlr.edu.in	$2a$10$qW0C.eu1eWs4wcFBhUwFWuK.iOkl3MfMaD7nc9nLediW4eJToCSsu	BALAKA SANJANA JOSHITHA	9492422132	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N
-cmv0lfk4302un10e0gfs9bqpe	26UECSM0184	26uecsm0184@student.gvpihlr.edu.in	$2a$10$XoE8cOj11uZrHk6PTYlwk.IslMN0aaPsI6hYfLZDRw6PXkbfYKH0i	BANDARU YESHU	\N	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N
-cmv0lfk4402uu10e0znveyz6k	26UECSC0004	26uecsc0004@student.gvpihlr.edu.in	$2a$10$LFPwl.kt7T3S14Op6Zx6AO9S.Z6q5Pq0b7EA5NyhdsbyCzMRISFSm	BATTU DURGA BALA GOPALA VIGNESH SWAMI	9553160860	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N
-cmv0lfk4402uw10e08dl6tnzp	26UECSC0005	26uecsc0005@student.gvpihlr.edu.in	$2a$10$oxXnjeCWdbxWPpNThcu/feelcL9TIZIQgLDMSnNjJii73SD5E3.lK	BELLAMKONDA YAKSHA SRI	9100355289	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N
-cmv0lfk4k030s10e0lj40maea	26UECSC0017	26uecsc0017@student.gvpihlr.edu.in	$2a$10$aW9dkSTFmfO0qTP8UJzDCuzgBUIPs9y68mwHQ6eIInGxud7FJw7.m	KAMISETTY ANUSREE	7995994545	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk4k030r10e00s5dgv2v	26UECSC0018	26uecsc0018@student.gvpihlr.edu.in	$2a$10$YVEjNHOL9w1o8wHgzMv1..tocMkAp9X7.Oz8o5vve9Q8Btm3WV8CS	KONISI SAHITHI	9908566361	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk4l031010e0380fq8s9	26UECSC0028	26uecsc0028@student.gvpihlr.edu.in	$2a$10$42.PqEMVsXyhCcw6vk/0GeM28YAXsmO/jvgAnM4WUgEZI/jKQYq6C	REGANI SRAVANI	9703718811	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk4l031410e07ds5ujv0	26UECSC0029	26uecsc0029@student.gvpihlr.edu.in	$2a$10$OW9..ao4WgmS7JF57Kf8fukbL92ZgHQzooKOSf9jQfCiez9OIfxfa	LANKA SINDHU SRI	8283999499	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk50036y10e09lzabj3j	26UECSC0038	26uecsc0038@student.gvpihlr.edu.in	$2a$10$oBIcgewgmWOZKwe3SNmw5u3rOCt3TxfBzDJd/dIzrRZ3r4jH9.cZC	SUNKARI DEEKSHITHA	9989299159	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N
-cmv0lfk50036w10e0qhiou276	26UECSC0037	26uecsc0037@student.gvpihlr.edu.in	$2a$10$aZgxMlNIAjZ1EFEVeX1G1efPJjeEQAShOUGg5WmjLg.k8lMudzUW6	RAJI HYMAVATHI	7989781396	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N
-cmv0lfk51037910e0ka01oa9u	26UECSC0052	26uecsc0052@student.gvpihlr.edu.in	$2a$10$HYQiWbEEh88mmypgVPdqbOkj7KnhhvjzoRBLmSfmCvy7hmlbRG0De	NARLA HAMPY PUSHPA HASINI	9182292146	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N
-cmv0lfk5h03de10e0gq1dz0h7	26UECSC0070	26uecsc0070@student.gvpihlr.edu.in	$2a$10$Et24YV/qUgVusyuXIubgpOd927ook/EE02v/7YN9CkrOsrkimBxw.	DUBA NAGENDRA CHARAN	7893453063	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N
-cmv0lfk5h03dh10e0o6nz65g2	26UECSC0074	26uecsc0074@student.gvpihlr.edu.in	$2a$10$O6iMV.o7ddkFkVVxJ31ghuBF3jF7msv8XPGYnBodBOlH/Q4WSOOw.	BELLAMKONDA SHIVAMANI GOUD	9701442626	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N
-cmv0lfk5i03do10e0lnp5ka5a	26UECSC0083	26uecsc0083@student.gvpihlr.edu.in	$2a$10$IOvVOte28K6sg.kWy/4biOXUJUWgLSfbKda2Y1AEXhmuTRY1umkxm	GADDE LEO RAJ	9441894409	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N
-cmv0lfk5i03dt10e0r9cghilz	26UECSD0002	26uecsd0002@student.gvpihlr.edu.in	$2a$10$WwW8b9gmMYUOlvSpu7QFkOAvtzIZp6KNDYq.ixywnMqFFxPMGynti	DEGALA JAGRUTHI	7981591545	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N
-cmv0lfk5x03jl10e04inmrhat	26UECSD0012	26uecsd0012@student.gvpihlr.edu.in	$2a$10$Rn/.9FfVCcVjIID7ezvRw.7cbws4e1WTxm1GPUW508otADY6s.NB.	SHAILESH SRIKAKULAPU	9986712229	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N
-cmv0lfk5x03jh10e0lsp84pwn	26UECSD0003	26uecsd0003@student.gvpihlr.edu.in	$2a$10$qLYldD6wKkADzB37cf2LPuHxbSXIhBE3bPBPAr0tfLkDAcynyJc0m	DWARAPUREDDI CHANDANA JYOTHIRMAYI	9490749019	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N
-cmv0lfk5y03ju10e0a45pl9da	26UECSD0021	26uecsd0021@student.gvpihlr.edu.in	$2a$10$HOOitIxgORpEfdgq15LWS.E65mWqmgnCKzBXogqkfA3CyDQJiWZOq	THORLAPATI RAJEEVAN PRASAD	7659936724	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N
-cmv0lfk5y03jv10e08gfywgqz	26UECSD0022	26uecsd0022@student.gvpihlr.edu.in	$2a$10$zMVZdAL5Jo8G7QATe/eu6ee9uNKNH2R41hl1B/BTi8G4Q.Cf0wu2G	SAHUKAR LAVANYA CHOUDHARY	7855816754	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N
-cmv0lfk6c03pp10e0ctyz242a	26UEEEE0007	26ueeee0007@student.gvpihlr.edu.in	$2a$10$ew0ajvY9Ung5gpao9BZMCO0Cy9gUEYCLGayYBiZnkcBNEfAZ0vUIW	MANADALA PAVAN KUMAR	9121729939	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6d03pz10e0yxzjd4ic	26UEEEE0017	26ueeee0017@student.gvpihlr.edu.in	$2a$10$.hdhiqLEKvr/ytdu13tS1ex//CPqgDYQSCgwzaoxwd4h1O43JJA/a	RAPETI REVANTH	7569609054	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6d03q210e07k7c2a9w	26UEEEE0022	26ueeee0022@student.gvpihlr.edu.in	$2a$10$4P1fqxb40/wW/pXnzuZM7OqUwOBY1oid0441ETXqGc0zsEVNar5zq	TAMIRI SRI VAMSI	7093962905	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0jr1d200f5mzmyk1d0u9a5	26UECIV0011	26ueciv0011@student.gvpihlr.edu.in	$2a$10$zAzG6qkR/LqtRJ2c4IEZ8OezVXkugtwKVtPxwB8nlchRCRxUHPKRS	PENTAKOTA PRAMOD BHASKAR	9949202227	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N
-cmv0jr1d400fbmzmy2us0afc6	26UECIV0022	26ueciv0022@student.gvpihlr.edu.in	$2a$10$7ETV0Q2o5B6TGUyLVH4myeIOrY7Y.BNFWnKaeiU26aliBKLm2/rP2	YEDDU NAVADEEP	7013801411	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N
-cmv0jr1ds00l8mzmypjaxsiun	26UECIV0035	26ueciv0035@student.gvpihlr.edu.in	$2a$10$Ga1/rFSt7y8psZZqR0vvIuC0BoBgskiGwJTVECMF3fU2l4kEdRox6	YADLA SARAVAN CHANDRA	9515143125	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.085	\N
-cmv0jr1dt00lkmzmyxgsjxdz7	26UECSE0009	26uecse0009@student.gvpihlr.edu.in	$2a$10$LIXsp5CXkx8IdE.fnmWfG.yDkyrSJmAfk.pKXvMZWw12t8GgicUEe	BARATAM AMRUTHA	7569722112	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N
-cmv0jr1eb00remzmy5qz6ngq9	26UECSE0020	26uecse0020@student.gvpihlr.edu.in	$2a$10$KMDSUhxNFQcCehIshm6aKOk6hjsUi8K01Y0R9ARNuEP2WcLXI6gjK	MANNE CHAITRIKA	9177076835	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmv0jr1ed00s2mzmyy6jahf09	26UECSE0043	26uecse0043@student.gvpihlr.edu.in	$2a$10$pSr8ULq23MBmyjyacRGLbea29SA58nhVwElf4Brjf1ZXOnAAf8..e	HIMANSHU SHARMA	7416302732	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.103	\N
-cmv0jr1et00xtmzmyieh3fv4v	26UECSE0047	26uecse0047@student.gvpihlr.edu.in	$2a$10$vfgIpQoDGL9XssAm0QHb9uBNjp2uplZTpJgLv8s9jlbcqIKyLK98y	JANIPIREDDY SUNANDAN SAI	7288945666	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N
-cmv0jr1eu00y6mzmyof4dv1xv	26UECSE0063	26uecse0063@student.gvpihlr.edu.in	$2a$10$RcaaKRDV/ZvQOc4Rj897PuvNMikSHIa9lku1Oyn1yPffw/8Rbcx2i	KONDRA JASWANTH SAI	9966632644	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N
-cmv0jr1fh0142mzmy2ryhdjp1	26UECSE0077	26uecse0077@student.gvpihlr.edu.in	$2a$10$aBnBK9jIzqzsH9oiAIkUvOQ2hUalw.0y6HNMWQPgSxvaAnPmhD9Wq	SUSARLA MAHENDRA SAI NANDAN	9248080841	t	f	\N	0	\N	2026-10-09 05:50:36.798	2026-10-09 06:37:40.13	\N
-cmv0jr1fj014hmzmyhlwzgbda	26UECSE0093	26uecse0093@student.gvpihlr.edu.in	$2a$10$SxQ7y.x6c.3IoZiUOe4CguhYTrw5WYmNrF6kvwu48Q9tfapRWH2Xe	PADMA MANASVI TENNETI	9911557911	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N
-cmv0jr1fy01a5mzmyt625d9rf	26UECSE0098	26uecse0098@student.gvpihlr.edu.in	$2a$10$v7qNKuiehFP/uO..3pJWlOC8OByHWHnTdpX1QfHLU/05RvMg9JCvi	PARIDALA DEEPAK	6302530727	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N
-cmv0jr1fz01aimzmyhtdp6qh4	26UECSE0108	26uecse0108@student.gvpihlr.edu.in	$2a$10$VQBEjY56Pt.PmcUf9.A3iudbpSH9sZDVvwiFqMQnXImb5rdgNGJWm	PULAPA THANMAIE	8332839069	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N
-cmv0jr1gf01ghmzmyoyiron4m	26UECSE0124	26uecse0124@student.gvpihlr.edu.in	$2a$10$elPBxYu/3M3OBM13vxCCbeg.QRddwJ8X1HLt6ppClnayv37XLhzKK	SORI PRAVALLIKA	7842903926	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N
-cmv0jr1gg01gqmzmyb6g4jr5a	26UECSE0129	26uecse0129@student.gvpihlr.edu.in	$2a$10$Ex5NSvCDzi/TBpfBITQn0ub2miSvIgHemqDY8HGok5UXnWTMI.cVu	MAJJI TEJA PRAKASH	8341107694	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N
-cmv0jr1gx01mpmzmybpjnvina	26UECSE0152	26uecse0152@student.gvpihlr.edu.in	$2a$10$.wlz4fhJDrISytYYqBI4AObKv3YuEtW.F7Ac2C.iytVLLWz7d4IXG	BHEEMARASETTI VENKAT SHYAMANTH KUMAR	9701057604	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N
-cmv0jr1gy01n4mzmynljzwrkv	26UECSE0162	26uecse0162@student.gvpihlr.edu.in	$2a$10$giEYEwo/CtaV.hVQJ22c6ewOilLeeOSe318KVyE6sSv/1caEpWTYK	LENKA PRAGNA	6304760426	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N
-cmv0jr1hd01t4mzmyobxoivmy	26UECSE0177	26uecse0177@student.gvpihlr.edu.in	$2a$10$Jo7O1BfEcbM0SoKsG1YsZOX7E8naZd8QCo9TNOru6fj1Q5seYnF.u	BARLA JAHNAVI PRASANNA SRI	9885052856	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N
-cmv0jr1he01thmzmym8vpox56	26UECSE0193	26uecse0193@student.gvpihlr.edu.in	$2a$10$ERV5gF3rmosgPerleriPa.U//pXDLoz1OJiFlPHJCoiAlLFOul6WG	PILLA SAI NAG AKHIL	9676133355	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N
-cmv0jr1ht01z6mzmyk7ssrl90	26UECSE0198	26uecse0198@student.gvpihlr.edu.in	$2a$10$vGZUIagKeIcCBC2iryL3POhhIF4vftN71KsjMF5bPYcSgGkx./FwC	TEKKALA LASHYA	9394239226	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N
-cmv0jr1hu01zkmzmyx1a6n9l8	26UECSE0211	26uecse0211@student.gvpihlr.edu.in	$2a$10$GhrMXsmXqdZB4bxeCqDKeej/uA58NCsTXQdOfRqzW5fS8OQd8liXG	PERICHARLA SRI SAI SIDHVIK VARMA	9440255929	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N
-cmv0jr1i9025nmzmyduwehhah	26UECSE0235	26uecse0235@student.gvpihlr.edu.in	$2a$10$tDfS3TsCypa5MmdFovE7seYOsRgNmUmLttFJIBRaIGBpnx2LwmMfe	PENTA RACHANA	9949493940	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.226	\N
-cmv0jr1ia0260mzmyj914lma5	26UECSM0003	26uecsm0003@student.gvpihlr.edu.in	$2a$10$wi8kTFhBpLXKR1.U8/PLvueQUa.9Lj1Xqdo820Lg1migX2j5MEsMC	BALIBOINA HARSHA VARDHAN	9640720583	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N
-cmv0jr1ir02bqmzmyguv16wps	26UECSM0010	26uecsm0010@student.gvpihlr.edu.in	$2a$10$CB7Vu4Ie2Z6cEfvkIeGvn.OpFsLHSzRcYxJcxdHMDCcshFfw4Pwlu	CHALAMALASETTI DEVI DIVYA	9014049332	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N
-cmv0jr1is02c4mzmy432hogq7	26UECSM0021	26uecsm0021@student.gvpihlr.edu.in	$2a$10$eCXzvPKkU5zBuMjoInPcmOcKk6GILEJ51hgHPvNGFe.rt4jIcIEwS	EMANDI SRI SIRI	7382188288	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N
-cmv0jr1j702i3mzmybe1q3okv	26UECSM0039	26uecsm0039@student.gvpihlr.edu.in	$2a$10$bi0cOOY0u8/pzXxFvpHlYupVSN0S34EGXPkE2vPRLU9a9eoQXU/GK	KOLA PAVANI PRIYA	6309428361	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N
-cmv0jr1j902ihmzmyn6lorjrh	26UECSM0049	26uecsm0049@student.gvpihlr.edu.in	$2a$10$O7WxuzKBs2/Pz6j8cIfM3.FXgpBRWRfeqD9gC9PxnIQUd8mlbkEty	MEDIBOINA DILLESH DEEPAK	9963533685	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N
-cmv0jr1jo02o7mzmy1csvb7t7	26UECSM0059	26uecsm0059@student.gvpihlr.edu.in	$2a$10$HO4RmGnlEveS7bcTpUieTez2nShuvq0YGBkL/e0wt3mH0L/4IGU2K	MAMIDI NIHALI	9701177333	t	f	\N	0	\N	2026-10-09 05:50:36.948	2026-10-09 06:37:40.27	\N
-cmv0jr1jp02ormzmyavylpb59	26UECSM0068	26uecsm0068@student.gvpihlr.edu.in	$2a$10$.fxc5ICfx2OuaUCnzHMqWeJZhbGepzTS4KGuiXtE16CgMcvRDaTVi	RAYAVARAPU JAGADEEP	9550426949	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N
-cmv0jr1k302uimzmyhkdejc9o	26UECSM0082	26uecsm0082@student.gvpihlr.edu.in	$2a$10$rtx5S2T4CMpXsJojDbR2t.hfKE1.m6z9AbLJkwx0MO/x4Ak2X/gVu	BANDARU VENKAT	9000577642	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1k402urmzmy5g8qy3cu	26UECSM0095	26uecsm0095@student.gvpihlr.edu.in	$2a$10$acc7Ro49dyl9vhxHCtL7feHm2s3JNKnSeM8pbU76H9DOFUSsVPwVC	KIRLA NIHARIKA	8523096999	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1ki030pmzmycmfhex0e	26UECSM0106	26uecsm0106@student.gvpihlr.edu.in	$2a$10$npvyPLvPYsMFk7RoRHZKsemKhgKZvwvJhgzXDopVlafnR.hOV1jOW	POLAKI JANEELIYA	9390957739	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N
-cmv0jr1kj0310mzmynm6gto1x	26UECSM0117	26uecsm0117@student.gvpihlr.edu.in	$2a$10$f1cU8eGJT5EJhxvUARDjOe0d3L9gbfwdLi6gtwu5ySKJzKnppsRri	MAMIDIPAKA YASWANTH	9441305935	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N
-cmv0jr1cc008rmzmygffrfp48	26UECHE0034	26ueche0034@student.gvpihlr.edu.in	$2a$10$/rZ1I76KGORtWVgUjtTRL.abGWxwFrdMyszf94bT5Ki2ayhORp8N6	EAGALA RUPA SRI	7672003714	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N
-cmv0jr1cd0092mzmydnb3730i	26UECHE0041	26ueche0041@student.gvpihlr.edu.in	$2a$10$f3PDyPW0kKthvTgKXE2F0e6sfwbDcMCt2zvpFdCAsmVv4OJ6Eyvg.	YAKA UDAY CHANDU	9573953995	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.052	\N
-cmv0lfk3002i310e0z6umbc86	26UECSM0138	26uecsm0138@student.gvpihlr.edu.in	$2a$10$21K74Ir/NsbCAZDVcOivEeNqOmFBlBaXu53eu.t.nCobi3FDvR9lW	ELLA VARSHITHA	8074668644	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3202ie10e0n829bl2k	26UECSM0148	26uecsm0148@student.gvpihlr.edu.in	$2a$10$iu73enVWPNGwBCTplCueX.UOWGM4pZMa7RIY0nbzSNmTVSr9fibHS	POLUPARTHI SRI SAI TARUNIKA	7702274648	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3202if10e06yaijacg	26UECSM0140	26uecsm0140@student.gvpihlr.edu.in	$2a$10$VOfyZjYdasEme.7xGibCLeqOvcZ4OfZ98/kADr532tw4GSe0WLQuC	GUNTU SAI TARUN	9032845983	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3m02oe10e0814jy0lv	26UECSM0161	26uecsm0161@student.gvpihlr.edu.in	$2a$10$R5eyzvf1cvKztkANgwpfLOo1srr6Bfm33TuhUH1XoXFC4QSCmEN0i	REDDY SAMUEL	6302738878	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N
-cmv0lfk3m02od10e08h10j0ty	26UECSM0166	26uecsm0166@student.gvpihlr.edu.in	$2a$10$P2B3nUJoJkA/k71hLA6tYeJnYDCrksm32bh2AC8EKYBUCUlpShPSa	BODDEDA YASHWANT	9010572922	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N
-cmv0lfk3n02om10e0ot0tz3cz	26UECSM0171	26uecsm0171@student.gvpihlr.edu.in	$2a$10$H.BKh4Vrbb0usXHOlIgZE.rX27FAmQHN1UwROZTbOagMjMxuoRl82	KARANAM YASHASWI SHRI	9955373638	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N
-cmv0lfk3n02os10e05zjxq3jl	26UECSM0163	26uecsm0163@student.gvpihlr.edu.in	$2a$10$fR9Z7f0RCRc05rm1ZDqLX.RgkKmxaGf1nTPH8egxUgzbfRYsV9gYS	Tummalapalli sri Vishnu sai	8877338088	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N
-cmv0lfk4202uj10e06ylbf3fh	26UECSM0182	26uecsm0182@student.gvpihlr.edu.in	$2a$10$aQhE1N2KNaXUqFxm340JWuWqhYD.RWJHguLP1.yB6YuN2Y6VJXt3K	VANTAKULA THARUN	7386296014	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N
-cmv0lfk4202ul10e029wdu992	26UECSM0186	26uecsm0186@student.gvpihlr.edu.in	$2a$10$s9DvjvfT.gj3YbuT7pyChOywdsXUDSLK/.idj5GR4/bV3ryg0ojvy	MANDHA ABHISHEK RAJ	\N	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N
-cmv0lfk4302ur10e08gtk3rh1	26UECSC0001	26uecsc0001@student.gvpihlr.edu.in	$2a$10$zPz5rjbWspKQf4T98bcCPecICyFQ8VYnZXmvrMujs2SpvaBaIL/Je	ALLADA KEPTEN	7842053296	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N
-cmv0lfk4402uv10e01mf7s1jn	26UECSC0003	26uecsc0003@student.gvpihlr.edu.in	$2a$10$96YgK9kBkj0lj0bQ.EQ2su9zODjgAs.ehcsDzhO2rDMRYUCaFhvR.	BANDARU VAIDHIK ESWAR PRASAD	6303359461	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N
-cmv0lfk4l030y10e08goke9df	26UECSC0024	26uecsc0024@student.gvpihlr.edu.in	$2a$10$HhFl51KoxknyE0cAMtFjNOA8CAQ6iYop6N.iud8JwggnZicpsrg8i	MEDISETTI JAHNAVI SRIJA	9849774451	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk4l030z10e0wj58hc65	26UECSC0025	26uecsc0025@student.gvpihlr.edu.in	$2a$10$M8GqmxTK5RnqgYPJ95dNU.Y/M4RzN9fRhJ./rS0Z6NEsP/h.Dqo76	REDDI MANIKATESWARI	\N	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk4m031b10e0kp85wp92	26UECSC0033	26uecsc0033@student.gvpihlr.edu.in	$2a$10$8.GvooRU/NnhUR8ff8boduoSvEsSruwtb9rfqSm/1DSqrPlzdWQ4W	PEDAPUDI REJOY AARON	4842547990	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk51037010e0isy3pu8s	26UECSC0041	26uecsc0041@student.gvpihlr.edu.in	$2a$10$KnFVPWN9HvAC50Ivouxyy.wvvXfD4AwC5A1RHhukEzem5O2i8eiGy	VADIGINENI SIVA SHANKAR RAO	8885899056	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N
-cmv0lfk51037610e01amdkzon	26UECSC0047	26uecsc0047@student.gvpihlr.edu.in	$2a$10$ixcPz3GDFGDBhn2V0Ku1.Oi7q0zBFP3qkwv7YbT5pE6BI8RnLCAY2	BODDETI HEMA VARSHA	8121381234	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N
-cmv0lfk52037e10e0ijxxudgm	26UECSC0056	26uecsc0056@student.gvpihlr.edu.in	$2a$10$m5hBnJMHKgp75BQg1sDINuIwb8sMaHuQ1My0ZQH.ylIoGnUJwiA8m	KRISHNARDHULA LAKSHMI MANOGNYA	8712831950	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N
-cmv0lfk52037h10e03sbyvwh7	26UECSC0061	26uecsc0061@student.gvpihlr.edu.in	$2a$10$.Q1/yXDjXPuIgjiMPpGA5.ZJwRZyZzvWpuZEYKh6nRzrWO.zLbhKu	MADIPALLI NAVEEN	9000071921	t	f	\N	0	\N	2026-10-09 06:37:40.406	2026-10-09 06:37:40.406	\N
-cmv0lfk5h03d710e0dsqt504v	26UECSC0067	26uecsc0067@student.gvpihlr.edu.in	$2a$10$h/dK96lH5aqhHjIfIXjOFuPj9SEOKdKC.ltq2gwokUob3LH7S12me	EDADASARI YESWANTH YADAV	8125670308	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N
-cmv0lfk5h03d910e0q2h3004a	26UECSC0064	26uecsc0064@student.gvpihlr.edu.in	$2a$10$x9pq0b8aPIRZ6CQ1OfbLCuGmgJXgzcGfzeQxqD8UUlE5ogDNcSFMG	NAGABHATLA NAGA SAHITHI CHANDANA	9246614207	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N
-cmv0lfk5h03di10e0gbtlbbfn	26UECSC0076	26uecsc0076@student.gvpihlr.edu.in	$2a$10$Hcft4sIP14yhrT9JzyKQUOri6ob44KFVSAkXg2Xflv9Oe.20pEEee	KAPPALA DHANUNJAY	7331112521	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N
-cmv0lfk5i03dr10e0w7c949mf	26UECSC0084	26uecsc0084@student.gvpihlr.edu.in	$2a$10$BeshrBX1PWJKWp7FH01ArOw0NPRPTLPRoOyDQSBuZqcBmX5gBY5uO	PANDIRI ADITYA SRI SWAROOP	7396683496	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N
-cmv0lfk5x03jf10e0kwcmjw75	26UECSD0007	26uecsd0007@student.gvpihlr.edu.in	$2a$10$V3KdjDFkL.lV28.cVkqAuue7X7fO3kZKhuQ/X2Xc2aSmjmrVQQd3W	K VIJAYA SRUTHI	9000907250	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N
-cmv0lfk5x03jp10e0kvu3byda	26UECSD0015	26uecsd0015@student.gvpihlr.edu.in	$2a$10$ROBLdQ2QKopSCkVs2w1VQOLT.t1.fnoDkVpZ3Kvs4BMC0y5SEIqeS	RUPPA MICHAEL	6302506690	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N
-cmv0lfk5y03k010e0fqif9nrr	26UECSD0017	26uecsd0017@student.gvpihlr.edu.in	$2a$10$hyAOmQkLVgF.Q.SPdrffCuJlocy0kDmQREFBR1K.d6hSdCpEo7Suu	CHINTA YOGANAND	7702899357	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N
-cmv0lfk5y03k110e06nveupb3	26UEEEE0001	26ueeee0001@student.gvpihlr.edu.in	$2a$10$ekL1FeSC6oDduuSfoNatV.4bzyMsJMg21cEiByO1jEQONEjxY4UDS	ADDURU KANAKA SAI NIKHILA	7981462959	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N
-cmv0lfk6c03ps10e0cv40wm84	26UEEEE0010	26ueeee0010@student.gvpihlr.edu.in	$2a$10$ha5AEfPqQTb3pQ2YB5m7Ou9N2lDqnVNhzTAlq5HB8RuhmgNk.KoHC	KOLLURU SREYA AMRUTHA HARSHINI	6281002754	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6c03px10e0agp00arg	26UEEEE0016	26ueeee0016@student.gvpihlr.edu.in	$2a$10$zHHGhLOkNdZj0BZZJeShLe83u5dSycCOrePtpxFG9UEeKa4oDnTjC	PANDURU CHANDRA SEKHAR	9000224454	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6d03q110e0o348t9z2	26UEEEE0020	26ueeee0020@student.gvpihlr.edu.in	$2a$10$wcQ78zicJpgftE1wO60eGeP1s1zt9SDacGCkW7O1JfsUFtUX.A26e	SINGURU MURALIKRISHNA	9300679672	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6r03vy10e0p4ddeawf	26UEEEE0031	26ueeee0031@student.gvpihlr.edu.in	$2a$10$q7Pyoh.TKklWbJ5mJGbPru6b6CFKB8e541h1noFqmZMnKawL3m6Di	MUNAGAPAKA VEERA VENKATA TANISHQ	9705339809	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk6s03w710e0oae6hfmt	26UEEEE0041	26ueeee0041@student.gvpihlr.edu.in	$2a$10$RagAev4OzcjG.vtOMMCjeuoUcgPs8zBSVqLlSzqLargdUkknTxTcG	MOHAMMED HAJI ALI	9441245878	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk6t03wi10e0341o3ubq	26UEEEE0051	26ueeee0051@student.gvpihlr.edu.in	$2a$10$1DHcucTzGViY2Lny/glhXOy.xj0WN/GsZn/e4FiNB/Czknc.42yaS	MAJJI SRAVANI	7396445541	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk6t03wk10e0m2z1s6fo	26UEEEE0043	26ueeee0043@student.gvpihlr.edu.in	$2a$10$ADt4TIJKzVTXNQvXiVjSRuaZtEPPy3AaXrGGDzbQ1t/xcC6Vjt2vS	MYLAPALLI GIRI	6302887297	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk77042c10e0nj4xa6ur	26UEEEE0059	26ueeee0059@student.gvpihlr.edu.in	$2a$10$If.PT6fP.shOsDoTcw/WYeH1LyXZT87ukD/KW/3tOPMt2qiwJL/Qy	ELURU PREMA SAI SRINIVAS	6303751996	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0jr1cc008nmzmymy8ee9r6	26UECHE0026	26ueche0026@student.gvpihlr.edu.in	$2a$10$g/cbn65XeWzVYvxZ0Lm1DOW7a/6NSP9Gp2NTGjIKtcOsK1bOKfMRe	MOLLI SRI HARINI	8106832326	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N
-cmv0lfk3002hz10e0c8vomcea	26UECSM0133	26uecsm0133@student.gvpihlr.edu.in	$2a$10$2/stpRTEYDlWh1ZzzugAEeJNjm5theXTPGWECvMFWVIhZjyXclrYO	YERIPILLI BHARAT	7901557706	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3202i910e08hcmftmp	26UECSM0142	26uecsm0142@student.gvpihlr.edu.in	$2a$10$1tBl0hqZgHPD9jk1aYXbs.TGuCJ4DO.4zcNCeClXIY0sw9lDmdPPC	KASARAGADDA THEAKSHANA THARINI CHOWDARY	7702284666	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3202ia10e0wicqrpe2	26UECSM0146	26uecsm0146@student.gvpihlr.edu.in	$2a$10$61EfaL3XIAwKnFu0Nq8aVu6iaP3kq1paqjF7fHFH.81I13wd6U5/6	PENNAM DINESH	9985295885	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3m02oc10e0htgsw0ur	26UECSM0159	26uecsm0159@student.gvpihlr.edu.in	$2a$10$W/9OUj3EkHXwQiLlph89sef40xyCdJld4BPB7Zxss3MrERCJoNdrK	JOGA PAVANA SHUBA KEERTHI	9866315570	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N
-cmv0lfk3m02og10e0cdja2e9z	26UECSM0162	26uecsm0162@student.gvpihlr.edu.in	$2a$10$8FbvRzai8gQkepyNnZBLSe.19IBCnoR73HWD122fb/YszESzETsE6	THUTTAGUNTA SIRI CHANDANA	9701838242	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N
-cmv0lfk3n02op10e0pof9uk3p	26UECSM0173	26uecsm0173@student.gvpihlr.edu.in	$2a$10$FoynQZ9J7BjWfkWWYyYZD.RUY4ZSABD8YOjMciYjh2utdCuyKh/B.	VEMPARLA RAJA NARASHIMHA SRISASANKH	9505652889	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N
-cmv0lfk3n02ot10e094p1oo7y	26UECSM0174	26uecsm0174@student.gvpihlr.edu.in	$2a$10$utT17P7eQLV865VDq.G3Eu9R2Jbh2LUOBDOyAsd8c1cQgaAdynecq	BUDHARAJU MANAS VARMA	9490261899	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N
-cmv0lfk4202uk10e0so6tvkbz	26UECSM0188	26uecsm0188@student.gvpihlr.edu.in	$2a$10$pxLdWDBL3SUN/A57CBcZ9.hogVBCb/mflbga79w5vlGBdHv4P4LUa	GOSALA ANUSHA	7337255182	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N
-cmv0lfk4302up10e0jbunsf3h	26UECSM0190	26uecsm0190@student.gvpihlr.edu.in	$2a$10$sRjoufs.a8XizWpfyao6MeGXYdpey47reXgwxBtwlFsaQO.Dbn.kO	DEEPESH PRADHAN	8121551957	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N
-cmv0lfk4402ut10e056r6jjw4	26UECSC0002	26uecsc0002@student.gvpihlr.edu.in	$2a$10$W6eq71JbV5qMVTh9jaMNPek.udBDmyUWj/cFQw7e6fan5QSJO7GK.	VEMALI CHARAN TEJA	7659850969	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N
-cmv0lfk4402v110e07oxzo4yn	26UECSC0011	26uecsc0011@student.gvpihlr.edu.in	$2a$10$/3DMqi2IQssTmv2tJ4bFyOd2Z8hAC888GUAusGPIfo.xuNX9vzs66	OM AKSHARA GUTTIKONDA	7702744219	t	f	\N	0	\N	2026-10-09 06:37:40.372	2026-10-09 06:37:40.372	\N
-cmv0lfk4k030n10e03d1a2edf	26UECSC0015	26uecsc0015@student.gvpihlr.edu.in	$2a$10$7eWIEh0B/Oik92G9YmaKG.7rkay.dkSURpqraM2MYvpvWn37raJvW	KADAGALA BHANU YOGIESWAR	8897297197	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk4k030p10e07dc2e8ul	26UECSC0012	26uecsc0012@student.gvpihlr.edu.in	$2a$10$hIbFGg8VOtjjaJaWXf1ZGeXbGhlIB3uQ8l5tXZbt7CU3JiVA3TEnK	GOMPA TEJASWINI	8520021292	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk4l031310e0hzfgjg5v	26UECSC0031	26uecsc0031@student.gvpihlr.edu.in	$2a$10$2H4bf.XwoiZSGJv9uyajaOF3JIWsciuBkaiFC6RzIhzWlQPJCDHZy	PEDDINTI PRIYA HARSHINI	9948784272	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk4l031810e0vbwcs7ze	26UECSC0034	26uecsc0034@student.gvpihlr.edu.in	$2a$10$MlRX4TjZutFaYMRFmtFqIuNfyB3Q0WoMUta0uvCTWwTJZSTKRvNfC	POTNURU MOHITH	7093516834	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk50036x10e0dvjm74k7	26UECSC0042	26uecsc0042@student.gvpihlr.edu.in	$2a$10$l2ky96rSFC9DTn/1bLAzDu6ViqwJT2Vry5Mq1zpLTG22f3ICqdO0a	VOMMI GAGAN SAI KRISHNA YADAV	\N	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N
-cmv0lfk51037410e0ydawblrq	26UECSC0045	26uecsc0045@student.gvpihlr.edu.in	$2a$10$CSEV2VSIdYElDrRoagPJHOc2oH860Y/JqSlLNCxZOy2Z.a1DloBwO	P. SHRESHTA	9573778986	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N
-cmv0lfk52037c10e0pozha28i	26UECSC0059	26uecsc0059@student.gvpihlr.edu.in	$2a$10$2wn2nYWY4pSnsUfnuBp73Om/3VYO6m30WIM.erYAM6rkEcu4CXraS	GANTA DOLANATH VENKATA GOWRI ANJAN BABU	9297352298	t	f	\N	0	\N	2026-10-09 06:37:40.406	2026-10-09 06:37:40.406	\N
-cmv0lfk52037k10e0fchh8qfd	26UECSC0049	26uecsc0049@student.gvpihlr.edu.in	$2a$10$kpcuvuO4Q9z0LxHOthg3a.GdhK9iSRf61UoYvnesVip6trGXIgqXW	RONGALI YESWARDHAN SAI	8179129190	t	f	\N	0	\N	2026-10-09 06:37:40.406	2026-10-09 06:37:40.406	\N
-cmv0lfk5h03d610e0lhc1okl6	26UECSC0066	26uecsc0066@student.gvpihlr.edu.in	$2a$10$PIEpTZRYB2D2he4kubAc2uP.s2gl6n8A8gbqwkjM2y9N4eO/V/iTq	YADAGIRI KAVYA SRI	\N	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N
-cmv0lfk5h03d510e06okif5lb	26UECSC0065	26uecsc0065@student.gvpihlr.edu.in	$2a$10$CF6jVzSdnBc4kqkUpQ3Xi.0BCmYY4IyLKhVCDa5S7qNbvOAaZrk.O	PEMMIREDDY MARUTHI LAKSHMAN	9618127999	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N
-cmv0lfk5h03dj10e0s5w7alu2	26UECSC0075	26uecsc0075@student.gvpihlr.edu.in	$2a$10$nBJkGLETeaunAC891vyUhufHRDeyY4AGdk2t9ccSrMaRVaO.79WqW	SEERA DEEPAK CHAND	9440001056	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N
-cmv0lfk5i03dn10e05bm0s29t	26UECSC0080	26uecsc0080@student.gvpihlr.edu.in	$2a$10$235C4VrWZzR0uegDK5ULMOR9bojnwAmvulYbaFzWKKRvun.PWVkEa	Lalith kiran Bhogi	9030857999	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N
-cmv0lfk5x03je10e0n2qsuu27	26UECSD0009	26uecsd0009@student.gvpihlr.edu.in	$2a$10$IWhsDd32qsVy6Hk8NQGgZ..LjOOAYtaRFiL6Jm.1YjoNeFI9VwB86	MD ARSALAN KHAN	7093927606	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N
-cmv0lfk5x03jo10e0fhmdzi0s	26UECSD0010	26uecsd0010@student.gvpihlr.edu.in	$2a$10$WuNnMUTqneTPSme5t4QFL.4aGKEE.PEmGkxKeR6geEDa.MOVSBjUK	NERALLA PRANAY KUMAR	9849222040	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N
-cmv0lfk5y03jr10e0a9ndtr0t	26UECSD0018	26uecsd0018@student.gvpihlr.edu.in	$2a$10$ypV969.gH9L0G13LmXuHYuOy.ldfOVGJekvi6XlzUv2IrTJvOZPQi	BURUBU SRI CHARAN	8008803868	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N
-cmv0lfk5y03jx10e0xlmlrv5y	26UECSD0023	26uecsd0023@student.gvpihlr.edu.in	$2a$10$0j0IP7DyAdJRS88h0Da/X.aNo6XX5qEHpYEBvqaaien.amP31aEgW	KILAPARTHI SRAVAN KUMAR	9602395629	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N
-cmv0lfk6c03po10e05r7f31xp	26UEEEE0009	26ueeee0009@student.gvpihlr.edu.in	$2a$10$nTetlWQImjHnHMR.TQ9ETu4awMHr9BKHdEtd9e4u6BHgTLczDD.5q	KADIYALA VIVEK	6300920880	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6c03pq10e08rgw5x23	26UEEEE0011	26ueeee0011@student.gvpihlr.edu.in	$2a$10$ciBJ.g93CAoNHtvRoPTivOpa18BhRS8ctBR3H8DRe0LPh99UCLt92	KOMMOJU SAI AMITHA	9849992923	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6d03q010e01vgf1r52	26UEEEE0018	26ueeee0018@student.gvpihlr.edu.in	$2a$10$3fggCqEj5YaUAWg2TRzRXuCQK8nloZ1jau36avQAVlfQIVWRFUEUi	POTNURI CHAITANYA KUMAR	9912878589	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6d03q410e0bw66x31b	26UEEEE0021	26ueeee0021@student.gvpihlr.edu.in	$2a$10$H9Ao1Jb3NVdZlwxL0vMMK.6WR9a4JeyWl9KfSl4YUe/iAgsQVXD26	SURABHI GOSWAMI	9398829631	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6e03qb10e0bgj7sgvh	26UEEEE0028	26ueeee0028@student.gvpihlr.edu.in	$2a$10$U55YnZWdXa6MO1Rd0baU6eRNuj9d5NkMlLf4gafGx.bHUk92fOiF6	YEMINENI LAHARI	9398066389	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6r03w210e0ijk9mymy	26UEEEE0033	26ueeee0033@student.gvpihlr.edu.in	$2a$10$.OnOOXSBWYrYd/t8pDezQeS6cfW.ISUmMbc0M42OO.LxaJJamhxgO	GONDESI GOWTHAM KUMAR REDDY	7659060431	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk6r03w510e035cho8na	26UEEEE0036	26ueeee0036@student.gvpihlr.edu.in	$2a$10$c571CnY5gOfhEL8DMveNNeGsZdpj6cxJSZ70HheA0pJrCc2vltPnK	GANGAVAMSAM VARSHINI	9490302765	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk6t03we10e0z4n0mzca	26UEEEE0048	26ueeee0048@student.gvpihlr.edu.in	$2a$10$qKeKU7oHB3oSMT5O8xO7R.BsB6nvlzpRfZG2I6zq3hRsIyMvpRf0y	K. PUJITHA SRI	9949816336	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0jr1d200ezmzmy7kqzrztv	26UECIV0004	26ueciv0004@student.gvpihlr.edu.in	$2a$10$2U6JbEXzXtS5mrhFXNOtl.ziTvJdaso62NWT8x3Anz//XOsl1fD7i	GEDDA NEELIMA	70939979811	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N
-cmv0jr1d400fkmzmyn190hca5	26UECIV0026	26ueciv0026@student.gvpihlr.edu.in	$2a$10$dA54n8GefFvKSYI/MZvlEeVx9q3nQ0.NoBAV6/uVThJQF.z1ZNPn6	POTHIREDDY BHARATH	7601057200	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N
-cmv0jr1ds00l6mzmyvbnejuxj	26UECSE0001	26uecse0001@student.gvpihlr.edu.in	$2a$10$iyKvu7MRBenVZpZdHrH4puxxEu5Ex3KNEughzla9OMkpaoOzoeZKS	SATTUPILLI GRESHAMA	9682144196	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.086	\N
-cmv0jr1du00lrmzmydsbc34o6	26UECSE0018	26uecse0018@student.gvpihlr.edu.in	$2a$10$RHGJGc6C5.mwyX9SNLYYKeJ9N8hkKJS1DeuS8//SzZ4okMb7ja0nu	CHICHULA ASWITHA	9989051565	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N
-cmv0jr1eb00rlmzmywb4eo10g	26UECSE0025	26uecse0025@student.gvpihlr.edu.in	$2a$10$xblJZhZeWa52Y99HrzFanOAEBPh5Ai02WVl3.HraJNgV/Spgsb9Su	CHIKKALA TEJESH	9849893297	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmv0jr1ed00rsmzmyo5b6lpe6	26UECSE0036	26uecse0036@student.gvpihlr.edu.in	$2a$10$gY/ONiEW2fhV2CjK/fFj0uIhItAfwC2e6Te7W74gJtSnBCmquCMTq	GOGADA RISHIKA	8074054887	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmv0jr1et00xnmzmywr8ap711	26UECSE0049	26uecse0049@student.gvpihlr.edu.in	$2a$10$EefqDOTxZhHeLW4vu483xuFHM0ZwBgOPqXAWx9S5PNyP34VhkuMCK	KAREDLA JAYANTH SRINIVAS	8019064230	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N
-cmv0jr1eu00y7mzmyzu4nbqho	26UECSE0062	26uecse0062@student.gvpihlr.edu.in	$2a$10$JrtBafwXrxFZmAaLwdRcjOHAzmJMysepN9nnPj7bY040iMxH9kbGu	KONDA SRUJAN TEJASWI GANAPATHI	6300052856	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N
-cmv0jr1fg013xmzmyotjzcf7q	26UECSE0071	26uecse0071@student.gvpihlr.edu.in	$2a$10$kLQwtfUuxje6O4LHrFZkB.ROQKOfoPalV7ZmuMXFzLpfofDt7FqSe	VUTLA LIKHITHA SAHASRA	8978406250	t	f	\N	0	\N	2026-10-09 05:50:36.797	2026-10-09 06:37:40.131	\N
-cmv0jr1fj014imzmy7fn5zq6q	26UECSE0090	26uecse0090@student.gvpihlr.edu.in	$2a$10$fDZc3kZ82Gzy2oAvvMOWZO4oO/d05rE2F1Wso09pP1OJjnxcpuqjG	NANDURI SRI HASINI GAYATHRI	9912756396	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N
-cmv0jr1fy01acmzmy6dn8c5j0	26UECSE0094	26uecse0094@student.gvpihlr.edu.in	$2a$10$Yj63p2Fd8SL7mapqox5IjuSJoZc8klKoyGRz7DwKs9zXoZbeAdW6K	PALAGIRI VIGNESH	8919146051	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N
-cmv0jr1fz01aqmzmyjvrlj1n7	26UECSE0115	26uecse0115@student.gvpihlr.edu.in	$2a$10$XzZ7Q7gleFNckyCftqPriObd0iUf8hDTUopoNCT8nMqn.Vcq/xjcy	RAVIPATI MOHAL SARVAN	8499055559	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N
-cmv0jr1gf01glmzmykebnj6jd	26UECSE0127	26uecse0127@student.gvpihlr.edu.in	$2a$10$ozKkOMMFy1lTtt.ZGr4d4eaBogGienhJWtM0Z.HbZCYN5htg5jV1y	SURU SATHVIKA	9032061070	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N
-cmv0jr1gg01gwmzmyluou5tar	26UECSE0139	26uecse0139@student.gvpihlr.edu.in	$2a$10$DzlNb.zDagmhGXBUHhIHgutnk3ooFjaBhJ.mJPddCOTEKNeEd3Qze	CHAGANTI TANMAI MANISRI SARANYA	9347012301	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N
-cmv0jr1gy01mzmzmy87q1jyns	26UECSE0146	26uecse0146@student.gvpihlr.edu.in	$2a$10$SRt4P.UtdcHEZgFaGxe9rO.eYpR1yQM7EMfGiyYBzhquZr8j4ZkTa	ALAJANGI ASWIN KUMAR	9701282504	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N
-cmv0jr1gz01namzmybpn0igdj	26UECSE0165	26uecse0165@student.gvpihlr.edu.in	$2a$10$wsaKnKw9Ays5QT1Y7R5VIO1IvEdSSUYpUH8e2CgJyrWMZK0bJoOY.	MARPU MEGHANA	9440755929	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N
-cmv0jr1hd01szmzmy53uk8cch	26UECSE0174	26uecse0174@student.gvpihlr.edu.in	$2a$10$YUkWHV26MF6NKSsx34QRaO.Ga4shGJw0uxEI7Gy6mDnbvpJ6H8GCK	NITTALA LAXMI NRUSIMHA ANANTHA	9618877666	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N
-cmv0jr1ht01zdmzmya9z5c75p	26UECSE0203	26uecse0203@student.gvpihlr.edu.in	$2a$10$kBD3OAs1IHA3hZNNlLaLbOvTaVSn2NVRSiwVFNRS8LKmwzHtZ1YYm	PALADUGU SAI TANVI	9966146577	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N
-cmv0jr1hu01zlmzmy53y7gd5o	26UECSE0208	26uecse0208@student.gvpihlr.edu.in	$2a$10$m9HYLgLV7Nz.DNM.TuHVaOG92OUtArDsIdx.YDxRnITCESfJnXDu6	KAMBALA SURYA VISHAL	9381714207	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.206	\N
-cmv0jr1ia025qmzmy5hyyvhju	26UECSE0224	26uecse0224@student.gvpihlr.edu.in	$2a$10$0NEbK7ELcyJqxlNR1w/cR.XhrNKLOm/OCNaFlTzNwF3udHPlJ0R7O	YALLA DINESH	9676861033	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N
-cmv0jr1ia0261mzmy89d2fyzf	26UECSE0234	26uecse0234@student.gvpihlr.edu.in	$2a$10$g26s/Uy3buqiIpK2TvI1DeC1AzZpIw/wkywcCX8vSHB8Q/tavEjiG	TOTTADI SRUJANA	8332087129	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N
-cmv0jr1ir02bvmzmyzzyxp4ah	26UECSM0020	26uecsm0020@student.gvpihlr.edu.in	$2a$10$XSrHgqgrM7jIhcEguXmVM.lpCD5hQXUefdgW7swsQM3go1w3ltwCG	ELLAPU ROHITH SAI TEJA	9492270685	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N
-cmv0jr1is02c2mzmyqhp0x74l	26UECSM0024	26uecsm0024@student.gvpihlr.edu.in	$2a$10$Ta6IswnmIJR.lv9uZcssBeDmILs/UAMkvTDtb1VwAXsv6qSHLbXp2	GORLA LOHITH	9391901323	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N
-cmv0jr1j702i2mzmy3os9up3k	26UECSM0029	26uecsm0029@student.gvpihlr.edu.in	$2a$10$nRcBn3MlUfxV3vAMpF1av.l5NloYvJyc6SFh/nAXJd1VvMDJn3w9a	DAMMA NAGA JASWITHA	7799771668	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N
-cmv0jr1j902ijmzmycp8d6l0v	26UECSM0051	26uecsm0051@student.gvpihlr.edu.in	$2a$10$YWs.UT/arqoIe0fyggmSVuL2ZkH2rfzkysbR.Q8xfZ/yS/IVhq.36	MOLLI SAMSRITHA	9290504844	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N
-cmv0jr1jo02o5mzmy2bqpek9n	26UECSM0058	26uecsm0058@student.gvpihlr.edu.in	$2a$10$UtOxofM1ppNXoCCUz6iwzOMa62ftXejXNmtnb/1EZGgpTyQoeIa1G	NEELATHI HEMANTH KUMAR	7093872799	t	f	\N	0	\N	2026-10-09 05:50:36.948	2026-10-09 06:37:40.27	\N
-cmv0jr1jp02onmzmycckw5m7o	26UECSM0073	26uecsm0073@student.gvpihlr.edu.in	$2a$10$TbeXk5JDOe1OiInFRBH9ieMU7AY.bjRhWtWYbOhIP1kSM/11arYte	SIRIKI BHAVANA NAIDU	8121033455	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N
-cmv0jr1k302ufmzmyb0w6qr5x	26UECSM0081	26uecsm0081@student.gvpihlr.edu.in	$2a$10$dMtRn96iAoOYqx15sZF88.KVaeLCUspC3SYryzu4L2Bcy7yVxY0.G	VEMPADA CHARVITHA	9110372606	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1k402utmzmykr85s12j	26UECSM0092	26uecsm0092@student.gvpihlr.edu.in	$2a$10$fhi6nEIn80eohmLUw8XU9OiuoTh5D3JZjwKFnynAkTTV9jRBAlMie	MALLUBHATLA JAYA GANA SAI AKSHAYA	9885334269	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.285	\N
-cmv0jr1ki030vmzmyw74hgl09	26UECSM0115	26uecsm0115@student.gvpihlr.edu.in	$2a$10$w5aGETs/HKPTGFHsmYKnUO4HEbt6RVkpc7XJMDECSmSiZBhKOFQge	PADALA CHETHANA LAVANYA	8341380629	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N
-cmv0jr1kj0318mzmy6yexmxhi	26UECSM0126	26uecsm0126@student.gvpihlr.edu.in	$2a$10$1pNCUg.LojEqyuSQZhVjM.PYwuHmYKStDBghBdM6I6WIizYtBkLmq	GOTTUMUKKALA RISHIKA	9010233357	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N
-cmv0jr1cc008pmzmyddh8dw06	26UECHE0031	26ueche0031@student.gvpihlr.edu.in	$2a$10$wJ7t.73f0W2nCdEgiM3RZuTsW0OXcZuEkuXxUtdIUG38eR0tQXJ32	CHATTI BHUVAN TRISHANKH	9666163318	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N
-cmv0jr1d400fjmzmyfnzw2l2c	26UECIV0016	26ueciv0016@student.gvpihlr.edu.in	$2a$10$PVTTkiZ2vb.4oWPZG79SoOM57ocqgCXLPvPsa6Id6TSL.i6KtberO	VEERALAPATI JAI VARDHAN	9030608659	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N
-cmv0lfk3102i710e03s6f1px4	26UECSM0141	26uecsm0141@student.gvpihlr.edu.in	$2a$10$6AQ6tH4T0Mp8vBwQ/jD/t.65kQ2fx6nGFJNsBv97YTH0qjFYy7bMS	KAREDLA ADITYA	9908714312	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3202ib10e07u74l950	26UECSM0149	26uecsm0149@student.gvpihlr.edu.in	$2a$10$vlZJTwTDqqEhL1j8csQjx.nrwnRBcSJtLCtTn5IFoWPEevfFm.Vm2	RAAVI VENKATA SATYA SURYA YASWANTH	9912023977	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3m02oh10e0xui52t6s	26UECSM0164	26uecsm0164@student.gvpihlr.edu.in	$2a$10$nhhTWOEnw1KEp1HFeSfyNOZhCdUZ6AVLLQAtuF3o1xqtVCLPLlW5.	TALADA JASHVITHA	8179424575	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N
-cmv0lfk4202uh10e0ymkv4epp	26UECSM0179	26uecsm0179@student.gvpihlr.edu.in	$2a$10$O07II5dSfFraIuBENjMUruaSwS4qyUSRQZjjndI3qDC3AzhAQJ.WO	MARAMREDDY VEDADRI NARAYANA REDDY	6300965137	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N
-cmv0lfk4302us10e0526u75o5	26UECSM0192	26uecsm0192@student.gvpihlr.edu.in	$2a$10$bh7oowHe/IlpzAmCu.4V1O.uz91.mNOZwQT0H81iGWKltICEHep4G	MARUPILLI POOJITHA LAKSHMI	9052333399	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N
-cmv0lfk4k030o10e0c82hw3w4	26UECSC0013	26uecsc0013@student.gvpihlr.edu.in	$2a$10$41UvAQePVrz6YFqwaZbKUu7lFbDWHo1PAHHb0d1Rhlx4CuXzaoKE.	HARIPRIYA CHINTA	9908898253	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk4l031510e0io3cag82	26UECSC0030	26uecsc0030@student.gvpihlr.edu.in	$2a$10$iw8Kcm.CQDEr7Qvjwu3ySenNN7ptdNuth03Ib6dJusNR6zwz9Ww..	NOUDURI NITYA SANTHOSHINI VAISHNAVI	9502225642	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk51037810e0eh04jbo6	26UECSC0050	26uecsc0050@student.gvpihlr.edu.in	$2a$10$wzmEDstwJryePLt.H8p2jOlyTLXYfHMOqJw3Hye38R6cltXnvEnYu	MANTRABUDDI SATHVIK	9652435725	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N
-cmv0lfk5h03df10e09o9q1ky7	26UECSC0071	26uecsc0071@student.gvpihlr.edu.in	$2a$10$745oB1G19FAVBJJ3TwrdF.c2xXAijN825KvMDW0rggazwKBlUxu9O	MULAGALA ASWANTH RAM CHARAN	6305997593	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N
-cmv0lfk5i03dm10e09200i1a1	26UECSC0079	26uecsc0079@student.gvpihlr.edu.in	$2a$10$JvDS85hKX/M8bSsi6Obd9eNo2jFO4WQRuowp6Oa.O9pzGsGBgm3wu	KALLEMPUDI SWATHI	7674092146	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N
-cmv0lfk5x03jm10e0od04lwjz	26UECSD0011	26uecsd0011@student.gvpihlr.edu.in	$2a$10$pdrrM9IS2vM89HYPe9Yw7OXHQnlXb3NkaZTpCsK0MuTycOKsrNjCq	POTTI JAYADEV VENKATA NAGA VISHNU	9100593101	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N
-cmv0lfk5y03jt10e0kwbxlhye	26UECSD0020	26uecsd0020@student.gvpihlr.edu.in	$2a$10$MK/vvIYw6Jc0AtDYVDgaK.9E28ipCbQIu5px1Q/yreEtC3oUveYoe	MEESALA JASMITA	9177373738	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N
-cmv0lfk6d03py10e0pdybh4ca	26UEEEE0006	26ueeee0006@student.gvpihlr.edu.in	$2a$10$oxvD0Yfl0rykmGckYoUA5unVdmxoYZ.wL249xArFgs8gCxUXqZM2.	GADIRAJU YOGYA SRI	8309071940	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6e03q610e0zc0nk515	26UEEEE0024	26ueeee0024@student.gvpihlr.edu.in	$2a$10$ttOzpdyxBnUwDrFOv3d5/ec3MYvEBJJn.a51n2dUEQ1mEr6srs89q	VIJAY SANDEEP VATHADA	9885169919	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6r03vw10e01bskh1m5	26UEEEE0039	26ueeee0039@student.gvpihlr.edu.in	$2a$10$bh/ON.GsYLNtpJRZD4VxUeVRV4Lzf5qxu8Ob.NJmQFFCFVdjh/eGC	YARABALA DHARANI	9949601001	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk6s03w810e094w5c9qg	26UEEEE0042	26ueeee0042@student.gvpihlr.edu.in	$2a$10$.RcZzulP0OCOFupl87/y0utWXxTSTtZUaGSTwZliImJieXE8K3dRK	MUVVALA POORNA PRAVEEN	9440597244	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk6t03wg10e0tq3yedc5	26UEEEE0050	26ueeee0050@student.gvpihlr.edu.in	$2a$10$D1xIDemEK7rRQspuhYQC9O.wVvvQKAQxmV1N96VJuJLEzJ0sliP0S	MAJJI VENKATESH	9014721299	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk77042510e0cw6p178f	26UEEEE0058	26ueeee0058@student.gvpihlr.edu.in	$2a$10$9TLgEIH7.aXjy5GDcv33qOAEjBe8/VTk.IuftGGwTjgyjZjnf4WJ6	PERUGU VARUN SAI GANESH	7993958255	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk77042d10e0tw8egrwq	26UEECE0005	26ueece0005@student.gvpihlr.edu.in	$2a$10$PElKtk/VrJnJrz/7nkMSmuhb6qcQqvFrgwf2nwP96A89jHGxmLNJ2	ALLU JAGRUTHI	8555958560	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk78042i10e0dinsfd9x	26UEECE0013	26ueece0013@student.gvpihlr.edu.in	$2a$10$kDaOvRCTGLTHFm68aq0AVeeVdrLJEfIZOeWIvpyQXiegoCKIH2eNO	BHYRI BHANU MITHRA	6309366586	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk78042q10e06udz5j4w	26UEECE0001	26ueece0001@student.gvpihlr.edu.in	$2a$10$Pj45xQQKucjzjK/uX.zOyOHIvUH64oVvAFKwESeBd10qsXfKNRIxC	ALTHI BHARATH KUMAR	9849705972	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk7o048j10e0pwk10a9o	26UEECE0027	26ueece0027@student.gvpihlr.edu.in	$2a$10$8U2yL20nqYd0ilTbA7WK6ukZBBgB1.cNqrIBDQZdYr0lj3smvLt3W	CHIRLA SHANMUKHA SAI SARAN REDDY	7799113319	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N
-cmv0lfk7o048o10e0vf7id51w	26UEECE0036	26ueece0036@student.gvpihlr.edu.in	$2a$10$HK0EcI1XxtOPkjkBmsu.xuBBlt7mPhcr48RFG4GIdtOZqSKsEuKhi	DUBBAKA SAI VIKASH	8332881583	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N
-cmv0lfk7p048y10e0vqrq4m6z	26UEECE0043	26ueece0043@student.gvpihlr.edu.in	$2a$10$dodK8R/Ww4X8WxgiBUZVe.tt7iiHLV62DS5vbaobVqkr7BAFjGqwe	GALLA ROSHAN	7780407092	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N
-cmv0lfk8504es10e0tbiy192h	26UEECE0048	26ueece0048@student.gvpihlr.edu.in	$2a$10$3effedpHM6QpgBBOeCf3WOCh4R7pDq2QYojKBcbxRDDmToXRpbtZC	GAYATHRI SAI SATHWIKA PUPPALA	7670814737	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N
-cmv0lfk8504ep10e0jslv7hlp	26UEECE0049	26ueece0049@student.gvpihlr.edu.in	$2a$10$O6HrllaN4/VVpTeFfm.X0u/NgLYkmGBiPtEs5vCFbEBernoKrPJXe	GOLAGANI MADHAN KUMAR	8309094578	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N
-cmv0lfk8604f010e0470qp15g	26UEECE0061	26ueece0061@student.gvpihlr.edu.in	$2a$10$rRF8kX2n4U1vJaSAbuVmAuSvQqCegFIfr/74GO3TImlpJZIf2H4DG	MYLAPALLI HASINI	9390462140	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N
-cmv0lfk8604f410e048wyycf5	26UEECE0067	26ueece0067@student.gvpihlr.edu.in	$2a$10$ZPSRgiq/bkzaA4r1FvAAyeiUVHAIaT3.4OtD9dENiM6yUkdNm.ssK	PATHIVADA HARSHA VARDHAN	7013238099	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N
-cmv0lfk8s04l210e05wvqc30y	26UEECE0075	26ueece0075@student.gvpihlr.edu.in	$2a$10$1icQ2XExRLCPmfXy2DgRluU88j.2S3/cj1s3da9nAQVuV6voOwXtS	KANDUBOTHU PAVANI	7893505764	t	f	\N	0	\N	2026-10-09 06:37:40.54	2026-10-09 06:37:40.54	\N
-cmv0lfk8t04l710e0kitbbvfu	26UEECE0085	26ueece0085@student.gvpihlr.edu.in	$2a$10$ytGBS37Zxrelkmk7aRNoWOLy1bCGXyBdOfJrAf47EbAJFBIUhAhUO	KONA RAMA SURYA CHARAN	9394791423	t	f	\N	0	\N	2026-10-09 06:37:40.541	2026-10-09 06:37:40.541	\N
-cmv0lfk8u04lf10e0aebadnqx	26UEECE0091	26ueece0091@student.gvpihlr.edu.in	$2a$10$LaBjHESqUinb0S9gXJ91Y.QB2jSDrImOpRHITaFpaTy0p9wFBwvwu	MUKKALA VASANTH BABU	8978081138	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N
-cmv0lfk8v04lj10e0g8tia14z	26UEECE0093	26ueece0093@student.gvpihlr.edu.in	$2a$10$5hCYYLEs853cE0VgBat0Qe8X5wwotqJ6EcDWBIKTnHlwCEV6UonVi	MADEM BAVYA SREE	9866352972	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N
-cmv0lfk8v04lk10e0jcogw9wc	26UEECE0095	26ueece0095@student.gvpihlr.edu.in	$2a$10$FLKi0dSHfJtQuzKOJGhfxeTaq7x6DItbGf9FQq5h4yq82XV/Ct7xC	POLAKU VENKATA ADITYA	8008561324	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N
-cmv0jr1cc008smzmyyr9nnq7i	26UECHE0028	26ueche0028@student.gvpihlr.edu.in	$2a$10$AaH3lU2nJSRPHgLTx4p.OeX7YYhbLh2EbBRXkocrNeBsmsXNw3uJq	KOPPAVARAPU SRIHARI	6301459903	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N
-cmv0lfk3002i510e0g5p5p7ws	26UECSM0135	26uecsm0135@student.gvpihlr.edu.in	$2a$10$I9sb.A04i7aOZULjKGw73.0RnVgvjPyWTML0ayylztcxGbrUNuBgy	BOMMIREDDY JAIDEEP SAI	7893959739	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3202ig10e0rm036tio	26UECSM0150	26uecsm0150@student.gvpihlr.edu.in	$2a$10$TCJWLV3l2JEAEt/NAjCx2Owk/jcgaYYen.qqv/AWG0mfrekqbY/wG	SIRIPURAM AKHIL	8247090532	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3m02o610e07e6sn6xk	26UECSM0156	26uecsm0156@student.gvpihlr.edu.in	$2a$10$mr/g3BEmS7kGMlIeYkrpL.1avD7mIGy9/nm8kv.iXbpW54qalgSW2	MARNENI JASWANTH	9502468902	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N
-cmv0lfk3n02oq10e0iw4w9erp	26UECSM0177	26uecsm0177@student.gvpihlr.edu.in	$2a$10$MuQXw96hldLLK9U5pUpgYO5LDEBB4DWBhhIUq9sXIpqlNz6arkme.	VADAVALASA DALIYA	8498897393	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N
-cmv0lfk4302uq10e0msobz147	26UECSM0191	26uecsm0191@student.gvpihlr.edu.in	$2a$10$g.iDYLz2d46PWdsxeYuyhuwarDKTUSjxLqeuWn/9CoZ6kWuQaMacK	KARIMI BHARGAVI	8639920609	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N
-cmv0lfk4402uy10e08hovjr8b	26UECSC0007	26uecsc0007@student.gvpihlr.edu.in	$2a$10$7vQbN25kFDZIAVL0xZHzZ.tE2BuqQ1GTtI3Onz718Y8FAIq3T4o5W	CHINTHALA BHARGAVA KUMAR	9885914078	t	f	\N	0	\N	2026-10-09 06:37:40.372	2026-10-09 06:37:40.372	\N
-cmv0lfk4k030x10e0sk5oo3l6	26UECSC0022	26uecsc0022@student.gvpihlr.edu.in	$2a$10$Neeshkz/6UkxLqfN./P7G.EXBU387ZcLEPfzkyuNYDzrDxOu89eFq	MADETI DITEJ	8076248153	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk4l031110e0121kmxpo	26UECSC0026	26uecsc0026@student.gvpihlr.edu.in	$2a$10$.vuawcvykvz1JMHDdSMmC.eHieXnHBazz0Av8wh6lC2qHggjRLf1O	MOLLI SAI GEETAM	9390078712	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk51037210e0t9wr15ij	26UECSC0046	26uecsc0046@student.gvpihlr.edu.in	$2a$10$LRfzZcxinIAuQ3PjpSnEw.eq7cSfCrqmn3zY4Vxq1wgnC.U0mVSbu	KANDI SRAVAN KUMAR	9866838318	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N
-cmv0lfk52037f10e0dpuktf0s	26UECSC0057	26uecsc0057@student.gvpihlr.edu.in	$2a$10$2f71fswhHKfGt9QD09Be9u2j389BSxQ7R7LwglNMgTHQ0lAWhhX3.	TAMMINEEDI SUHAS	7799772776	t	f	\N	0	\N	2026-10-09 06:37:40.406	2026-10-09 06:37:40.406	\N
-cmv0lfk5h03da10e0ru8r12b9	26UECSC0062	26uecsc0062@student.gvpihlr.edu.in	$2a$10$pYsj9TAtWdq59aMzyfAmm.nN0Pv5XhTdTzUo.SQhDM2QiOfxLfrQa	MEDAPATI CHAITANYA VEERRAGHAVA REDDY	9949049999	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N
-cmv0lfk5i03dk10e0yphgyz3t	26UECSC0077	26uecsc0077@student.gvpihlr.edu.in	$2a$10$PcKTgim5mTZuFsXiF6Zc8.vrtyo7anMERCX4FvM2A7jsir7Y59UpC	MARIKANTI LATHISH	7036173718	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N
-cmv0lfk5x03jj10e0xp918d3g	26UECSD0005	26uecsd0005@student.gvpihlr.edu.in	$2a$10$gPxd5URUvnn15CEMUQU7S.VIzYvXnjBixgyYVeTrT.MMw3hGwuqS6	GUTLA KARTHIK	8309954330	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N
-cmv0lfk5y03jy10e00yyjhdsp	26UEEEE0003	26ueeee0003@student.gvpihlr.edu.in	$2a$10$LC77xhxfbCCFghcmehkz2uBxfoKOBnXamKRw9x/tn/sZT1ted27t2	ARIPAKA HAREENDRA	9063873849	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N
-cmv0lfk6c03pu10e04nar01i4	26UEEEE0015	26ueeee0015@student.gvpihlr.edu.in	$2a$10$NdJv2dkopAd1ul5Q32Z5KuPV8PPdP/50HxBHJ0WN96fk28J8iVmbm	PALAVALASA SIVA PUJITHA	7416521289	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6e03q510e0dfxyqk0f	26UEEEE0025	26ueeee0025@student.gvpihlr.edu.in	$2a$10$BUqYhLdKEb2yGyn113vVUu/G2MoTIzL.t8KffUfu1UExNkEi2kJ4u	YAJJALA SNEHASREE	9000653567	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6r03w410e0cyxgbjq8	26UEEEE0038	26ueeee0038@student.gvpihlr.edu.in	$2a$10$ppD5etwejaIBIXJ0FpZzOOnkyg3Yu4vOBbAUtOU.fopLcUTgq7.3W	MOKA RAGA SRI DURGA VARSHINI	9441564028	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk6s03wa10e0jh4ldbv0	26UEEEE0045	26ueeee0045@student.gvpihlr.edu.in	$2a$10$a8C8hu2qzkIJYWExCQ5BlOlhxMaB1.W3ADWF7WpKnXbszgfWMklk6	VASUPALLI DHEERAJ NARAYANA SWAMY	9440583886	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk6t03wb10e05d6qoeyy	26UEEEE0047	26ueeee0047@student.gvpihlr.edu.in	$2a$10$4OAkGTdXHqLMUugPk6xL/e2EW/LnwhSnQZhRXpedSJAw4ibGpEXPu	VEGI GOWTHAM SAI	9618128987	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk77042e10e0b2yk9mgd	26UEECE0007	26ueece0007@student.gvpihlr.edu.in	$2a$10$qO.yIQsEpgC1GDrc5.B9MeKVuw3ZZd/4F8ujydih18kxDoa2RaRCi	ANKITA VARMA	8309814318	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk77042a10e04zpblrac	26UEECE0009	26ueece0009@student.gvpihlr.edu.in	$2a$10$jGtbtrIddH6FCcwU2tmXiezIwytcDpB0M..5RvuGnFJVCGud1ESoa	ASISH BABU SRIPATHI	9704576603	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk78042j10e0uxx8i1zn	26UEECE0015	26ueece0015@student.gvpihlr.edu.in	$2a$10$rg7kwqwGUhyD47.YG6n30O4Qw5pRPXukgJGc88gRIC1WXtxKDNtGK	BODI RAVEENDRANATH	7396579595	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk78042n10e0z8u3fpwl	26UEECE0020	26ueece0020@student.gvpihlr.edu.in	$2a$10$6Hpy8es9m8shoWzCo0PoWu36AjuHvhD6.uQ/eJbb0pEPYUaYDn..q	KARRI MOHAN KRISHNA SIDDARDHA	9491763509	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk7o048h10e02eqc1yt4	26UEECE0022	26ueece0022@student.gvpihlr.edu.in	$2a$10$JqBJxcJVXX5ekGmqp1DCVO/TRuajgIiHyUQSyM37EY2fPfE4vISAe	BONU CHANDANA SRUTHI	8341675661	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N
-cmv0lfk7o048q10e04magixym	26UEECE0033	26ueece0033@student.gvpihlr.edu.in	$2a$10$GRN9PUsFcBIu/dUg4U9ncuo6bxqaePTNMHsuEUALuhYboYNjBKx8a	DARAHASINI NATHALA	9491812958	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N
-cmv0lfk7p048z10e04xyumij9	26UEECE0045	26ueece0045@student.gvpihlr.edu.in	$2a$10$6U6K0nunTzKoIjHgbUhqA.xdIa0cHb/YAmmFrF40FOsfh7J19/8cu	BATTULA KRISHNA MANOHAR	9848710014	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N
-cmv0lfk7p049110e0752w0c50	26UEECE0032	26ueece0032@student.gvpihlr.edu.in	$2a$10$f0KPH2pF18pY8IeBFgXsduCO/XIUA5y9s7wtdJfZYybg5.8PJGnO6	DAMMU UDAY KUMAR	7396986698	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N
-cmv0lfk8504en10e0kdggnvhp	26UEECE0054	26ueece0054@student.gvpihlr.edu.in	$2a$10$sXXXBiR9TgDs5PEskZEneOTKb8wN7QpKKT/0cki7966oInCuTiNR2	GUJJU JAHNAVI REDDY	9246628201	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N
-cmv0lfk8604f710e09zw8t1s1	26UEECE0064	26ueece0064@student.gvpihlr.edu.in	$2a$10$gVD0MkdKkQPbIcgTMVfyieS83.usa22En.Z7tqOOTqDQi9Am3Bnt2	ABOTHU YASWANTH	9885684875	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N
-cmv0lfk8504ez10e0scuncyzy	26UEECE0052	26ueece0052@student.gvpihlr.edu.in	$2a$10$e7fGLgDu..bcWmfvliOvWOs7M3pRSQ3.1xpiVS7Qc74hab7MqFNNm	GORLE GANESH	9110300780	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N
-cmv0lfk8s04ky10e0eopyd13c	26UEECE0071	26ueece0071@student.gvpihlr.edu.in	$2a$10$rS5pvYODZhMPNGbiMzUpAuNpCJCV4Ik9UuhbJD6GaW0ksB5.JYjP2	KALLURI GEETAPRANAYA	9985311424	t	f	\N	0	\N	2026-10-09 06:37:40.54	2026-10-09 06:37:40.54	\N
-cmv0lfk8t04l510e0fnpe0fdr	26UEECE0082	26ueece0082@student.gvpihlr.edu.in	$2a$10$CbC1gEDvzZw/43/GwOOUAe6KII3r2L9Hb7BPWdRR59qrXhvXLEkJG	KILARU VENKATESWARLU	8949306676	t	f	\N	0	\N	2026-10-09 06:37:40.541	2026-10-09 06:37:40.541	\N
-cmv0lfk8u04ld10e0cr1rqvv7	26UEECE0089	26ueece0089@student.gvpihlr.edu.in	$2a$10$NQXdkR5O/THuMzZeUB.qtOG.O6LIcfmA/WNj3W260iIb8mgcHB6sK	PADALA LAKSHMAN KUMAR	9381548787	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N
-cmv0lfk8v04li10e08kwnkclx	26UEECE0094	26ueece0094@student.gvpihlr.edu.in	$2a$10$VaV3e3wm9h4BJunrrusUOuIDOodXyBEV9JaiExI19BEXx3DgrIKB6	MAILIPALLI KETAN SAI KAUSHIK	9441025147	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N
-cmv0jr1cc008umzmydb27t4nl	26UECHE0035	26ueche0035@student.gvpihlr.edu.in	$2a$10$jVsoGij3SsXLUiVXvksZEOdVHAPDCn/DUextiKqzcs2KABFB/v1Cq	SARAGADAM JOSHMI	8096688832	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N
-cmv0jr1d300f8mzmy5qcicwup	26UECIV0020	26ueciv0020@student.gvpihlr.edu.in	$2a$10$GDHL0qigW.ohNpzLlJ6lPO0O6CnZHjg7bwX/Kh10jKqgfZ2sCedlm	VANDRASI HARSHA VARDHAN	8367351200	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N
-cmv0lfk3102i810e0oahlclrt	26UECSM0144	26uecsm0144@student.gvpihlr.edu.in	$2a$10$F7yLimdew7pUnzub1EZIvOtErpBMHmSEWgJJbLrxXabsbyZz8sipm	KOOSU SAI CHARISHMA	9010720695	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3202ic10e01h7lk5g2	26UECSM0147	26uecsm0147@student.gvpihlr.edu.in	$2a$10$RU1qHzZhlYylAkVVl7c3yep.r18yq2yBzbzHjsFsL5uxTe1onskDO	PATHIVADA RAHUL RAJ	9951921987	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3m02o710e0s0loqtsz	26UECSM0155	26uecsm0155@student.gvpihlr.edu.in	$2a$10$vD7hvLFmT6eFMC1VjSyCBe.06vOE9tBPNttZEdrZHj9/HV6EkPeBa	YENUGULA DHANUSH SATVA TEJA	7893334430	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N
-cmv0lfk3n02oo10e0jv58jndd	26UECSM0176	26uecsm0176@student.gvpihlr.edu.in	$2a$10$B2jukpNuSBKH6mUqPArJRO5idYd2efgQVI9R3A8JCcWNAWErzjhf2	CHITTEM HASINI	9885235952	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N
-cmv0lfk4202um10e0v9f0t8pp	26UECSM0187	26uecsm0187@student.gvpihlr.edu.in	$2a$10$qWByTEi35AR2Yq5WJjQlGOg6dqSHYX.53EojRzKomyCYyMdzQ3mTK	RANDHI SRI SUSHMA	9441058869	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N
-cmv0lfk4402ux10e0prvzmx5w	26UECSC0006	26uecsc0006@student.gvpihlr.edu.in	$2a$10$EkP4kvlhTIhbXKQAqd3b/elR4PNz39L2ddbBQWS2tUWocfCyLfEbm	BENDI CHAITRA SHIVANI	7075443086	t	f	\N	0	\N	2026-10-09 06:37:40.372	2026-10-09 06:37:40.372	\N
-cmv0lfk4k030w10e04yyt2rkp	26UECSC0019	26uecsc0019@student.gvpihlr.edu.in	$2a$10$6unJdwdW8lqTPFwc1WW26ecoYLx.AVYKU2ZkxIr2IwC0U02XMvrSe	KORRAYI SWATHI KANAKA RISHITHA	9440053732	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk4l031610e004ettext	26UECSC0035	26uecsc0035@student.gvpihlr.edu.in	$2a$10$8/YXbZEF883dOidmRAzwr.YNjNilSPeRcw2e0P0HRnrlhJ.G8FpZC	RADA SAI SAATHWIK	8074289497	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk51037110e03vag5oak	26UECSC0044	26uecsc0044@student.gvpihlr.edu.in	$2a$10$5a2/HddDObZmCLy.gS4/8OJtJzS06AoJJNSRxHw3DHWkwYgQtPuDa	YASHITHA RONGALI	7286039706	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N
-cmv0lfk52037i10e0y4de4alx	26UECSC0058	26uecsc0058@student.gvpihlr.edu.in	$2a$10$rInTT/dT4ZAUsmijO1PdxutFIKbAVvoT2VG3qiJQpRs7Gc35OmUj.	BHEESETTY TEJASWIN	9392604600	t	f	\N	0	\N	2026-10-09 06:37:40.406	2026-10-09 06:37:40.406	\N
-cmv0lfk5h03dd10e0vkoryi18	26UECSC0069	26uecsc0069@student.gvpihlr.edu.in	$2a$10$RY1oIZ7s7f1TwI5WsoVHM.Ip17ybk4Bq2WtCRLFCteCy7Vql3AKd2	BODDEPALLI TARUN	9515398084	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N
-cmv0lfk5i03dq10e07tpghyqg	26UECSD0001	26uecsd0001@student.gvpihlr.edu.in	$2a$10$4dY9si2/TTVuY903UrlaRO0cU8DqoEIkdAZkAh/1d8jWhjB0AguTa	BUDI BHAVYA	6202935844	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N
-cmv0lfk5x03jn10e04ydhy3wt	26UECSD0008	26uecsd0008@student.gvpihlr.edu.in	$2a$10$EfjTcanJiY24sAVXCgD5BOSgS9ZHFifnywo1nlQwrfc0WMy4u2uMS	MALYAVANTAM N V V L GOWTHAMI	9603638574	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N
-cmv0lfk5y03jw10e0yz9yqo1h	26UECSD0024	26uecsd0024@student.gvpihlr.edu.in	$2a$10$QGqri6qpdXrBYcU5c53NN.uuflF/V/HRRJZ2hHy4sznSgGoLIRLbG	MUVVALA VARSHINI	9848548511	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N
-cmv0lfk6c03pn10e0ogwm8ld2	26UEEEE0008	26ueeee0008@student.gvpihlr.edu.in	$2a$10$xIE83uX2R/WMD85UBNgaK.dXcSr3BTsIPzgXoAUzmY4BSL9p5/ZGe	INUPAKURTI NAVYA	8397403182	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6e03qa10e029o5aoic	26UEEEE0019	26ueeee0019@student.gvpihlr.edu.in	$2a$10$ZML2DDzXC4YDAyhSqd4VJeWT6fZEL5wHgn3UC0hUKQKmh4gqZEslW	AMBATI HARSHA VARDHAN	9381315338	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6r03w110e0q9xhyqx5	26UEEEE0035	26ueeee0035@student.gvpihlr.edu.in	$2a$10$tgPI/mD1VCtvfU.RwELQk.TEwwBVhaasNefx9Qk61FvDEdJI.eSWi	BALAGA RAKESH	9505901446	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk6s03w910e066q43t3n	26UEEEE0044	26ueeee0044@student.gvpihlr.edu.in	$2a$10$axDd5U5o6VrGG6eKHPvp4OiFfkRgiH1oiStApSHfFlcUttCn2nypy	THOTTADI SURYAKUMARI	9704194944	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk6t03wc10e0b6s56wza	26UEEEE0046	26ueeee0046@student.gvpihlr.edu.in	$2a$10$F455XwIYTTrJwXYzS7VtzeHP39GbJH.Im6JPcA3POu/9.oFDeiw/K	BHUPATHI MAHITHA PRAGNA	9963265788	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk77042810e0waafvt3h	26UEEEE0057	26ueeee0057@student.gvpihlr.edu.in	$2a$10$yN/ZA4CKRBciPgIUzClB0u6VEQpM8dDtauusfGKqLROt8AzPC7sGa	NALAM SHANMUKH SRI RAM	7989679717	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk78042h10e0kfwv4n2m	26UEECE0016	26ueece0016@student.gvpihlr.edu.in	$2a$10$N.IhnnWqAi3wi9W4dTSZ.eL77RBpcKh0Dyc9MEiRbAGHBNHvMj9v2	BONI TEJA SAI	8761955740	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk78042o10e0y93bbf6m	26UEECE0004	26ueece0004@student.gvpihlr.edu.in	$2a$10$3aNmL.J4o4qxjS1LA3kv5etslYY7urxc1jLmp4Pta8Gfg7zT/uUfe	KANDULA POORNESH	7569900600	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk79042s10e0br5kl9ar	26UEECE0010	26ueece0010@student.gvpihlr.edu.in	$2a$10$dnJXJV43T/F.eth0g2iFb.Q81yhFKwAyEFuGQg1DUdsww9cklrgqq	AYISETTI PRADEEP VENKATA NARAYANA SESHA SAI	7801019888	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk7o048e10e05gyr61x2	26UEECE0023	26ueece0023@student.gvpihlr.edu.in	$2a$10$LSUkvxoXo2rVzDW9oYElH.qTxltdx1Tly2vbe5c8yyrXFfJAP./by	CHEMBOLU SAILESH SARMA	7569493084	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N
-cmv0lfk7o048n10e0os6g95ht	26UEECE0029	26ueece0029@student.gvpihlr.edu.in	$2a$10$dbOs0slG2TbmtLbRr0PHoetJIoMcUNN/KC0KR0wGnNgFDPp2t5OQK	CHUKKA KRISHNA KOUSHIK	9967923452	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N
-cmv0lfk7p048s10e0o034cfmx	26UEECE0035	26ueece0035@student.gvpihlr.edu.in	$2a$10$2bIhpRCY0dVztVCTFHPJnenwUlKaLuX29ktZGUmAxcYtIec.Ld9Sq	BONI DHEEKSHITHA	8328699873	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N
-cmv0lfk7p048v10e0z6aafx7i	26UEECE0039	26ueece0039@student.gvpihlr.edu.in	$2a$10$kTNA8pOTB4fsSWCH9ql8SuYkQ5YDLMgIrCNOPKImsc4JfombzSVHW	GORRELA SRI SAI CHARAN	8008222183	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N
-cmv0lfk8504eo10e0xsowtgou	26UEECE0047	26ueece0047@student.gvpihlr.edu.in	$2a$10$7C1C0ELV3inQS/ACppFaEe1Ds0utk/Fye60lGBM5FTQVRWb570U8W	GAURAV SANKHALA	8121374922	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N
-cmv0lfk8504ex10e0rjluxutd	26UEECE0059	26ueece0059@student.gvpihlr.edu.in	$2a$10$hqHcnQYSfkc47RbTFXSnIeu5Oit2bxkqbSANf4s649UFa6LcutzbO	MALLA UDAY BASKAR	7331187450	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N
-cmv0lfk8604f110e0ae9ak5wx	26UEECE0063	26ueece0063@student.gvpihlr.edu.in	$2a$10$bQLd1a4Owt6ZUkpxyfwkjO7pheQo7wZT1ka4NZ0OlKS1oE.mPBnBe	MAKIREDDY SADHVIKA	9160384766	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N
-cmv0lfk8604fa10e0rvbci9qy	26UEECE0057	26ueece0057@student.gvpihlr.edu.in	$2a$10$Qw1hNUApPJMwGQhHi/4MEurCu6nUfIwFxYbn9oOd4ewhOedGeN1lS	KUNDRAPU SIRI SADHVIKA	8688271862	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N
-cmv0lfk8s04l310e0u23ebqf5	26UEECE0080	26ueece0080@student.gvpihlr.edu.in	$2a$10$nkZM1BWfBS9xyVezKfOOSO3oMza5p5NUUNhmcRx8lJ9zrzOWeEAfG	KATTA MEGHANA NAGA SRI	7382128803	t	f	\N	0	\N	2026-10-09 06:37:40.541	2026-10-09 06:37:40.541	\N
-cmv0lfk8t04l810e0jg66gnmm	26UEECE0079	26ueece0079@student.gvpihlr.edu.in	$2a$10$zCQdl8/raNEL.h3FFLqVPuycGZloRGpOAtxuoFAf4mxMCmZDFKbg2	KASAPU KARTHIK VENKATA SATYANARAYANA	9642269598	t	f	\N	0	\N	2026-10-09 06:37:40.541	2026-10-09 06:37:40.541	\N
-cmv0lfk9c04r610e0kg4ma60n	26UEECE0098	26ueece0098@student.gvpihlr.edu.in	$2a$10$Kd0hKOyAlHu6IEdZ.AMrZu.ZGbbrqHwYGHGoZ0vSvXZ3RVUuUNRQ.	PULARI CHARAN	7569626672	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N
-cmv0jr1d200f6mzmyc59vtwz3	26UECIV0013	26ueciv0013@student.gvpihlr.edu.in	$2a$10$li6jWr9gNBo5v81gQBz/yOoo3VsToGiLxK0InALLWky3PggoQ4Ai.	POTHINA AJAY	9392877999	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N
-cmv0jr1ds00lfmzmybwmq9i50	26UECSE0004	26uecse0004@student.gvpihlr.edu.in	$2a$10$OgiCntjlhikUjiFdHXS/LOqNAI07VipWp7K8bVc5to.2SO8KxuNIu	BARRI SIDDHU HARSHA	8106269795	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.086	\N
-cmv0jr1dt00lqmzmy8uth1yji	26UECSE0016	26uecse0016@student.gvpihlr.edu.in	$2a$10$faZpkKVGvwRgOgkW2Ip0quwpzm5GVBohf4TUpm5yllROv92batWU.	BOYIDI VENKATA SAI GIREESH	9381293312	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N
-cmv0jr1eb00rfmzmy8vln9sfg	26UECSE0024	26uecse0024@student.gvpihlr.edu.in	$2a$10$ShRPTlCv2jPAGhcnqTeYHOtsfXotmeBqN7X0G5LrmyFFZFTL45SnG	CHIKKALA D NAGA SATYA VENKATA PAVAN KUMAR	9346445365	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N
-cmv0jr1ed00s1mzmykc8qfybg	26UECSE0039	26uecse0039@student.gvpihlr.edu.in	$2a$10$X.9zqes2KXqiMR8ug02TKeQHBYI2nhQpQe1x8JvLMD.a7TSh6POQi	GOLLU SAI MEDHA VAGDEVI	9908511217	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.103	\N
-cmv0jr1et00xpmzmytb6j3t9h	26UECSE0044	26uecse0044@student.gvpihlr.edu.in	$2a$10$VDbJmYn6SWiOPYAfP0riDeT46Jy.MRvPYr5S1O6aQqK76KcOLGdt6	INDANA J V V MADHUSUDANA AYYAPPA	6303435229	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N
-cmv0jr1eu00y9mzmyh2s1d9b8	26UECSE0065	26uecse0065@student.gvpihlr.edu.in	$2a$10$SX1c/JLoVt0X7zGkWUEl1.loHZLn78MlrPQovTNADpiTxD6Xu2lLe	NANDYALA LASYA	8639618233	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N
-cmv0jr1fi0145mzmy0asi2b4s	26UECSE0079	26uecse0079@student.gvpihlr.edu.in	$2a$10$jXdVJHwnPMyIoj9A1C0wMuxaE6skgeQs4ETh1qQYaBieRomcFGnhi	MARUVADA SRI KEERTHANA	9395566277	t	f	\N	0	\N	2026-10-09 05:50:36.798	2026-10-09 06:37:40.13	\N
-cmv0jr1fj014cmzmyea75q1er	26UECSE0083	26uecse0083@student.gvpihlr.edu.in	$2a$10$vTnPlkFVrDDGex9uII3TA.IMoMOsbRipM89J3zmSw3WQhS.sQCO6O	MOTHUKURI SURYA NARAYANA	9948325872	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N
-cmv0jr1fz01ahmzmyccpsl9c5	26UECSE0100	26uecse0100@student.gvpihlr.edu.in	$2a$10$JWby9Nt9MO6bqmkELGmaKO1MfU9xH5tLk1f0QS6wsljoglVJboktm	PILLA DEESHMITHA	8309345509	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N
-cmv0jr1gf01gimzmy15d01b68	26UECSE0126	26uecse0126@student.gvpihlr.edu.in	$2a$10$YqW7SGWYEeNhnO8npXvzpOiIn3Jz1MeKcS3pK/3qHJk.dJCDS9BU2	SRIYANI MANGU	9441178558	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N
-cmv0jr1gg01gumzmy0se5fvta	26UECSE0135	26uecse0135@student.gvpihlr.edu.in	$2a$10$ZZAGqXmgPkmm.OgJJKC.pulvkI1It9EEyophHkbaWzW02eFYXws82	VASIREDDY LOHITHA	9347703949	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N
-cmv0jr1gy01n6mzmymqea60j5	26UECSE0163	26uecse0163@student.gvpihlr.edu.in	$2a$10$nj317nYt2bRMYVCSIdY/Su8cuuH.EsPJhZcIGZ6YmLdbIrTEnqgna	PRAYAGA GAYATRI AKSHAYA	9640584922	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N
-cmv0jr1gx01msmzmy0hhr7hzc	26UECSE0155	26uecse0155@student.gvpihlr.edu.in	$2a$10$yzOtPtVfzyb7KzRDK0VgRe6dkyb/uETB/8y5z1nDpGHwcB2HLPKEy	CHALLA SAI SHASHANK REDDY	9849952449	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N
-cmv0jr1hd01t0mzmy6r10kes9	26UECSE0181	26uecse0181@student.gvpihlr.edu.in	$2a$10$KiZhtFZK.S4TPD80fQm.0eB9I1teGHsvV/hcGoUIyGut3RPB7jsF6	GANISETTI SRINIVAS SAMPATH HEMANTH	9381137461	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N
-cmv0jr1he01temzmybuo5939c	26UECSE0192	26uecse0192@student.gvpihlr.edu.in	$2a$10$ryjgjC5lZrXMqCkWDIPJ7uS/Ll54p1V4ILeVyu0hKmY/38TmZZmA.	PASUPUREDDI VENNELA	7989349573	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N
-cmv0jr1ht01zgmzmycphz4b7l	26UECSE0207	26uecse0207@student.gvpihlr.edu.in	$2a$10$mfhtXVO4gTv/jtuBe2p/I.B/fS2m0iJ3nbjjCjHOPHY3Yj2v4Whra	KALIGOTLA KANAKA KODANDA SAI HRUTIK	9849959567	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.202	\N
-cmv0jr1hv01ztmzmyfxh9prmh	26UECSE0219	26uecse0219@student.gvpihlr.edu.in	$2a$10$6vUmF0FeZi2gEUB9D0lIdeCoWSD63m7x83ZtcnQm/AfOyb.3XEWD6	YELAMANCHILI SRIVARSHINI	9490893468	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N
-cmv0jr1i9025gmzmy209dxon6	26UECSE0221	26uecse0221@student.gvpihlr.edu.in	$2a$10$PhHdkZza0zFfFsma9wrJVOKMMZc6H8QtLrEid7aH8nkIqGP3gIqX2	KANDRAKOTA KIRAN KARTHIKAY	8185884971	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N
-cmv0jr1ia025umzmy697eu9rv	26UECSE0239	26uecse0239@student.gvpihlr.edu.in	$2a$10$wcSv8FrCApjFn3XMKmJPi.D/3M/j55qbL.dE5QRWVA2OXyHaLPnRC	DASI ANUDEEP	7981026691	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N
-cmv0jr1is02bzmzmy6hmmp6al	26UECSM0007	26uecsm0007@student.gvpihlr.edu.in	$2a$10$EdqKXwaeXMnKloaOvMwP/unz8iu7dBKcltCjmIFpLd0K7s0xTQbz6	BHEESETTI VINAYA	7780108622	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N
-cmv0jr1j702i4mzmy7wbcn7zl	26UECSM0040	26uecsm0040@student.gvpihlr.edu.in	$2a$10$fUV9jYkREanTzFiyFZIxseemo3EihmW02hDGfb2wJ.98xRsOokzq.	K LALITH VENKAT SAI KUMAR	9177760523	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N
-cmv0jr1jo02ofmzmyamdf9oc7	26UECSM0064	26uecsm0064@student.gvpihlr.edu.in	$2a$10$IjKqsWChZKoGijjfgQJStuWMtlooy2KRJKzc.FOufkRt85dJJfwP6	POTHINA CHANDINI	7989070177	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.27	\N
-cmv0jr1jp02okmzmy2z938c7f	26UECSM0069	26uecsm0069@student.gvpihlr.edu.in	$2a$10$Z41S7ht/MojT/exhLVmS2eE0kRxsXlv4RmMwMgf.zhWzWw9iFFdWG	SALAPU MUKESH NAIDU	7993742397	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N
-cmv0jr1k302ugmzmy75yr5ibl	26UECSM0079	26uecsm0079@student.gvpihlr.edu.in	$2a$10$UrrTxrzS8YjtKXf0banxsuhT8ML44.YxDKFxHpjn4/CCWAjkvV6iG	TYAHADI YOGESWAR NARASIMHA	9347912145	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1k402uzmzmyxob0lpuy	26UECSM0102	26uecsm0102@student.gvpihlr.edu.in	$2a$10$Gk2YygDwHES.j4.FVGXwFuIdxqmIuw.WqRvyPj6ZzuQxaQTxEaLHa	NADIKOTI JAGAN NAYAK	7013394692	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N
-cmv0jr1ki030qmzmyz9aknnou	26UECSM0112	26uecsm0112@student.gvpihlr.edu.in	$2a$10$R.JFacjC687S71rcEh535.c9HVlXTzZ82IRuRWFOuXeNAmVcGkmvK	PATNANA DHEERAJ KUMAR	7661919339	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N
-cmv0jr1kj0316mzmyj9atw39l	26UECSM0118	26uecsm0118@student.gvpihlr.edu.in	$2a$10$gO/zRXXvT2cRt/RpFRCXbO.ZK4wNnFJpOQyYW8huiLcxQC.gMLo8C	SHEIK THASNEEM	9000217818	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N
-cmv0jr1cd0091mzmyzatq3ouo	26UECHE0043	26ueche0043@student.gvpihlr.edu.in	$2a$10$5gFXmCkoTXWt1HTOmDbf2OzbTjs9Xw42Sp9atkl.TjonsiITZPeae	KANDREGULA MOHAN NARASIMHA	6281622969	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.052	\N
-cmv0lfk3002i410e0nnwc7fjt	26UECSM0136	26uecsm0136@student.gvpihlr.edu.in	$2a$10$MjQmeEgmiCucFOq823MXB.TOCUU8StBHmo0u1HeXbiSE9wgPsGLa2	BADIGANTI HEMANTH	8332084842	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3202ij10e0jgle2usm	26UECSM0151	26uecsm0151@student.gvpihlr.edu.in	$2a$10$SAlr907GbuK63BW7S9KTie62p8zAx6R6Mqrw7G0kDcrSVPK9FilI6	THUMMAGUNTA PRADEEP KUMAR	9666821320	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3m02ob10e0pqoyscda	26UECSM0158	26uecsm0158@student.gvpihlr.edu.in	$2a$10$/ku2N9ZEzVnwK8c.E1IT3ukKI99RQF4r3OcGMSyHk9dj85xO8.VHu	GIDUTURI VASISHTA VARDHAN	8008367474	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N
-cmv0lfk3n02ol10e094qjvfm0	26UECSM0170	26uecsm0170@student.gvpihlr.edu.in	$2a$10$exCJFYf0fTqLaNAGPN5d/e3bPHECDoFbJmQMZ5G/BDf5P0SyEnK0G	RAYAPUREDDY DUMDI SIVA PADMA SAI	9618391672	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N
-cmv0lfk4302uo10e03dksxq1r	26UECSM0183	26uecsm0183@student.gvpihlr.edu.in	$2a$10$iDhLKd7MgBJrfv7qF8MCCeUOvb0rJzGph7DVqOJ8LAGde0ZWWituC	KOMMI VEDA GURU SATHWIK	9849104088	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N
-cmv0lfk4402v210e0l6s4tvhx	26UECSC0009	26uecsc0009@student.gvpihlr.edu.in	$2a$10$IrSXAPCPmJNBTvkkz.qB7uHy7I8VTPc4l/qtnG0Xg9zQscuEWTRmm	DESAMSETTI GEETH SATYA SATISH CHANDRA	9000636519	t	f	\N	0	\N	2026-10-09 06:37:40.372	2026-10-09 06:37:40.372	\N
-cmv0lfk4k030u10e0tljudqpp	26UECSC0021	26uecsc0021@student.gvpihlr.edu.in	$2a$10$0Sq5vNloJUJwxYpV.fbJcOmDT2VFMTHgLL/fnPsQxI8ps4WlFyVoa	BUGATHA TEJASWAN	9493417440	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk4l031710e0qswez2do	26UECSC0032	26uecsc0032@student.gvpihlr.edu.in	$2a$10$vbsYp0m5CE3O0bxT5aFBYusGl12iGBLLROsltkX03vFxd8/jjjeP.	PADALA BALA YASWANTH	8522043344	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk51037310e0qsnpfiin	26UECSC0040	26uecsc0040@student.gvpihlr.edu.in	$2a$10$82vo912PV5XJ1VtxGQJwDu.uqPbSpwKCGiy3S2OhySJhAmdlGCXWC	VUNDRALA MANOHAR	7801071155	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N
-cmv0lfk51037a10e06kdu3199	26UECSC0053	26uecsc0053@student.gvpihlr.edu.in	$2a$10$Fg2sc9ILuCTamz13j0gkCOWbFSx1QJ0D.nSK.gPgbSQ1OG1mV7qTS	VEGI HARIKA	9346469739	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N
-cmv0lfk5h03dc10e06fexuw4f	26UECSC0072	26uecsc0072@student.gvpihlr.edu.in	$2a$10$OQ4Ar.DAkCUNyqtjIxhMWO.Gl8rXKh7KsqgF6qAAzi7LShzRbD/HW	VEMULA VENKATESH	8897708759	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N
-cmv0lfk5i03ds10e0886wb6fb	26UECSC0082	26uecsc0082@student.gvpihlr.edu.in	$2a$10$XxVof7aig7.Fj4HjsOnhqeve0aR.YHqw6T/OulIh2jT5udUf29ziG	MOLLI NITYA KRISHNA HAAS	8886545673	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N
-cmv0lfk5x03jk10e06k89z97j	26UECSD0013	26uecsd0013@student.gvpihlr.edu.in	$2a$10$4a6w3lBs0gw6KBY6eyKx7uTZ5SzAuCQjD0pWj3.y943Ja.v8Ii/ie	TAMARALA SAI AAKANKSHA	9491106220	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N
-cmv0lfk5y03k210e0xmpinjo6	26UEEEE0004	26ueeee0004@student.gvpihlr.edu.in	$2a$10$3KvR2qKZ93768P2XnTOIK.aZrKAad8OqrlMIuvnbzrZaxGkX0Xtey	DONKA BHARGAVA SANTOSH	8247676569	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N
-cmv0lfk6c03pr10e07yz5gf3f	26UEEEE0005	26ueeee0005@student.gvpihlr.edu.in	$2a$10$AtoTAiAM7cNh8fih9VlkAeHZLGa7tM.19HgSh2PHA8YgU/fzt5yF2	DOKKARA PRADEEP	9550395765	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6e03q710e042tq80qg	26UEEEE0027	26ueeee0027@student.gvpihlr.edu.in	$2a$10$CtYzhBk6.iqn88nCnBzyrOnJwiErPm90FgD4pOd3YYAh/jyfs.1a.	YEDLA CHANAKYA	8374015677	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6r03vx10e0ek99p8u2	26UEEEE0034	26ueeee0034@student.gvpihlr.edu.in	$2a$10$dc7iaax3I3yMlCMBbsMncu1tRrrdKEFH/Q2pg4yVjkmqagWvcjUsm	VANJARANA SRIHARI	9346367550	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk6t03wd10e0gjxa4o9k	26UEEEE0052	26ueeee0052@student.gvpihlr.edu.in	$2a$10$VcYKtlZX8SqdVkL6hxPK3OqKwpRJep6CAeQXw8OVI8.YvMPhJu9na	PADALA SASI KIRAN	9676933263	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk77042b10e0ncr98ogx	26UEECE0002	26ueece0002@student.gvpihlr.edu.in	$2a$10$PcfonGUYoFd0L1EIsSJpqe.nIp8W8OEW/UaEWd/TJ/OdxmSe7UsPW	AKKIRAJU RUSHITHA PREMALATHA	8897110410	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk77042910e0ubij0dvk	26UEECE0003	26ueece0003@student.gvpihlr.edu.in	$2a$10$BbluYCDnots8xn7tlPmI7OxgBhWwOEERyp/UeWoSi0hjjGH6.rM7i	AKOJU VENKATA KUSUMA	8331862873	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk78042m10e0rrkif0l9	26UEECE0017	26ueece0017@student.gvpihlr.edu.in	$2a$10$pzbhVDIZr10H.UfZJv6CGueYRRq3t.ibhMARnEG0Rq1.uvO99g3sq	BUSI NITHIN SAI	9398545997	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk78042r10e0xcsva9s1	26UEECE0008	26ueece0008@student.gvpihlr.edu.in	$2a$10$xYGlcgphmKU63kszLh4AXuB04zd8IXo1dWgnZXB5MEny0QxdD9GmG	ARATIKATLA LALITH SAI	9949717060	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk7o048l10e004pjrybb	26UEECE0026	26ueece0026@student.gvpihlr.edu.in	$2a$10$OQSkqSEbn8TQ3UOFLi2nFesaQXHhtXN20kEoIbVF3i/xUSqqNZTNC	CHINTHALAPATI LALITHADITYA PRANAV	9652271177	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N
-cmv0lfk7o048f10e0576mdbk2	26UEECE0024	26ueece0024@student.gvpihlr.edu.in	$2a$10$BKnOTGPbK5chk5hY1G22FOR3faeO3eHbk69hLM91MaC3wtmUFEHJe	CH KRISHNA NAGA GOWTHAM	9949157075	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N
-cmv0lfk7p048r10e04mrny66b	26UEECE0037	26ueece0037@student.gvpihlr.edu.in	$2a$10$pTH9..URTzj9id1ZqbknMO57Kc6FQs.FihZEQC9O/GEqSFS1Jjy/C	DURVASULA VYSHNAVI	9492255760	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N
-cmv0lfk7p048t10e0mezj8sj0	26UEECE0038	26ueece0038@student.gvpihlr.edu.in	$2a$10$C54IyTaHbvia3LombinY3ers/hahnzfKHIBtcxkdn8O8opu4f0.Ry	KOMMURI ROHANA	7981905517	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N
-cmv0lfk8504er10e0py9hzzij	26UEECE0050	26ueece0050@student.gvpihlr.edu.in	$2a$10$xX9oK//XneteJDnh1arquuRnbaPpVnl6ttlo2pUuIwEHGbRriaXiG	GONTI MOHANKUMAR	9493362956	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N
-cmv0lfk8504eu10e06lprnht7	26UEECE0051	26ueece0051@student.gvpihlr.edu.in	$2a$10$F5ReYLVPknu78F4/EGOWa.ta2MY4Ge8510N3PMhnVV00G7L6i5FgW	GORJA CHAITRA SOWMYA	7075196844	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N
-cmv0lfk8604f810e0kzexxb3f	26UEECE0070	26ueece0070@student.gvpihlr.edu.in	$2a$10$oAJ7zbKFjKAtEosP65YzCeqJA2SXHYDr04A/zUM9Ln8BG8MBgsJEi	K PRITHAM	8374142762	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N
-cmv0lfk8604f910e0uxqhjri1	26UEECE0069	26ueece0069@student.gvpihlr.edu.in	$2a$10$.oULecrrd9W6D2dwE3ZCsez7V5sAyiOAEgS8m87B6lMIc0ZcdW.Vi	JUNNURI RESHMITHA LAKSHMI SYLUSHIKA	8143161375	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N
-cmv0lfk8r04kx10e01fg5kgx8	26UEECE0073	26ueece0073@student.gvpihlr.edu.in	$2a$10$I4XCFIZUOcUe5zK6gAcw7eJH9Vpwax4cW7l4H8BRcLVhfsd9Dj7ya	PILLA RAHUL	7075678880	t	f	\N	0	\N	2026-10-09 06:37:40.54	2026-10-09 06:37:40.54	\N
-cmv0lfk8t04l610e001bxbtu0	26UEECE0083	26ueece0083@student.gvpihlr.edu.in	$2a$10$J0QVmJgOqIe8dmjL462PA.xaQJeu2cDtVH64kjYIyPgxtJtMmk.GS	KOLLI JEEVA RAJ	8465088573	t	f	\N	0	\N	2026-10-09 06:37:40.541	2026-10-09 06:37:40.541	\N
-cmv0lfk8u04lb10e0917ehah4	26UEECE0088	26ueece0088@student.gvpihlr.edu.in	$2a$10$Bul5dkjXkrPQFZFSUOFdJuNKYs03zLvXVTyIrDC8JGazNWtK7RaxW	SAYYED REHAN UL HASAN KHADARI	9885240837	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N
-cmv0lfk9c04ra10e0yoolkedi	26UEECE0101	26ueece0101@student.gvpihlr.edu.in	$2a$10$7PqfGRtoJqmg5HgXiZnPBebocZN8Sr0NMXUV2BdRIzjiEkRB6a1UO	MARADANA MONIKA	9676314488	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N
-cmv0jr1cd0094mzmyr81ltobw	26UECHE0044	26ueche0044@student.gvpihlr.edu.in	$2a$10$EwYd/1kQtXlGox0s4w.Tzu5i8rbPK0MBlrr280Ud47XsCceWYTDeG	UNGATI NANDU	9502407781	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.052	\N
-cmv0jr1cc008xmzmymsiwel2p	26UECHE0037	26ueche0037@student.gvpihlr.edu.in	$2a$10$HpiOAHe1gb4GAzcE.EknN.PaeAE.d5h0ooC7LrokIfEt9T.xLkeX6	KANAKALA MOHANA SESHU MADHAV	9059796348	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.052	\N
-cmv0lfk3002i110e0zjmd5q9j	26UECSM0134	26uecsm0134@student.gvpihlr.edu.in	$2a$10$rwWjggHpvUtS5qYe/dhKkOH3bcp41yzkMUtEiPdx8L0S5wGwQq6W6	ADAPA SAATVIK	9963843449	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3202ii10e064chultx	26UECSM0143	26uecsm0143@student.gvpihlr.edu.in	$2a$10$0Np7uoEe77weHTAM3URVk.irQppHuJFQCYE/MN/JRc1rY92Cwc/uC	KIMAYA PRESINGI	6304697749	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3m02o910e083qixm5l	26UECSM0160	26uecsm0160@student.gvpihlr.edu.in	$2a$10$BQtBcVeE8zdPhRIOzq21AeDlBdWKnCO0WHRq6eLfaBQ1q2uv3K236	MYLAPALLI MADHU PRAVALLIKA	7288992399	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N
-cmv0lfk3n02oi10e0z8fkfhs5	26UECSM0168	26uecsm0168@student.gvpihlr.edu.in	$2a$10$uQnW0vOzbOx8iSFl2rTaxe5EUvxJNFKy.TLDAfDGZpaSu5zlicadG	MARISARLA PAVANI	9391873474	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N
-cmv0lfk4202ug10e0prxujl59	26UECSM0185	26uecsm0185@student.gvpihlr.edu.in	$2a$10$26e5q6R1.lXS8w2p6mVsyu8NUmoEeEqGhbB/RCetDpt0braOaGL2C	PAPALA BHANU	6305062561	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N
-cmv0lfk4402uz10e0jbpio68k	26UECSC0008	26uecsc0008@student.gvpihlr.edu.in	$2a$10$HcNFJV.e9R/n4rbHe7WeFOOvG8QuBQG7FZgb7jvJsZ/O4wsSr4ETW	CHINTHAMAREDDY CHANDRIKA	7842534230	t	f	\N	0	\N	2026-10-09 06:37:40.372	2026-10-09 06:37:40.372	\N
-cmv0lfk4k030t10e0gwk3oux7	26UECSC0016	26uecsc0016@student.gvpihlr.edu.in	$2a$10$sx9fSbev6tEY7E7V8j1.ye30Ih92xX0IrRneR/qwVXQUMtpSnIRU.	KARRI PAVAN KUMAR	8074724827	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk4l031a10e0sbw096bf	26UECSC0023	26uecsc0023@student.gvpihlr.edu.in	$2a$10$tLIN5d6X74m9KNkuxhTeueaV0P/Q0E1MYHWoPvcAtrCC5vVTlMP/K	NADIMINTI DHARANI	9440564583	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk51037710e0e4rpja0q	26UECSC0048	26uecsc0048@student.gvpihlr.edu.in	$2a$10$1vX8n3Rrz9v.T6AR73bXYuObQADnPudIYFPoBDL964cddU6vDdaOS	UNDI ANANDA VALLI	9247547825	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N
-cmv0lfk52037j10e0r2gnb98j	26UECSC0060	26uecsc0060@student.gvpihlr.edu.in	$2a$10$168GFcJ0v2i0FDDpZqfFJ.KQZUN0K4ICdgmO7YfYLuuwoTW1aYaD.	KANDURI SATVIK	9963556753	t	f	\N	0	\N	2026-10-09 06:37:40.406	2026-10-09 06:37:40.406	\N
-cmv0lfk5h03d810e0dta84kx8	26UECSC0063	26uecsc0063@student.gvpihlr.edu.in	$2a$10$BjJfY6fP6ROLsiDkUEcnf.OJC3pkVQ1qEnDmFWXJHuWJJiZsxhOle	MURAMALLA BALA VENKATA DURGA SAI	9948286555	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N
-cmv0lfk5i03dl10e0ow713cni	26UECSC0078	26uecsc0078@student.gvpihlr.edu.in	$2a$10$ROg5vRcTkWCeDS8Mivfem.1UAPRAIaLJqOBNR1.4ZEN.dXsHzgSb6	ADAPA DURGA NAGA VEERA VENKATA SAI KUMAR	9949103567	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N
-cmv0lfk5y03jq10e05brkp3h3	26UECSD0016	26uecsd0016@student.gvpihlr.edu.in	$2a$10$CRkKwo9WNro.IoIcWMxcguxzVWnhAY7EIZKaMYZ7MuQsED7asYnEi	APPANA V N S JHANSE	9030976777	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N
-cmv0lfk6c03pw10e0fssrnh53	26UEEEE0013	26ueeee0013@student.gvpihlr.edu.in	$2a$10$Ls2E.AXX4Ukbjn2AcI4LsuUf1GSZ4P1t4BRlz64Ya4zB4UI2D/wte	MUKALLA PURNA CHANDINI	7702199481	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6e03q910e0kqr7cpwx	26UEEEE0029	26ueeee0029@student.gvpihlr.edu.in	$2a$10$aMpYJedMuUr3B.CEdUTsleDRRjo2Gjg6iBe3MfhTb5bO/ok452Zmq	AMULOJU UTTAM AVINASH	7702468181	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6r03w310e07hzoyign	26UEEEE0030	26ueeee0030@student.gvpihlr.edu.in	$2a$10$tPn7gxE/JW6C0q95daZyZ.HkiYUdpSpmPgp4NjrasDCau6.2hKqBy	YERRAMSETTI DIMPUL LASYA	6304491274	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk6t03wj10e0maz2fsb8	26UEEEE0054	26ueeee0054@student.gvpihlr.edu.in	$2a$10$QQlDgP1EPFbFhlwGJRqMfOIWEUTv.D9yemy4K21Vg0PWDYx1iS3Le	TIPPANA CHANIKYA	9391473542	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk78042f10e0ryhuei3j	26UEECE0011	26ueece0011@student.gvpihlr.edu.in	$2a$10$leYvRmwACrvBsmrAotbcsOg5mD/0rNlV297C6HsXpKiH2tng6FIh6	BALAGA ROSHAN	9494250999	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk78042g10e0b5rimuq0	26UEECE0014	26ueece0014@student.gvpihlr.edu.in	$2a$10$zR3/bhzWNhewEk9ctxvTlOv.Q4x6hEHxm83lQQAIx.aO8MLH4ETQy	BODDEPALLI HARSHA VARDHAN NAIDU	9949610280	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk79042t10e0179f7wm8	26UEECE0006	26ueece0006@student.gvpihlr.edu.in	$2a$10$LXXiHeggEBZxPqnOVH0epuL6CL1QYRxX2Xfo5EbNX2moPt.yRLkyO	ALLUMALLA VENKATA ADITYA	9989009708	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk7o048i10e0ctr0oah5	26UEECE0025	26ueece0025@student.gvpihlr.edu.in	$2a$10$ShmApCZIjDqZxtYmixBI/ezY.Vj9ymIk5vnLQ5uMjhz8Nfxm4QfHC	CHETTU JYOTHI PRAKASH SIDDU	8247589483	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N
-cmv0lfk7o048p10e01vvwrs70	26UEECE0031	26ueece0031@student.gvpihlr.edu.in	$2a$10$DANtzO.G5ot/lREozF/6teE/5U2xwJ/RDwHM2N.KTLicVevYkppDq	DALIBOYINA SASHI KANTH	9963524108	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N
-cmv0lfk7p048x10e0fedigc26	26UEECE0042	26ueece0042@student.gvpihlr.edu.in	$2a$10$mzQGhvCz1/SbqtfJTEjIwONGVHH/EC8bXV/GdAogrlLw4e.MuxOD6	SARIPILLI CHARAN TEJA	8885667494	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N
-cmv0lfk7p049210e0n03a5khe	26UEECE0034	26ueece0034@student.gvpihlr.edu.in	$2a$10$pSGS8NKZTwUoOnH31htqJ.uJx9meqfmaooFtQub/vuekmBK6JjFyy	DEVARA JAYANT	7032350101	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N
-cmv0lfk8504ev10e05bz1r4ce	26UEECE0058	26ueece0058@student.gvpihlr.edu.in	$2a$10$0p7Y4WGg9j3eP25M89zMAu6jyyRdXhF9HetrlO30h3olqdv1L.88q	KILARI MOKSHITA	9492450584	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N
-cmv0lfk8504ew10e0fglg920e	26UEECE0056	26ueece0056@student.gvpihlr.edu.in	$2a$10$wifeFV2RptSa4yfRptaie.eV0Flte32a7f5w4WQSZKm7qYjR.Ckji	KORUKONDA JAHNAVI	9963942460	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N
-cmv0lfk8604f510e0q24ckuhr	26UEECE0065	26ueece0065@student.gvpihlr.edu.in	$2a$10$VZ8esekeSrisCyCcJR0sautCsuSFerfnQF/uj/OZuM0ashQvOj76S	JAGGINENI DEEKSHITH KUMAR	8978652635	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N
-cmv0lfk8604f210e0m9vubk9k	26UEECE0062	26ueece0062@student.gvpihlr.edu.in	$2a$10$/FTsCekZ1AaXtkGnhAM/W.oJZcjHDui9UvsG81LNLZLZZgRPz9yuu	MOJJADA SAIVEEKSHITH	7337298563	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N
-cmv0lfk8s04l010e0vec5y9sj	26UEECE0078	26ueece0078@student.gvpihlr.edu.in	$2a$10$cs9hn/LoOAIdhyDj.i/gJeoXt2RJNYEI4lnPzJNZ9n.pgYTbDBbB.	BALLEDA MOULI	9182637452	t	f	\N	0	\N	2026-10-09 06:37:40.54	2026-10-09 06:37:40.54	\N
-cmv0lfk8t04l410e05js1yoly	26UEECE0081	26ueece0081@student.gvpihlr.edu.in	$2a$10$lOirXrcIyGvnKDaIrhRicegP6dDAm2xyqKAF59H9DrR75w5X4Cpr6	KETIREDDY MANOJNA	8309315807	t	f	\N	0	\N	2026-10-09 06:37:40.541	2026-10-09 06:37:40.541	\N
-cmv0lfk8u04lc10e0j6fl4dni	26UEECE0090	26ueece0090@student.gvpihlr.edu.in	$2a$10$dho2RP.Q3kPWOG2uHdYONeWajYKVBvBn4v8CzxYyUaBErLRs7oN6u	VADAGA LAVANYA	9701698305	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N
-cmv0lfk8u04lh10e0nhmxw8db	26UEECE0092	26ueece0092@student.gvpihlr.edu.in	$2a$10$upcBqc10nYzZ2dmAlrtbvO2GKIYKyf2gJ6pIiqj5NEKIA3iyPKiOi	MADDIPUDI PARIMAL PRANEETH	9392651174	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N
-cmv0lfk9c04r910e067zv83vv	26UEECE0104	26ueece0104@student.gvpihlr.edu.in	$2a$10$0S0WL92fdAlyuCWp1AiY0Ook7dvw8Ho5hcyOhsvZjShTtYfmxT2f.	MERUGU V B SAI YASWANTH	9848363540	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N
-cmv0jr1cd0095mzmygtwv144q	26UECHE0045	26ueche0045@student.gvpihlr.edu.in	$2a$10$9RoGed1FocF125XbGJ7npuf2D27xdk4baE3ARKLaMmzeraocFWree	BURA SRAVANTHI	7207263162	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.052	\N
-cmv0lfk3002hw10e0agm4j3md	26UECSM0132	26uecsm0132@student.gvpihlr.edu.in	$2a$10$J.0nzUgkboa9DDsbkb6a8eyfWePjhfLxE4D.LCF7J08rIYkMfz3Ji	ETHA JYOTHI SWAROOP	9885739407	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3m02of10e0bpzg1yug	26UECSM0167	26uecsm0167@student.gvpihlr.edu.in	$2a$10$M0NfJNUeLBGG8XcWh0gOcum.WRjnMp1ujnucMorbtWrftSjHD0LDe	JAKKANA RUPA MANI SRI	7981718957	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N
-cmv0lfk3n02on10e07sa44s0t	26UECSM0175	26uecsm0175@student.gvpihlr.edu.in	$2a$10$EwTnJc86vY06L6dKit1GCOlonW7q5kL6//ZB0f1DHTXd2jad0/lIC	MITTIREDDY DEEPIKA	9573945667	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N
-cmv0lfk4202ue10e0g2ic815h	26UECSM0181	26uecsm0181@student.gvpihlr.edu.in	$2a$10$FRiQeEpgQASA2R77KEXmk.o4.9SkRywILlEmqp.YucPv79cdv.5h6	PADI ANUSHA	8790383168	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N
-cmv0lfk4k030q10e0gubju2pr	26UECSC0014	26uecsc0014@student.gvpihlr.edu.in	$2a$10$vMTDODLEs8xaNjwdXtgNV.vUevV51pIHbdrnjV.KM2wxPrVEUeCL6	KOTHAPALLI JAYA SREE	8121993460	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk4l031210e0mk5e2hdc	26UECSC0027	26uecsc0027@student.gvpihlr.edu.in	$2a$10$un/lVAT8EUGRvDOkfPfG0uSOv1iCQOA60GxgLafB2FflHE.r43dSu	NALLAMATTI GEETHIKA	7075140571	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk50036z10e0zes31hy5	26UECSC0039	26uecsc0039@student.gvpihlr.edu.in	$2a$10$Exkx35i9Qa2D0CcqTrvzMOy37Nism2otkWACK0a5GqTz28GvbpY2q	TARIGOPPULA NIHARIKA	9652223373	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N
-cmv0lfk52037b10e0jv9015sq	26UECSC0054	26uecsc0054@student.gvpihlr.edu.in	$2a$10$BZAAmnbgkSLdvXBXezKclOJ0egb805MV2icaIdgIW7RjM/ltbnx3.	DHARANIPRAGADA JAGANNADHA SAI LAKSHMI HARSHINI	9985896765	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N
-cmv0lfk5h03db10e0vvhwazjl	26UECSC0068	26uecsc0068@student.gvpihlr.edu.in	$2a$10$EYHsNtGHX6nszfzG172pMeellCCtz/3xsdN/RqcH0ly9DZtHSVNwq	ELURI SRI DURGA VENKATA SURYA	9640609146	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N
-cmv0lfk5i03dp10e0e4myp4n2	26UECSC0081	26uecsc0081@student.gvpihlr.edu.in	$2a$10$4pXUGrR4c9M3rjNmhOULM.QTU2Y3ToLHo7PffCpLTt2j3fHDccFRW	BARLA DURGA SAMPATH SUSHMITHA	9963523666	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N
-cmv0lfk5x03jg10e09ps9isyr	26UECSD0006	26uecsd0006@student.gvpihlr.edu.in	$2a$10$saV7h856LfOrVodqv7GbSe0RTNrgpZxCClRuM6H2z/G6r8FgDLVKK	KOMOLESWARI PANIGRAHI	8341735912	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N
-cmv0lfk5y03jz10e0y169oed6	26UEEEE0002	26ueeee0002@student.gvpihlr.edu.in	$2a$10$gXJRR2pWcamOX6qVzmIMCeI8bub49TbpnvJfv2N6/oYD6JvIgLr36	ARASADA HARSHA VARDHAN	8008766573	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N
-cmv0lfk6c03pt10e077huxt61	26UEEEE0012	26ueeee0012@student.gvpihlr.edu.in	$2a$10$1A/Jk/zLk2sSD54JiPsfSOYwVfrwQ.cE2.P.z/F6JZGzq.zHNerxu	LANKA MONICA MADHURI	8639094904	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6e03q810e0mgomfsjb	26UEEEE0026	26ueeee0026@student.gvpihlr.edu.in	$2a$10$PqGUlbPnDTQINFeMuH3rYu/HRjqx9.4lHlMIJGlHkFR.E.RDuU.da	TAMADA ATUL BHARADWAJ	9182282446	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6r03w010e0nqxwe4qa	26UEEEE0037	26ueeee0037@student.gvpihlr.edu.in	$2a$10$tctIf6q4XqTYm3V1ouBut.phKseFWb09yeoE9rjyh9vZ.DSCccgWe	KOTHAKOTA LIKHIL LOKESH	9000645841	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk6t03wh10e0plpdc5z6	26UEEEE0053	26ueeee0053@student.gvpihlr.edu.in	$2a$10$6lkwT9RZIQOGKUiCUwH5O.76/NeRR5SdF2Dv/hOenTm6nzGd0l2PS	UDAMALA MANOJ	9052893845	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk77042710e0zxpm8f0z	26UEEEE0056	26ueeee0056@student.gvpihlr.edu.in	$2a$10$Ue4Wn9bik85dEIh2y.tSpOM.0SX4b8kqkkGjDVWg8iSjjdyrZkNHK	GARUKU REVATHI	9390923328	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk78042k10e0bev36d4g	26UEECE0018	26ueece0018@student.gvpihlr.edu.in	$2a$10$OZUIeuAqjbBNe7zjQwE9iuty008zZTyEBHyVXwWGpU.VJWLWewhvS	SHANMUKHA BADARINATH CHEMBROLU	9550666075	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk78042p10e0z2i2vl3w	26UEECE0019	26ueece0019@student.gvpihlr.edu.in	$2a$10$R6XGBjZPubMZzaE0f3jI7.DBEhH69rTjD8fT76zbsmvtUui5edyru	CHOKKAKULA KUNDANA SRI	8919938694	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk7o048g10e02l99tqfp	26UEECE0021	26ueece0021@student.gvpihlr.edu.in	$2a$10$5G.3ajhvg1st2/S/KHfhEOmxbatk2tH7NNlmN0V6I1KdnI7gXnq4O	CHALUMURI S V SAJAN KUMAR	8500282056	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N
-cmv0lfk7o048k10e0kf1d5o2b	26UEECE0028	26ueece0028@student.gvpihlr.edu.in	$2a$10$AkygfhgHLAoQ7TuWAS7JgOIV13FsOy6sciLhWff3emIX0goCaHriK	CHITTI LEELA MOHAN	8125229076	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N
-cmv0lfk7p048u10e0eksgecu1	26UEECE0041	26ueece0041@student.gvpihlr.edu.in	$2a$10$o216UfrKqMsUZRjS3EOu4OjZ7O7TBbZoemmfkAhnSvhlplQjpNxmy	GADAGAMMA PREETHI ELINA	8985573679	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N
-cmv0lfk7p049010e0ng55py5l	26UEECE0044	26ueece0044@student.gvpihlr.edu.in	$2a$10$KrWzQRS6tGbOb48zyuA77.hvph3hXfk.qHgcjsdGp9EpETtoRrP8u	GANTI VENKATA ANIRUDH	9949333744	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N
-cmv0lfk8504et10e0nz1hkio0	26UEECE0053	26ueece0053@student.gvpihlr.edu.in	$2a$10$5BbHf/L4zN4pvcpBpwyxReUZoVwVPQRRUKAfA1tGBj5bsUTvkrFPi	GUDALA PAVANI	9985792924	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N
-cmv0lfk8504ey10e0fzfwdzs5	26UEECE0060	26ueece0060@student.gvpihlr.edu.in	$2a$10$G.Q8d6zRt2TfrvkT1fSLVu.cwqQPIP.dnZhbpAPgnJyM0JqYXeQpC	KORUBILLI MONEESH	9908948648	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N
-cmv0lfk8604f310e0yb5h76lj	26UEECE0066	26ueece0066@student.gvpihlr.edu.in	$2a$10$5Br132J2zQfP4MpG7Wj/ye4EkU5y1ZVBIUt3QN6iPSWG32WDNzuUC	PAKALA SAI GAYATRI	8309586163	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N
-cmv0lfk8604fb10e0v2wn32g5	26UEECE0055	26ueece0055@student.gvpihlr.edu.in	$2a$10$j8K2PHlu1L2T7tPsPr9Lr.Gas./wWtxPgkQ6cqXgzvi1nzBBrRV1.	GULLA AKSHYA	7874701688	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N
-cmv0lfk8s04kz10e0j5luom4s	26UEECE0074	26ueece0074@student.gvpihlr.edu.in	$2a$10$BYNGBvHa7.8VuhnjndKLYOTFvtPg34nzEuIDiwTB9QiwmOuE9dY7K	KANDI JYOTHISH KUMAR	9032097118	t	f	\N	0	\N	2026-10-09 06:37:40.54	2026-10-09 06:37:40.54	\N
-cmv0lfk8r04kw10e0ice9b3gw	26UEECE0072	26ueece0072@student.gvpihlr.edu.in	$2a$10$HUMwpsH7qPN1RvavrqKxYekpUJYf4yZEJplUZYIiZMCk4tBdGIAR2	KARAMSETTI OM SWAROOP	8919809024	t	f	\N	0	\N	2026-10-09 06:37:40.54	2026-10-09 06:37:40.54	\N
-cmv0lfk8t04l910e0cqr9htae	26UEECE0077	26ueece0077@student.gvpihlr.edu.in	$2a$10$8iDJGrNHz5W6rMmsYPFGuOW2GVsHJZceahheX5uuFg3h/iBKHduGe	VURUKOOTI NAGA LAKSHMI PRASANNA	8341588199	t	f	\N	0	\N	2026-10-09 06:37:40.541	2026-10-09 06:37:40.541	\N
-cmv0lfk8u04la10e0twfcho6h	26UEECE0086	26ueece0086@student.gvpihlr.edu.in	$2a$10$5vPL7uWeUqxmq4hNupwe5uE2u/APQa2Q9WJSKJRWxtFc4NOs5oDIG	KOYYA PRIYANKA	9293859532	t	f	\N	0	\N	2026-10-09 06:37:40.541	2026-10-09 06:37:40.541	\N
-cmv0lfk9c04rb10e04q4yv3x9	26UEECE0102	26ueece0102@student.gvpihlr.edu.in	$2a$10$H9av/PcQQOMCgg59PnlJtuBpN2ufGfbjv6l57CQ53WjSFgTFrwFRO	MATHIREDDI CHESHANT	8317566731	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N
-cmv0lfk9c04rc10e0ci8xyss8	26UEECE0106	26ueece0106@student.gvpihlr.edu.in	$2a$10$vIr4IDarvz3iHs0XlRizR.aYpfd7lACee0lKAUl8tXjeheaLhuBGC	PORAPU MITHRAVINDA	9491605990	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N
-cmv0lfk9c04r710e0nmieqvt9	26UEECE0097	26ueece0097@student.gvpihlr.edu.in	$2a$10$kqyseOjh.hRge/I0uMAtV.JmYKUWjqvALtIwdf8X3URXnA6tJxZNa	GANGIREDLA DEVENDRA SAI	8555025714	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N
-cmv0jr1cd0097mzmymswjygxi	26UECIV0001	26ueciv0001@student.gvpihlr.edu.in	$2a$10$N8GCVQSKYU660qvtM2XDM.fh8iSPfWpHZ8LtsYZ/htACzSpp5JBEW	ANNAMRAJU TARUN	9989308070	t	f	\N	0	\N	2026-10-09 05:50:36.685	2026-10-09 06:37:40.052	\N
-cmv0lfk3002hy10e0hu39vpfu	26UECSM0130	26uecsm0130@student.gvpihlr.edu.in	$2a$10$buFS.tz33wFrsEeecucEHucKbdzkO3RrLvr4Ta53qKCBr2zimBR4K	PINISETTI DHANUSH KUMAR	9985231315	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3202ih10e0twe3zfzl	26UECSM0152	26uecsm0152@student.gvpihlr.edu.in	$2a$10$6tVuwZ2b2bjCJ8fZ8K6a...KdfM3wntBx9SN0CbEWt.mj/6RXDdSO	VASUPALLI ISHITHA GRACE	6305639669	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N
-cmv0lfk3m02o810e0btvl78xr	26UECSM0157	26uecsm0157@student.gvpihlr.edu.in	$2a$10$XD2/0qgLVOsS5VHF/OL9YOeq28nm2RrtGIpqE58poXcFkzuKm6nAW	MARUPILLI DEEKSHITHA	9705481971	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N
-cmv0lfk3n02oj10e09l0yqnyb	26UECSM0169	26uecsm0169@student.gvpihlr.edu.in	$2a$10$DOBkyoRL6.3.xNDUPUe5RuvUuQqvWQLDyybgb1NYzMxkILA7eJFvW	NAMMI DHANUSH	7989388174	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N
-cmv0lfk4202uf10e00qp536oi	26UECSM0180	26uecsm0180@student.gvpihlr.edu.in	$2a$10$Ug57.Ys.3z9Eyn/OJtiIO.9q5Nx98kYpVjjOWRm81GdfcdqnnWbVO	NAGAVARAPU VENKAT SATYA SAI ADITYA	9907824830	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N
-cmv0lfk4402v010e0cqp5ypub	26UECSC0010	26uecsc0010@student.gvpihlr.edu.in	$2a$10$6hEDA/egAM5RntAX9Ies/OHh7UpK1x/StLP4.C./B6WD1v/ygreyS	GENGI DEEPANVITH	9390546799	t	f	\N	0	\N	2026-10-09 06:37:40.372	2026-10-09 06:37:40.372	\N
-cmv0lfk4k030v10e0fhbw5dq0	26UECSC0020	26uecsc0020@student.gvpihlr.edu.in	$2a$10$8En5rm6GudJFeuyYxXbCGO/vQVbULoPMnUtg6ZDyIhNC.XW8U1ux.	KURIMINA SANJAY KARTHIKEYA REDDY	9492816692	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk4l031910e07t0akfpq	26UECSC0036	26uecsc0036@student.gvpihlr.edu.in	$2a$10$GmtPq03IG4pKLfxu351IzO.gzaPJ/C987NdQVGKg3mHF55CEfN9R.	RAJANA SAI CHARISHMA	7396578455	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N
-cmv0lfk51037510e0vruw687k	26UECSC0043	26uecsc0043@student.gvpihlr.edu.in	$2a$10$rPvFldQHNSygBgGmfkz.b.pT3RbKph7X9KkpLyry9uTQa5S3E79Fa	SARAGADAM YASASWINI	9247811633	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N
-cmv0lfk52037g10e0jrsqvo2x	26UECSC0051	26uecsc0051@student.gvpihlr.edu.in	$2a$10$mcx6MPdDI26AECpgeUJNwuA3h6joG5iVX6qr6Hz3n/W8Uexqnj9/q	DADISETTI BHAGYA APSARA PADMASRI	6302333102	t	f	\N	0	\N	2026-10-09 06:37:40.406	2026-10-09 06:37:40.406	\N
-cmv0lfk5h03dg10e0ff8r8tam	26UECSC0073	26uecsc0073@student.gvpihlr.edu.in	$2a$10$OrthfQTU.tl7SqoWToIaTOcjuVMu44OhlnYAI41bxevrQEAbYcA2K	DORNALA ABHISHEK CHAITHANYA VARDHAN	7013712646	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N
-cmv0lfk5x03ji10e06ulc9ne5	26UECSD0004	26uecsd0004@student.gvpihlr.edu.in	$2a$10$8vL5yDQBFLLpj0YQmB8IPe95whkzbySUKhJ5yJPRMWAG7y.KjNHay	JOSYULA SAISIRI	9515624006	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N
-cmv0lfk5y03js10e0gud0nqu3	26UECSD0019	26uecsd0019@student.gvpihlr.edu.in	$2a$10$KBjUVBgjno.Fk4y.SocgCuqyJwS.HIrLKP2tLdTF13JAO7FK../C.	DARLA BHARATH SAI VIGNESH	9493918385	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N
-cmv0lfk6c03pv10e0c3hbt8e5	26UEEEE0014	26ueeee0014@student.gvpihlr.edu.in	$2a$10$32MAHtIg5lT/5hsZW49Iee9WPfTMt0r6TBtCW3/3aL3HvnT/H31eu	NEELI YAMINI	8106500500	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6d03q310e0flyzylj4	26UEEEE0023	26ueeee0023@student.gvpihlr.edu.in	$2a$10$Sttoj6t4qN5P73kqCHK3jeNG6baPvyzrW/9O7D6wkH5L19SlphHXi	TASUMANTHU MAHESH	9963396064	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N
-cmv0lfk6r03vz10e0pk4yg60p	26UEEEE0032	26ueeee0032@student.gvpihlr.edu.in	$2a$10$nv9wKdKqRZrm3knNe/lpNuo02MDuJXgqYXPAimzJxKB3FmRFQAqPO	MUDDADA JOSHIKA	7674924984	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk6t03wf10e0ejvuw6a0	26UEEEE0049	26ueeee0049@student.gvpihlr.edu.in	$2a$10$ELHM9WhjSuZmSCul0WyWAe9GoYuScXMj.PA5mYdFzh.JygylagZH6	POTHINA DHISWAN	9949868179	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N
-cmv0lfk77042610e0x0hrtyah	26UEEEE0055	26ueeee0055@student.gvpihlr.edu.in	$2a$10$fs/WOOmx8t7Shk4g2UZR8.CHW3TdiNAUTHG9g1utgayTT3e0LTEU6	MANOJ KUMAR YAMALAPALLI	9247838689	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk78042l10e0dfnp8y5b	26UEECE0012	26ueece0012@student.gvpihlr.edu.in	$2a$10$Cc5thH3342QSRVEjP/auKONisgDF69bfiKmJFOnEZ8coWPt5Iz3ki	SAJJA JAHNAVI	8977188789	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N
-cmv0lfk7o048m10e0rixkh9u7	26UEECE0030	26ueece0030@student.gvpihlr.edu.in	$2a$10$i0/4Qwy0kkp1x52STndwZeVaSkurDaORWXUZDjj6NF81cB18nnz62	KODA UJWALA	9642154562	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N
-cmv0lfk7p048w10e0oj91gj62	26UEECE0040	26ueece0040@student.gvpihlr.edu.in	$2a$10$ShDkfI7W47DIhVMu2KXKG.Ps0709CuRmNziBRdOtI9THN4nyYZDJa	GURANA LIKHITA HASINI	9966713714	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N
-cmv0lfk8504eq10e099gm2ufd	26UEECE0046	26ueece0046@student.gvpihlr.edu.in	$2a$10$6f5Ffp/b1Z1GeWwq1qkwceVXJiVb3bNVGYenOQFvuSONZPsMnkH/m	GATTA ARUN KUMAR	7893595868	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N
-cmv0lfk8604f610e08w8t43st	26UEECE0068	26ueece0068@student.gvpihlr.edu.in	$2a$10$pRTeWzHTzjkjzL4ZkHokxuUM1pFm10lL7dQIruMQ2mT787YRKbvd6	DASARI JASWANTH	8008608930	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N
-cmv0lfk8s04l110e0wsct4jhw	26UEECE0076	26ueece0076@student.gvpihlr.edu.in	$2a$10$nITbEcoT/u3n4HM3vm/weu2SLOga44ApuEBqyx5Ol1gNkbgsJkWau	KANDUKURI SHANMUKHA DEEPAK	9949402670	t	f	\N	0	\N	2026-10-09 06:37:40.54	2026-10-09 06:37:40.54	\N
-cmv0lfk8u04le10e0qst6pzav	26UEECE0087	26ueece0087@student.gvpihlr.edu.in	$2a$10$dOZI7pQMT1.OZAWgNMOBLOfHITF/zT0dkMwm78YheJY9ls5Ja8FOG	KUNCHAM SURYA SRI RITEESH	9849998288	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N
-cmv0lfk8u04lg10e0a3mp1oe9	26UEECE0084	26ueece0084@student.gvpihlr.edu.in	$2a$10$pFZxcDayCgHCzgYg4FbqCuKM5V4/zFL7sVt2nBlSSUzzf0j632ihq	KOLLURU SURYANARAYANA MURTHY	9491600742	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N
-cmv0lfk9c04rd10e0l5dobmjm	26UEECE0107	26ueece0107@student.gvpihlr.edu.in	$2a$10$vhaC8.zN.zQh.Z4bDxar3uLkqPsJLNKHyFZITgvLsJ0TYqzvxWAnW	MUNTHA VISHNU VARDHAN	8099655902	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N
-cmv0lfk9c04r510e04iltqaf5	26UEECE0100	26ueece0100@student.gvpihlr.edu.in	$2a$10$KySXCZnbj9GxiyA722XqDOKj45Iv.YozpyAeohUGvNsa6jtoTNN36	MANI SANKAR PANDA	9491567640	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N
-cmv0lfk9c04r810e0t9hczj34	26UEECE0099	26ueece0099@student.gvpihlr.edu.in	$2a$10$iVy/2Wmd3JKyyOUiBcr9be7J.0YpN/QcBg9OQ8WuaE5ZW530YYY8O	MANEM CHARISHMA	7997229793	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N
-cmv0lfk9d04re10e06zvt7db8	26UEECE0103	26ueece0103@student.gvpihlr.edu.in	$2a$10$zYX0Isy0VLPTPmwbxvaNkOCFIO.gvSmD0WWs71ZOCovN5aGJJ.OVC	MEESALA MEGHANA	8309050770	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N
-cmv0lfk9d04rg10e0vdemsnnu	26UEECE0112	26ueece0112@student.gvpihlr.edu.in	$2a$10$K39Pg3QOCNKg97BQHeZBsex2u33VaUBpYWN5XBN9cuXLYozsyuXLu	NAGALA SASHANK SAI	9100128321	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N
-cmv0lfk9d04rf10e03i8fja0a	26UEECE0110	26ueece0110@student.gvpihlr.edu.in	$2a$10$oRUiR1I70vS3Be8gbCEInutpgDYwFmw674ZzBz6u5W804OcFd8wte	MANDA VENKATA SAI CHAYA PRANAVI	9581472650	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N
-cmv0lfk9d04rh10e0pj5itz6e	26UEECE0096	26ueece0096@student.gvpihlr.edu.in	$2a$10$IwRRhVX2pHTpvzK1Jm70B.aRyT/ViUEM7Cw2yV4VS1inwnEKPEgeC	MALIPILLI VASANTHI	9494329634	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N
-cmv0lfk9d04ri10e04wvxg9up	26UEECE0111	26ueece0111@student.gvpihlr.edu.in	$2a$10$ftE8WML/W6V/OpKZhmlnuOeQOcAvtw1YyZuiodyhHAJ.YNWFCesC2	RAJANA BHANODAY	9618566684	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N
-cmv0lfk9d04rj10e09cexdzh9	26UEECE0108	26ueece0108@student.gvpihlr.edu.in	$2a$10$AVOIX4IA7j1k1rHHYlIbzujOmiiGgf4wEYfDAlgLoI2K1hpJKfJnq	MUTYALA MOHAN ADITYA	7569703369	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N
-cmv0lfk9s04xk10e0tyl3jjvz	26UEECE0127	26ueece0127@student.gvpihlr.edu.in	$2a$10$yVvH6kq/fSu29qklROW.Pey3Q.odDuii07fxabeuN11pZ8wTp/zGq	Vennela Palli	9346669196	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfk9t04xt10e0g6m4ckaf	26UEECE0137	26ueece0137@student.gvpihlr.edu.in	$2a$10$igSSVdpgP40Unq.gTFN8r.n6fU0zuORzxopNAczsI1jj7qR/Nsqcu	RAMIREDDI MAHESH SWAMI	9573153772	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfka8053q10e0mz0latam	26UEECE0147	26ueece0147@student.gvpihlr.edu.in	$2a$10$0oE5GSbI95ulgduyNTQrc.jX/jiJRGIRZIcchlMOEVxTQaj3gYiQW	SIMMA NAVYA	9347924649	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N
-cmv0lfka9054310e0h9lqx291	26UEECE0167	26ueece0167@student.gvpihlr.edu.in	$2a$10$8oDUvSgP412AUTVZRtZskOwIM3.raGd3wPtN1wiRQWWvO6n4QQa2e	SASHANK KIMIDI	9392448853	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N
-cmv0lfkao059w10e0nchstke6	26UEECE0173	26ueece0173@student.gvpihlr.edu.in	$2a$10$yle25OfY9QUr4xXYThKylOMp2VkJdtfgjEbucshgYKvD0fR5fF81m	GADI VINEELA	7396423103	t	f	\N	0	\N	2026-10-09 06:37:40.608	2026-10-09 06:37:40.608	\N
-cmv0lfkap05ac10e0kh3k322l	26UEECE0187	26ueece0187@student.gvpihlr.edu.in	$2a$10$GmSOq2MkojTCyF25n3OpVurzmyhJ8z6Fvn5vWZY979KFOCsMvfkKe	MAMIDI MOULI	7756861893	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N
-cmv0lfkb405g710e090grrxnq	26UEECE0201	26ueece0201@student.gvpihlr.edu.in	$2a$10$1tgUJ3SSSbQHgYsAW8GnR.9iYFfwoKqcvBBAkWaqH4wHFOTlLwJTm	POOTHI MANASA	9704685400	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N
-cmv0lfkbl05mp10e0cftueptd	26UEECE0235	26ueece0235@student.gvpihlr.edu.in	$2a$10$P7QD4tdlAK5GKufikrVlQu0MIYc8sIiCkXJ9BMXbAiUcP7m0l5Wym	DUMMU SRIMANTH	9493188935	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N
-cmv0lfkc105sz10e0fr0406f4	26UEECV0001	26ueecv0001@student.gvpihlr.edu.in	$2a$10$JTXxl0pW7Btgc3jyErK04.KkhpkHYOUXAXN.Qi9A8FD2S2Wxs1QIS	ALABANI SHYAM KUMAR	8008624227	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N
-cmv0lfkc205t610e0dkm4m41o	26UEECV0007	26ueecv0007@student.gvpihlr.edu.in	$2a$10$9InJKJR5gqXxXNhnmXPd2eqdS.m.r71kLbCi6aNjjs6R3/PlaF87S	GALIDEVARA ANANYA	7013860883	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N
-cmv0lfkcg05z210e0pwb56i6q	26UEECV0021	26ueecv0021@student.gvpihlr.edu.in	$2a$10$l9zdnGW79946jkgpe8LPm.DojIaLF7PgyJwjRFndKjdgmGC2ZJupm	MAMIDI RUSHILA PRIYA	9390160306	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkci05zc10e0wrqaflht	26UEECV0034	26ueecv0034@student.gvpihlr.edu.in	$2a$10$Rr2oN.3NqnaJye3uAlt./.qXru2/s6X6sBAzTYf6k5kikBJhYrhAy	PERI SAI SAHITYA	8897022499	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkcx065910e0aoidor2i	26UEECV0042	26ueecv0042@student.gvpihlr.edu.in	$2a$10$OWQKBwK67tKNhtlW.m0fUO4KuOCYnEVMAMDe1eGnlu8e1xlv2pHTm	SADI VINAY SRIHARSHUDU	9000633510	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N
-cmv0lfkcy065j10e0kz69n1l8	26UEECV0056	26ueecv0056@student.gvpihlr.edu.in	$2a$10$XU31Uht2D4bHjA71JzdikuK7Pco/x9jj4ZJUXCmwe/boswcAgc5Wm	CHINTAPALLI JASWANTH	9502654822	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N
-cmv0lfkdc06bj10e031dc5nid	26UEMEC0014	26uemec0014@student.gvpihlr.edu.in	$2a$10$2Gw6P0rYkESLFqSespZDUO72Yfxj/JEQg5IFAgwBbNmaq0ID84sga	GABU JHUSHIKETH REDDY	6303258661	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkde06bz10e0sanu2odm	26UEMEC0027	26uemec0027@student.gvpihlr.edu.in	$2a$10$ypAQhwDYcRJYnWo/QJ.xDeV5zxiTCqzZE4bIiH/yd1NGJCtFfY7x6	KAYA SANJAY REDDY	7780728398	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkdt06hy10e000aye9dk	26UEMEC0047	26uemec0047@student.gvpihlr.edu.in	$2a$10$BBId0VoORlyfkCu3pg43W.XeZG1.1XFcdQ1c23RMsrZ89f4wGdp4C	PRIYANSHU KUMAR SINGH	7207515306	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N
-cmv0lfkdu06i910e0dvdw4g2g	26UEMEC0055	26uemec0055@student.gvpihlr.edu.in	$2a$10$nrhLykgjQX42M8ARwNHSP.g1ieQrG2CRtzvmrvkX2L3DrEy09dlka	SUNKARA DEDEEPYA	9640878806	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N
-cmv0lfke906nz10e0ol5yw5an	26UEMEC0061	26uemec0061@student.gvpihlr.edu.in	$2a$10$Bdr.1MHWPdJ.6F1GnysW/ugEiLGOSdox.zWRXwV7.bifzionIpiD2	DEVA MANI TEJUS	7794962240	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N
-cmv0lfkea06o910e08nhndlux	26UEMEC0073	26uemec0073@student.gvpihlr.edu.in	$2a$10$aG4Ev74GlgrArOmfuHBHeex/MNXMVcGjVjPoAq.oer7MFMz6VKgIu	MANDATI NAGA MALLIKARJUNA	9393177097	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N
-cmv0lfkep06ug10e05cbpwzhz	26UEMEC0098	26uemec0098@student.gvpihlr.edu.in	$2a$10$DwPtuhlDz7vdI1k7Auwl/.z.suNdyzl2bxvD/lH4pSECEltYnhP7G	VANDRASI ROHIT	9618430522	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkeq06us10e0lph24h92	26UEMEC0095	26uemec0095@student.gvpihlr.edu.in	$2a$10$Caq3sSYikCVuzut/lfl6I.rozs/zBtflAOhXOiGHMGZwxPKfsIZjq	YELLA MANOHAR	9346368856	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkf5070p10e0tm1i1grl	26UEMEC0123	26uemec0123@student.gvpihlr.edu.in	$2a$10$37KCfqLJAv9zvjlwQVgwFOU2NzTMrFxOnyidgJAtajTPptJJ9wM3y	SURLA JASWANTH	9849570165	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N
-cmv0lfkf6071210e09by3e78z	26UEMEC0136	26uemec0136@student.gvpihlr.edu.in	$2a$10$Fvn3BKPlQHJ89UMRJXszqeK4dxlxa9IzO9sB1SU.acI4ETX.lqX2W	SUNKARA GANESH	7013596013	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N
-cmv0lfkfl076u10e0aqvv7mx1	26UEMRB0010	26uemrb0010@student.gvpihlr.edu.in	$2a$10$N9kHcEAO6F8jtvoDRUGsqOA34UBeAkDPEirNFADYM.9iRDlxZMJoC	PAKKI SANGAM JASWANTH JAI TEJ	7842450708	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N
-cmv0lfkfm077510e0sr54x2nb	26UEMRB0021	26uemrb0021@student.gvpihlr.edu.in	$2a$10$7GouTN8Ri39IHKhFNgcOhefYr89n7M1iphkT7a8NBRHA6igRQZi7G	DULLA RISHI VARDHAN	9347754220	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N
-cmv0lfkgc07d010e0uug9oy7h	26UEMRB0032	26uemrb0032@student.gvpihlr.edu.in	$2a$10$NToITcK1Tk0KV0mDvBc5H.JgQmXL1Ch0zh4HDyEVvouF5CQMbvfeu	SIRUGUDI NETHRANANDA KUMAR	9963810616	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N
-cmv0lfk9d04rk10e0qpe6adea	26UEECE0115	26ueece0115@student.gvpihlr.edu.in	$2a$10$giZHw7oiV0qxqvjoHtJ81OPxtje36X9zikE247gVmFdwCXMnaBxsq	REDDY JASWANTH	9347679441	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N
-cmv0lfk9s04xg10e0x2ogwqbc	26UEECE0122	26ueece0122@student.gvpihlr.edu.in	$2a$10$.g76P8./TEBWDhnY0GGhee2H7uaGXOgMJqS5Q.oEjwywPDbDpw8ym	PADALA LAKSHMI NARASIMHAREDDY	9177569366	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfka8053t10e0frzasac4	26UEECE0150	26ueece0150@student.gvpihlr.edu.in	$2a$10$.gMCOKEh9p4cHBo1/HHhd.cIhsaFszTXlOb4lpcAX2zi6SVJ7LCJK	SUSRITHA ANDEY	8106376842	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N
-cmv0lfka9054710e076reqcn5	26UEECE0170	26ueece0170@student.gvpihlr.edu.in	$2a$10$rGVW0zydmVfYIP16FZLFKuAVa27QSPzQAObx88NqNpapCeNOfGQvi	MATHA VARDHAN NARASIMHA	9000640160	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N
-cmv0lfkao059y10e0qaegnsaf	26UEECE0175	26ueece0175@student.gvpihlr.edu.in	$2a$10$h7YJlc4dUy/nBLMc2lACu.W9ZyiZ1kuaQLqTjELiaTasNqS6S5xqe	KARRI BHARGAVI PRASANNA LAKSHMI	8919477327	t	f	\N	0	\N	2026-10-09 06:37:40.608	2026-10-09 06:37:40.608	\N
-cmv0lfkap05ag10e0ctwpq97w	26UEECE0189	26ueece0189@student.gvpihlr.edu.in	$2a$10$1A.YqCBjbZvIhkeD/Y83bO/0lLoGFi9cCpWAu/W8Ezo0HPFNOPoe.	RAMBHA YASHASWINI	8074058010	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N
-cmv0lfkb405g610e0nn0t9otu	26UEECE0199	26ueece0199@student.gvpihlr.edu.in	$2a$10$Nfh9KgTdJynvav18lHf0UeBwG4Drr3XRLFq/30hDmvpl8m1zBCt5C	DAMMU VIJAYKUMAR	9652644393	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N
-cmv0lfkb605gs10e0ezz9k7ur	26UEECE0220	26ueece0220@student.gvpihlr.edu.in	$2a$10$xSNmBUWwB7taXMqRTpI5J.DpwBjNrhrvlISCpBgok1XXT9fgQ/tRG	GUNTAMUKKALA THORAN AKSHAY	8374808250	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N
-cmv0lfkbk05mf10e0z0i2yvvh	26UEECE0225	26ueece0225@student.gvpihlr.edu.in	$2a$10$n.1RpMkvLmndmumeKPcqGuy.Z6zkWxVY.V2Bv3tIUfbfK64nevJcu	JANGA WEDANT NANDHAN	8529146456	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N
-cmv0lfkbl05ms10e0s3wvygs9	26UEECE0236	26ueece0236@student.gvpihlr.edu.in	$2a$10$5Er2jomAaD6syBJf/lgfM.3GuzIIOYZHXkLf61kwUN4RpnzRPgpbe	MEESALA VENKATA SAI SRIKAR	7093580295	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N
-cmv0lfkc105sr10e02ki8o1wq	26UEECE0251	26ueece0251@student.gvpihlr.edu.in	$2a$10$a74htgQj0ZzwzDIQcQ6UV.cH8zi1h1FsFF6wZK.B.WxRxHH3uCeIC	DONKA ESWAR	9392076551	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N
-cmv0lfkc205t110e0w8qxs7aj	26UEECV0003	26ueecv0003@student.gvpihlr.edu.in	$2a$10$TxluVKMMdpCa/jjORcu2COZ69ab05VdYnFKvRzyypoTsSIhtfo4m2	ANSH PRADHAN	8822573941	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N
-cmv0lfkcg05yw10e0t1ma66b3	26UEECV0016	26ueecv0016@student.gvpihlr.edu.in	$2a$10$0.ExiMLEHEExd6tk7wxq6.BOXbYCD/kg3eKLuMhXVytCJo9p5tkYK	KARROTHU DEEKSHITHA	9701608762	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkci05zi10e00vbhzdyc	26UEECV0038	26ueecv0038@student.gvpihlr.edu.in	$2a$10$VAUV2kcOflHenXVwG0JGmuT.N0bFb4zPvHawZ.cfxuxKzVZnGrism	RAMCHARAN PANDA	9390426040	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkcx065b10e0m2e12w3c	26UEECV0045	26ueecv0045@student.gvpihlr.edu.in	$2a$10$L/o4mF2eggEKXfi4HHGC1u38EYy14fN.IDVGKfFdjACDUBhcTy2PO	SATTI AMRUTHA KEERTHI	9248771666	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N
-cmv0lfkcy065o10e0z0yg02w9	26UEMEC0002	26uemec0002@student.gvpihlr.edu.in	$2a$10$TlcyzwVgBx6uLL4DkabsEejfyJxbahmyLCKztNmGggNj66kbelgra	BALIREDDY GUNAVARDHAN	9885516680	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N
-cmv0lfkdc06bl10e037xjs5fv	26UEMEC0016	26uemec0016@student.gvpihlr.edu.in	$2a$10$ly8fBrEhTntlkbSP4v3oser69rVHF4V9H1n7UuGOLY2F6d2Yizy4y	GANTA PURUSHOTHAM NAIDU	8523078444	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkde06bu10e07racr1o3	26UEMEC0028	26uemec0028@student.gvpihlr.edu.in	$2a$10$ZkUfQXAJ7xekHOXUczqq4.9V9YI8zZ2F0bpspLymlstEfl7KsUC9m	KODAMBAKAM BHUVAN	8639412459	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkdt06hu10e00khiv9q5	26UEMEC0040	26uemec0040@student.gvpihlr.edu.in	$2a$10$Wj80P0QGVkeeujE0KaaNXui8voXkyOcWATeNBnEUpMCuv1jl4IShi	NADIGATLA HOMESWAR	9618063181	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N
-cmv0lfkdu06i210e05q1jyme5	26UEMEC0051	26uemec0051@student.gvpihlr.edu.in	$2a$10$RhCR8fPKzXZaMi7r8koYT.LLUzIaOFQQWnDzZaWYY.rD4esf957cS	SARIKI SAI	9966406263	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N
-cmv0lfke906nw10e08uxtak1u	26UEMEC0060	26uemec0060@student.gvpihlr.edu.in	$2a$10$k9n.g.sTdpHS1rgQuuxEQ.bEROKt/d1F/yF1aFyCa5ur9MUfG89J2	YADLA VARUN	9966083664	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N
-cmv0lfkea06oa10e0dhzwnvwx	26UEMEC0075	26uemec0075@student.gvpihlr.edu.in	$2a$10$hMB7/CspTJVPKzw/xXi5OuknnWtqN6h3t9kc9mpl4iArWTL69jlt6	MOHAMMAD FARHAN KHAN	9618650352	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N
-cmv0lfkeo06ub10e0lv3whqyr	26UEMEC0092	26uemec0092@student.gvpihlr.edu.in	$2a$10$65/ZQ79zj4PR/df8/jzD8OyMPhgbC/einTVgPWuw5Ht9x8JcVKXXK	SEELA CHAITANYA	9494211207	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkep06uq10e00t6c15pn	26UEMEC0109	26uemec0109@student.gvpihlr.edu.in	$2a$10$iZSL.FnSFiPM475K0PjjwuZSqcF5TN4YeGb5HBcQoSM5FhwG0jlt2	VOOLLA YASASWINI	9040760077	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkf5070q10e0zc3owo4o	26UEMEC0124	26uemec0124@student.gvpihlr.edu.in	$2a$10$V9ZHHrI2mCTzJg1VjUQ8a.aDjlZOn1xqSkLdDNHvRSx807ssgB3Te	PESALA SAI VARDHAN	9014880691	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N
-cmv0lfkfl076s10e0qoyhqdxi	26UEMRB0007	26uemrb0007@student.gvpihlr.edu.in	$2a$10$AY5orFyfh4LqWbxddxNYKuLkXAAYkWGfAznfemnFNo0ROtqvOLu9C	MAILIPILLI ADITYA	7330950025	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N
-cmv0lfkfm077810e0otqk68ch	26UEMRB0014	26uemrb0014@student.gvpihlr.edu.in	$2a$10$jrjyrna5Qn6WNwTC8f1fg.BfvrLtIAUO0yqR.qmFhLWLELEQP67de	SINGUPURAM VENKAT NIRUP	6301798234	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N
-cmv0lfkgc07cy10e0h8kifoac	26UEMRB0025	26uemrb0025@student.gvpihlr.edu.in	$2a$10$PZdLmde8tOpDQX.GLxUsZOI1KsYOJt/l1xy9kuOyPuQa.cC46BTy2	DASARI PRASANTH KUMAR	8639396346	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N
-cmv0lfk9d04rn10e01y803swu	26UEECE0116	26ueece0116@student.gvpihlr.edu.in	$2a$10$EXkR0qiQiullK3Q87slqduLVZZ12ju3LB4nGDt9gMRi2LTXRb0Oxm	NARASUPALLI SUSHITH NAIDU	9440416460	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N
-cmv0lfk9d04ro10e07nsjbmwl	26UEECE0117	26ueece0117@student.gvpihlr.edu.in	$2a$10$ZKHV6UrU/ZFCLNZAniJEDuYNhdsgNvqSBAeeACxaCewhrUnIu1omS	NEKKALA HEMPREETH	8297243143	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N
-cmv0lfk9d04rp10e0q8qc3eme	26UEECE0118	26ueece0118@student.gvpihlr.edu.in	$2a$10$VoMSr6V78/BLmsPzr3I05usb4lzRDBFPCMIWgqieRlOt2B8g.1v/u	REGIDI JYOTHIRADITYA	9848155744	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N
-cmv0lfk9e04rt10e0gd6q6rhz	26UEECE0109	26ueece0109@student.gvpihlr.edu.in	$2a$10$m5T4LGovIjDJWuwPPNVj7e0xXoxW6UIlTnTh9vemDSa.2K37GH2mC	MUVVALA VENKATA SHYAM SAATVIK	9848018442	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N
-cmv0lfk9s04xl10e05frmx7ss	26UEECE0129	26ueece0129@student.gvpihlr.edu.in	$2a$10$uPl.gGCE0aheH0k4gbphX.2ja8EyViEuseuk5NbHtfEWLoEaYfilC	PERI S S KARTHIKEYA	9441607181	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfk9s04xj10e0wlj8dnf6	26UEECE0126	26ueece0126@student.gvpihlr.edu.in	$2a$10$2.6ADN3ou8VKj9HQaiWwBelQ6XegJJyiiw/S68Asya3c1Lr61fx7S	PENTYALA NAGA SAI LOHITA	6281418546	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfk9s04xh10e074dv7xme	26UEECE0125	26ueece0125@student.gvpihlr.edu.in	$2a$10$5aoQfP47CZILaTm/pE5qU.5kvYG0EcdI3UvilIUGemaKToJ2rXseu	TATISETTI YASWANTH	9985788142	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfk9s04xm10e02f85psj2	26UEECE0128	26ueece0128@student.gvpihlr.edu.in	$2a$10$5k4XOh9oH9k7UVXP0bX3A.TkKJqdJMA3HqM6L98PG6JF6Lpqr3K96	GUTTAVALLI VENKATA KRISHNA PRIYA	9848854311	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfk9s04xi10e0fzfxqf3i	26UEECE0124	26ueece0124@student.gvpihlr.edu.in	$2a$10$g/WGzg96Zy4eKedGFk8Z6./1fndargnYciPRm/q3UBMG9G4Zfupie	Surada sahithi	8247536772	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfk9t04xu10e0bn1u2tni	26UEECE0138	26ueece0138@student.gvpihlr.edu.in	$2a$10$E53ysbV.ig3cEx.4wqxM3u6s8hBzK3CA4V.6XLSpNlDdwdkGZY/jC	GUNDU NOHITH	8978999599	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfk9t04xw10e0bw8z6pe8	26UEECE0141	26ueece0141@student.gvpihlr.edu.in	$2a$10$sGeLOD7Zeo83q2j5oKy80Oqt7ED7oV6DKPTrEcdvyEEsZMhJu49VK	PANGA SAIKIRAN	8985920598	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfk9t04xv10e072svkksc	26UEECE0139	26ueece0139@student.gvpihlr.edu.in	$2a$10$1Ma3cmHelqYK/8hb.h0qtu6LQmLJFlKQNLeBerccYYXaBIiNSa6VK	MAVURU ROHITH	8074661731	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfk9u04xy10e02pjmnh18	26UEECE0142	26ueece0142@student.gvpihlr.edu.in	$2a$10$IJsVaS3i0mgRAur2HKoR2ORxAbckh57D5hiHLLj4pdMsmcr4j2Qc6	SAGI HAMSINI RANI	9440540416	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfk9u04y210e0n9pd7x0e	26UEECE0145	26ueece0145@student.gvpihlr.edu.in	$2a$10$JMy3Bpof/1wpDYaIeH.tVOgm7TsTsrk2DXU0c1V3MlsaCQmw1bj7S	SEEPANA SANTHOSH KUMAR	9951514022	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfka8053r10e0if63l5w0	26UEECE0153	26ueece0153@student.gvpihlr.edu.in	$2a$10$85IeFZZQvVWhJafoX64WNOmW2DDBlQVSRSsFpvqwm9Toude73szsW	TATSALLA JAHNAVI RAMANI	6304691661	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N
-cmv0lfka8053p10e04utx5om3	26UEECE0149	26ueece0149@student.gvpihlr.edu.in	$2a$10$TahVFhEAfCMPb8mFAzVJd.QEfYTdV2Y6TuuW48F1bmtVz3jpbjrby	SIRIPURAPU VAISHALI	8374222328	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N
-cmv0lfka8053s10e0mvrcaujc	26UEECE0148	26ueece0148@student.gvpihlr.edu.in	$2a$10$PMqwxmf7SNVfpA1Hpb2iu.Hu3osZ2f5vsM6pasBd1oMh0SX8ndLEK	SIMMA PAVANSATHVIKA	7702245947	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N
-cmv0lfka8053w10e0c0lr01tk	26UEECE0156	26ueece0156@student.gvpihlr.edu.in	$2a$10$.pqEY5bPYknvWP81flkT2eRM5iTX/jtb7fLUOMR1EUkc/rxDX0DSO	KARTHIK NAKKA	7330799913	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N
-cmv0lfka8053y10e05ec8244j	26UEECE0160	26ueece0160@student.gvpihlr.edu.in	$2a$10$c1cIfWL.OsIh1aU4R7Q5f.nE5JJLvbcpZPvJXkR19OQkwEKHgQHGW	VITTANALA DIKSHITHA	9704659191	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N
-cmv0lfka9054110e0flix5oy0	26UEECE0163	26ueece0163@student.gvpihlr.edu.in	$2a$10$kYKONS0y9.1ZVTn5o9PDxe..pEgtWC2qd.59T5PYuHWmvlK11a6WW	PAGOTI SUSEELA PALLAVI	9440820426	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N
-cmv0lfka9054410e0hvsv05gz	26UEECE0164	26ueece0164@student.gvpihlr.edu.in	$2a$10$MGDTsR2GQ1fK2Tevt6Sjuu0ePNdH8MUSVKrRhk6Fkpg7ZKYinf/VG	VURUTHA MANASA DEVI	8143232668	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N
-cmv0lfka9054810e0m3pwy9xz	26UEECE0159	26ueece0159@student.gvpihlr.edu.in	$2a$10$VmdNlkRyz2HJUt3U.Va1BOPEJRYKPbqAS5uuAWSo5cY9MQRVRyuii	VILAMANDIPARTHI ASRITA	8790146656	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N
-cmv0lfka9054a10e035po4q26	26UEECE0155	26ueece0155@student.gvpihlr.edu.in	$2a$10$FGyKAOaYGM.Ns4XehMHbausi5u0yhvlMWB4xPgc6/KfkZt6B6qtf.	VISSAPRAGADA VENKATA RAMANA SHANMUKHA SAI	7036269164	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N
-cmv0lfkao05a310e0elajv1tg	26UEECE0178	26ueece0178@student.gvpihlr.edu.in	$2a$10$xvVwvD0zuRtt1HbN56heyuUFK0tG6lFA2Xct1YOFYzaw0Kz7j1NNC	BALIVADA SRIKOUSHIK	8500894754	t	f	\N	0	\N	2026-10-09 06:37:40.608	2026-10-09 06:37:40.608	\N
-cmv0lfkao059z10e0azrhbu3e	26UEECE0174	26ueece0174@student.gvpihlr.edu.in	$2a$10$ALkpnroK9z5XNvkXBtCHQe7DMtPNVPai/gtC5vpW2iJfXefGMPqR.	TANNA TEJESWARA RAO	9849319694	t	f	\N	0	\N	2026-10-09 06:37:40.608	2026-10-09 06:37:40.608	\N
-cmv0lfkao05a410e0z0ac4k9o	26UEECE0180	26ueece0180@student.gvpihlr.edu.in	$2a$10$kfBgQHBi9ozWgRMYJFtfn.mcy0DQhxmQw4/Y9Lhc0e5P.1zjBdE96	EJJADA SUKANTH	9550626409	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N
-cmv0lfkap05a710e03ttmtu1e	26UEECE0184	26ueece0184@student.gvpihlr.edu.in	$2a$10$nJdiMCyB7trxk4/cqeyv/.nKbSyky1fLP9Vfwzj2fOcu9J2DfUqJa	PAMU JAGRUTHI	6309005651	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N
-cmv0lfkap05a810e04grzelll	26UEECE0172	26ueece0172@student.gvpihlr.edu.in	$2a$10$OYKKyjmVrV1tvaj0l.5J/evy0H4uKtl/Z4tiPx0xTLgkMyGeanRnW	YELAMANCHILI PUNEETH	9848865458	t	f	\N	0	\N	2026-10-09 06:37:40.608	2026-10-09 06:37:40.608	\N
-cmv0lfkap05aa10e0atsqdbuj	26UEECE0188	26ueece0188@student.gvpihlr.edu.in	$2a$10$buGsKrwMniHDjPvT9efIWO4QxA7NaMZiCwJvbQMt2fJikD6NlIKue	KEMBURU LOHIT NAIDU	9437944638	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N
-cmv0lfkap05ae10e0thhbgjs1	26UEECE0190	26ueece0190@student.gvpihlr.edu.in	$2a$10$O1wPNNzS9400LzDhvEuhue9h29OQEAuHJC09fZN4Vxy/n4y5kgheG	MEESALA KEERTHI	8309540627	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N
-cmv0lfkap05af10e0401r8xgo	26UEECE0191	26ueece0191@student.gvpihlr.edu.in	$2a$10$m1EEW52kMNkT2Pr.zrXnPugRxzKmomEsljhKKXVnOOUojfz2SCuSa	PURAMA DELHIESWARA RAO	9440540463	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N
-cmv0lfkap05ai10e0rz7a4mnn	26UEECE0195	26ueece0195@student.gvpihlr.edu.in	$2a$10$ADPG0hU91LYI730xlanTruXxVWIGXMOscZ2ibgPC3w4BoAIvjuF0K	BATTULA VAISHNAVI HARINI	9849841396	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N
-cmv0lfkap05aj10e09xypju65	26UEECE0194	26ueece0194@student.gvpihlr.edu.in	$2a$10$dZ.0mvAFkaBb1QPsCAeX7OrV329pgIaJZFiZxG7f1slDx46d1OPHy	PILLA SAMPATH SUCHITH	6302419847	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N
-cmv0lfkb405g810e01g6i859p	26UEECE0203	26ueece0203@student.gvpihlr.edu.in	$2a$10$yno0p3RYESYazAorzVP3k.JO8GGwqmZC5KDhMSNAl4ToR1halqXH6	JAMI MOHIT	9989398411	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N
-cmv0lfkb405gc10e0i0fw8kiu	26UEECE0206	26ueece0206@student.gvpihlr.edu.in	$2a$10$kvNEB4WaPPCcSLm3hl5G4.K4noIpTLMXwZiEHgPu90MEFHo7G/azS	BARINIKI LAKSHMI NARAYANA SAI SIVACHARAN	7661075202	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N
-cmv0lfk9d04rl10e0c1xq8ok3	26UEECE0113	26ueece0113@student.gvpihlr.edu.in	$2a$10$.RsBAbpN6/MopkfVgmuDxe3KJj9l3tRgYAlkq36nPy/31/2gDledK	NAGIREDDY RISHIKA NAIDU	9440597244	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N
-cmv0lfk9t04xo10e087a1spj9	26UEECE0134	26ueece0134@student.gvpihlr.edu.in	$2a$10$MYqxKINtDlvrn1GnTFQD0eMDBcMglpAe3S9ALDrmE1LX56RC7YO0i	POTNURU JASWANTH	9573276472	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfk9u04xx10e06quyi4d7	26UEECE0140	26ueece0140@student.gvpihlr.edu.in	$2a$10$VuiDLeJ6Jb/t/U02uOdZnedJWA.JLSwn10HAMs5QB2kz57RlYEVHO	YEDLA VAIBAVI	9963562366	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfka8053n10e0w88ft0wk	26UEECE0152	26ueece0152@student.gvpihlr.edu.in	$2a$10$MjCObKastee9eYS5mSu1F.74hl7WDmnyVX.COa6U0NDM6sQhlywJu	TAMADA SANDHYA	9573418635	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N
-cmv0lfka9054010e03bcfdd8o	26UEECE0161	26ueece0161@student.gvpihlr.edu.in	$2a$10$4Lyxx9.BNdogg8QjFq8WMek/DyWrPNYMpuMnSA5u9d4HEIx3x0lKC	VOODA KOUSHAL	8121827695	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N
-cmv0lfkao05a010e0c9h5jdmn	26UEECE0177	26ueece0177@student.gvpihlr.edu.in	$2a$10$sfrptM9v1qa4h8ww0UpGeu2Eg/ElVvcMXCjnu0cO/L8sUl.IOaCMm	VISWANADHAPALLI JOSHU BABU	9912988217	t	f	\N	0	\N	2026-10-09 06:37:40.608	2026-10-09 06:37:40.608	\N
-cmv0lfkap05ah10e01uen3ihr	26UEECE0192	26ueece0192@student.gvpihlr.edu.in	$2a$10$RVS.9u6nxs/mXZFsDrNh6eItG8T7FYMWiw/Ps6sJIWHluhIxUenqu	B. BHANU CHAKRAVARTHI	9491812176	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N
-cmv0lfkb405ga10e01m5xczgi	26UEECE0202	26ueece0202@student.gvpihlr.edu.in	$2a$10$zR/LUgAokczVAujKN/gDBe4bxVtsaRCfYFX/T8WatjXUx8ufvyMUC	PARAMSETTI LAKSHMI LIPSIKA	9441277639	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N
-cmv0lfkb505gm10e0ivb8b8wz	26UEECE0212	26ueece0212@student.gvpihlr.edu.in	$2a$10$/FX..UAYx/EHhtujsv5zpeWpH8VoljXu8ZuJPTwHpuQtgQauHj7/y	KUPPILI MANIKANTA	9701490953	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N
-cmv0lfkbl05mq10e0yebokbo4	26UEECE0224	26ueece0224@student.gvpihlr.edu.in	$2a$10$5FRH7d5vr24qOSKY6jD8cuYMX8/L40HXMblVV.h.YcifsFtGVcMr2	MANDALA HARSHA VARDHAN	9078767437	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N
-cmv0lfkbm05n110e0e3wirme6	26UEECE0245	26ueece0245@student.gvpihlr.edu.in	$2a$10$y6tkc1TkGo8Fi6h4mKnWzemEMPrS6kpAkyBHZZWe/LpKoZdezVK.e	N HRUDAY KUMAR	7008319324	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N
-cmv0lfkc105su10e09aav3tm6	26UEECE0256	26ueece0256@student.gvpihlr.edu.in	$2a$10$qR6eg8wXjkA7ljw9DUj/Gu97Hv3uywQHpY6BBhVnCnVZVPPAWr5wK	VOODIKALA YADAV DURGA NAVEEN	7036934473	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N
-cmv0lfkc205t210e0ltq3sj2k	26UEECV0006	26ueecv0006@student.gvpihlr.edu.in	$2a$10$QuiFYxWwni9/F2.wrQfDieEgZfe6csQOLc5fkTUcLhB4LTVWIy6Dy	KURMALA SAI HARSHA	9494197578	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N
-cmv0lfkch05z710e0fwrr0i5s	26UEECV0025	26ueecv0025@student.gvpihlr.edu.in	$2a$10$qsVyZLdi3.PC/HFzf00u3erqvsgccsuDU.ah3SNlq1YHqAek6pPnu	MUPPURI SIVA GANESH	9182233083	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkci05zj10e0ix5j9rkd	26UEECV0028	26ueecv0028@student.gvpihlr.edu.in	$2a$10$HmnD1sjxDhHtW7aJuy7zoOH66Y7Y0UEfLG6RoHV4y7U2tsUtnJsTO	KOTHURU SAI PRASANTH BABU	8332816424	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkcx065c10e0ritk9fh1	26UEECV0050	26ueecv0050@student.gvpihlr.edu.in	$2a$10$OiB7XwKw1tZJXo11gaKPK.UCIQ2KwzpWZtV0/d0clLTuV/5mO4.UO	VARANASI SAMPATH	7995771858	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N
-cmv0lfkcz065r10e0vkjz36cs	26UEMEC0004	26uemec0004@student.gvpihlr.edu.in	$2a$10$gwP4jzVH.i.gSJVvafHsW.GDztj5zdFnrY0cIPVWtCIaJ9jZz9Bw.	BATHINA MANOHAR	8309403294	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N
-cmv0lfkdc06bf10e0c11o4lfe	26UEMEC0007	26uemec0007@student.gvpihlr.edu.in	$2a$10$UofFfqkHsdSwfo89TyfhGOW9oknFeU5DtrmMAgTDCXZeTT1FpnmA.	CHODI VENKATA SAI KAUSHIK	6305722323	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkde06bw10e0713dde31	26UEMEC0026	26uemec0026@student.gvpihlr.edu.in	$2a$10$YAM7hOBy2Z/pAvFKas40COdYA9q0APnIjcDQp5Q2AdgcT/6Yl3Iu.	KATTUBOYINA PHANI NAGA VENKAT	7981736379	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkdt06ht10e06kbnj8ix	26UEMEC0038	26uemec0038@student.gvpihlr.edu.in	$2a$10$mpFWa4CknmiolYGJHvq3hOcr6CRgZxYWp1fUNHHFd1B3FShRQwM/q	MANDAVILLI KRISHNA SATWIK	9533777732	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N
-cmv0lfkdu06i310e03zgroccy	26UEMEC0050	26uemec0050@student.gvpihlr.edu.in	$2a$10$rOsOmU.yBLFtA4ayJUa7du3uEy8.3cz04v5ZqhRfTUWR0s5epJ/ta	KARRI VENKATA GOWRI MURARI	7095987363	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N
-cmv0lfke906o610e0nt010pv3	26UEMEC0070	26uemec0070@student.gvpihlr.edu.in	$2a$10$kkjGERmwWdSLmQUvXanopuY7Ga2DuyT8X8YnCWu6GYIo/NiqWXmzG	MAKALA JAYARAM NANDESWAR	9281351499	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N
-cmv0lfkeo06ua10e0a88pghf8	26UEMEC0085	26uemec0085@student.gvpihlr.edu.in	$2a$10$WlAmpVfjQEvHU.oGvQVaFeuwM2iejqEaHVHv7EuJOv55HrFkxW3Yu	REDDY JITENDRA	7989334010	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkep06uo10e0wp7fqyt3	26UEMEC0106	26uemec0106@student.gvpihlr.edu.in	$2a$10$7HunzWOYMY/luW9zr2PRE.MmWQXEHD1r7H003d7WAJg9sGjh72OD.	SHAIK MOULA	9642474706	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkf5070o10e0uh3zlp9f	26UEMEC0122	26uemec0122@student.gvpihlr.edu.in	$2a$10$1pOz61REx1QaJBHV5qnqdu6R/dIyjPnk2jSavj0i6eH83ecoYKpeu	SADA BHARGAV SRI SOMASEKHAR	8125113672	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N
-cmv0lfkf6071010e00xuoyr9b	26UEMEC0134	26uemec0134@student.gvpihlr.edu.in	$2a$10$KO.xQgMc/.oGo8bFi.W4deTzePw9ZGyxtoO//1WZ2cViF10qzMn.a	LINGAM SHIVA	6309028066	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N
-cmv0lfkfl076o10e0ycf1eud8	26UEMRB0002	26uemrb0002@student.gvpihlr.edu.in	$2a$10$oGlfjOMrQA33moVYEPvj/eeLiN9mWanaOUZWLR4iW3ZFdt5qkWWWS	BAGU DILLESWARARAO	7842954145	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N
-cmv0lfkfm077110e096wmnw9e	26UEMRB0017	26uemrb0017@student.gvpihlr.edu.in	$2a$10$9yYrZaGLYg5kylExjXVMFenMgRmS0mCP3o1Jg6r9cMa3r3C49ht9e	VASAMSETTI SAI REVANTH	9494753632	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N
-cmv0lfkgc07d410e0frs38n2s	26UEMRB0034	26uemrb0034@student.gvpihlr.edu.in	$2a$10$j5B8l57Ub5DOlyBe2gxZ0.pir6DWmBmpUu7HKP9OnbI0YNTcWf.kW	KARRI SANJANA	9686169696	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N
-cmv0lfk9e04rq10e05q3ly4bt	26UEECE0119	26ueece0119@student.gvpihlr.edu.in	$2a$10$WHP9LodmZF5DoVW9UyKJtui9vfvaUCtrIOImLjoMlAhpd2qnbdUwO	NUNNA DEEKSHITHA	9491553801	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N
-cmv0lfk9e04rs10e0fixdywjy	26UEECE0105	26ueece0105@student.gvpihlr.edu.in	$2a$10$pGNRTyn.UIpDzM6CHUZdYuRHpdVcHmEApkrxY9ZAn7OQqvSESv1MC	PUSAPATI SRI HASINI	9573279698	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N
-cmv0lfk9s04xf10e0vqdyg2na	26UEECE0123	26ueece0123@student.gvpihlr.edu.in	$2a$10$dTnM0Rk23i5HE.E1fwOW1.Ss0pb8jLi0LGHpQbN.CjkkdgDXDJHfS	PEDADA PRAVEENPRAKASH	6305336872	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfk9t04xp10e01exlaxzd	26UEECE0130	26ueece0130@student.gvpihlr.edu.in	$2a$10$uB8PNbzAY0BVdxHMvlMI8.QsjgOL8V2Y6hlqR7FwF6J.C0IgTq4W2	PERURI SAI PRIYA	9010011840	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfk9t04xs10e07cuumety	26UEECE0132	26ueece0132@student.gvpihlr.edu.in	$2a$10$3/MeIaav4XS78NhtliRs3O1QImd9boMegZhZ5ramF7RiFQhUnzyh.	PINNINTI REKHA TRILOCHANA	6281328315	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfk9u04y010e00i0l2cu1	26UEECE0131	26ueece0131@student.gvpihlr.edu.in	$2a$10$Tx.oaFjdnqmFGzo7ROMzC.8Duicjhp6npRWUip6ftZmO0LzPvsyEK	SAREPAKA VENKATA HEMANTH	7995998747	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfka8053u10e0afqc14jd	26UEECE0146	26ueece0146@student.gvpihlr.edu.in	$2a$10$wBlxYypotUSuu/SzMhn8uOUtCYqX.kCoI.iDrBKFxBekb134WiwRK	NIKHIL KUMAR SIMIDI	9440148525	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N
-cmv0lfka8053x10e0gf8k6foj	26UEECE0158	26ueece0158@student.gvpihlr.edu.in	$2a$10$yADt6bPlQ/GZoEMx4C9/Hu22LF0UcIYLaW52r05PD1BWFxgH356BO	VALLABHADASU RAJ KIRAN	9912103956	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N
-cmv0lfka9054210e0qknmrmpc	26UEECE0165	26ueece0165@student.gvpihlr.edu.in	$2a$10$xv1gHXzZpTbTQCjP06a48.y/0cFFw15gqkvVB9CDSlXJ6iQqJ3LkK	YERIPILLI SRI HARSHA	7793946655	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N
-cmv0lfka9054910e013qxuveo	26UEECE0169	26ueece0169@student.gvpihlr.edu.in	$2a$10$0h3ph008ik2k6tMZjlDEMuRbniXM54c/Ccbp2RhT9QfG6c1kgTnNO	YERRAMSETTI PRAVALLIKA MANGATAYARU	9392805876	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N
-cmv0lfkao059x10e0g9d1n0mi	26UEECE0171	26ueece0171@student.gvpihlr.edu.in	$2a$10$UVk2Icz0sHNXZON6FPxt3.zWXOgRhLLHI3/shL9vEGFrTnr3wfVr2	SANAPATHI HASINI	9393841300	t	f	\N	0	\N	2026-10-09 06:37:40.608	2026-10-09 06:37:40.608	\N
-cmv0lfkao05a110e0c0juqosi	26UEECE0176	26ueece0176@student.gvpihlr.edu.in	$2a$10$PkhdxFJivdSA.s5mXr5BIu3oqY26zndp6WrWO0haQE.jQCBNCX.j2	CHILAKANTI DEEPAK SAI	9490703464	t	f	\N	0	\N	2026-10-09 06:37:40.608	2026-10-09 06:37:40.608	\N
-cmv0lfkap05a910e0mdyq9aq9	26UEECE0181	26ueece0181@student.gvpihlr.edu.in	$2a$10$.Ltc9/yy5uCwPEw5DLfTEOuXKijjE/DgB0droTob.//BxhJCGOjca	MADUGULA MOHAN VAMSI	8008023737	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N
-cmv0lfkap05ab10e0hxpn8j39	26UEECE0186	26ueece0186@student.gvpihlr.edu.in	$2a$10$mMlbVd5zrHR0GH.HXFdDY.CfIW/uxHR/WJ6bPHQc/9VCasiZ4INQe	YENNI SURYA	8919962088	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N
-cmv0lfkb405g910e0fsozc4n6	26UEECE0200	26ueece0200@student.gvpihlr.edu.in	$2a$10$mOSgGtR867Pd/vGrka71Q.FMTVCnreMxs6v0BjpWojnu6BkKHssVq	PATOJU SATYA SAI SURENDRA	8500906029	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N
-cmv0lfkb405ge10e0r0msm2dq	26UEECE0208	26ueece0208@student.gvpihlr.edu.in	$2a$10$DJXGiSA/kPYmCO6IYA7epegfQx8IuNim5c6kVbCS03uxT9hujCtJi	NARNI NAGA SAI NIKHIL	9391481505	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N
-cmv0lfkb405g510e0iioyiqm6	26UEECE0196	26ueece0196@student.gvpihlr.edu.in	$2a$10$qsMdGC/knIsqpu90jhW.AOOX3mGV7EwrVbZpVvMauYlnZTu66SYd2	DASETTY HEMA BHANU CHANDER	6300739438	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N
-cmv0lfkb405gh10e0n0mrd3ku	26UEECE0197	26ueece0197@student.gvpihlr.edu.in	$2a$10$pIjNG6P/enjm4ICIE0Xa1udC.HhRhsdwyU3cAnrJuzPZBGYMG2USu	CHELLIBOINA JOSHITHA	9063363379	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N
-cmv0lfkb505gj10e086n6hqbf	26UEECE0210	26ueece0210@student.gvpihlr.edu.in	$2a$10$Yzni7tRGMnptTXxXFzjXzOSeU3SEsRIcSC16iyiLkWIiiqNQkzqZ.	GARA THASWAN	6303951572	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N
-cmv0lfkb505gn10e0f16w1mjr	26UEECE0214	26ueece0214@student.gvpihlr.edu.in	$2a$10$EGOrGbbDRC/7dl7Zo1w7t.kiAKnAFzJ9YQ8t75GjDBSJg8Pi5/6gy	BUDHA THANSIKA RANI	7780759699	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N
-cmv0lfkb505go10e06s6wpqje	26UEECE0215	26ueece0215@student.gvpihlr.edu.in	$2a$10$Xyxhs5M8k5QnY577lqt1ROV4HWfcaNiJBYFS.MFKEn.e//mGQ8ZN6	DUMPALA SAHITHI	9493812076	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N
-cmv0lfkb505gr10e003ui4fh4	26UEECE0219	26ueece0219@student.gvpihlr.edu.in	$2a$10$hQ.gDLhcg2RTH83AOQ/ZROz.7hoO8VhyyxmSgFefX1tlG4bPL8RMK	CHEKURI NISHANT VARMA	9848061604	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N
-cmv0lfkb605gt10e015jjbule	26UEECE0218	26ueece0218@student.gvpihlr.edu.in	$2a$10$Haf7enbeqNP1WT6kjho5Oeq2xBRKWFypyudhg98zCo.dUSWIOUHLS	AMBATI HARSHITH	9059958007	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N
-cmv0lfkbk05mj10e0vewu01za	26UEECE0228	26ueece0228@student.gvpihlr.edu.in	$2a$10$LhWf1xJi2YuTHDyxe26aA.lVgT6bRLdcOyqfsLVyBHNKrrEymdp3K	TAMMU AASHRITHA \r\nKALYANI	8688833859	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N
-cmv0lfkbk05ml10e0pl2qf3ze	26UEECE0229	26ueece0229@student.gvpihlr.edu.in	$2a$10$6wDzNC9BLPsgQF9Dba07IOB/yB8oL1FeysVKywEZ043RDxFrI8B1S	MALLADHI SRINIDHI	9912124202	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N
-cmv0lfkbk05mk10e0r068ocg2	26UEECE0223	26ueece0223@student.gvpihlr.edu.in	$2a$10$Yr.saU1w72tvck8rIYpds.lzr7gsb2AUAWCGWm9kMd7egtlSKQrv.	JAGGARAJU HANSIKA	8106033182	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N
-cmv0lfkbk05mh10e0twyctn5p	26UEECE0221	26ueece0221@student.gvpihlr.edu.in	$2a$10$W.39PlyRkGXIDexbB1pvkuEiZCMEtIEWveuf8Ffb0RctkoIKnaxvm	LOCHARLA SASI KIRAN	9963764126	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N
-cmv0lfkbk05mo10e0il6u14zd	26UEECE0233	26ueece0233@student.gvpihlr.edu.in	$2a$10$hYR0ypBWR918LshvPN1Np.M25zkVk/nSYKnS8Nc7mXhal1o.8CeU2	VALLAMULA SAI TEJA	9182214096	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N
-cmv0lfkbl05mt10e0dpwjlqp2	26UEECE0237	26ueece0237@student.gvpihlr.edu.in	$2a$10$14l7V5.UFwQt5aqhufy1/uZlHWJ0lS10NcGi6Uhxi0VYqtjBkbt.6	NAMALA MAHASWIN KUMAR	6305432088	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N
-cmv0lfkbl05mu10e0ngo0wfxq	26UEECE0240	26ueece0240@student.gvpihlr.edu.in	$2a$10$1ocNSb5vYV.FlyzS4lBDXOWGvMqq6/iN16kedAmfwBerHcNenPvCO	KINTALI LAKSHMI VARDHAN	9063725963	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N
-cmv0lfkbl05n010e0zxwgtivk	26UEECE0243	26ueece0243@student.gvpihlr.edu.in	$2a$10$lZlic2UiQwMhJCCdddhZM.XQD4itICNnfymBqR.iLggvthCmY7P8y	VADDEMPUDI VENKATA SUBBA REDDY	9160184820	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N
-cmv0lfkbl05mz10e003zz3o98	26UEECE0230	26ueece0230@student.gvpihlr.edu.in	$2a$10$ln/z2SP7PLTSn0PSu0TwXeJOSV0C0O.Z1uT4VQIRTKHx.ZNkvyz0m	ADURTY LAKSHMI SAI LIKITHA	9490753384	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N
-cmv0lfkbm05n210e02mieds6r	26UEECE0244	26ueece0244@student.gvpihlr.edu.in	$2a$10$241jGj0B5Q4j/92MHP5QHe.k14tPtIODt.hs5/8cV99KHWErEMzjG	CHUKKALA KANAKA SAI	8897268728	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N
-cmv0lfkc105st10e02grwv08o	26UEECE0253	26ueece0253@student.gvpihlr.edu.in	$2a$10$rMbYZkxHjHF1bjJTAVnM6ebHjTBVS8qMvM24RX/hpCQLZkCISYxD2	PEDIREDLA CHARAN TEJ	8328227280	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N
-cmv0lfkc105sn10e0kbedmblf	26UEECE0246	26ueece0246@student.gvpihlr.edu.in	$2a$10$JaynrxVU4OhUJm4.WEctHeB1NyX.yhv2T9zYSgKVicb8C8AjIJ7de	DONDAPATI JYOTHIRMAYE	9246636172	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N
-cmv0lfk9d04rm10e0c4cf01hp	26UEECE0114	26ueece0114@student.gvpihlr.edu.in	$2a$10$g8vqRGE./aKgv34L1.YnVuNXoLQ1Re9.g2KrwrjcBc9eXPdQUbzSi	N KOUSHIK	9281296345	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N
-cmv0lfk9t04xn10e02jj0flyh	26UEECE0133	26ueece0133@student.gvpihlr.edu.in	$2a$10$o3E/F1zIZA5BFNbv63lKyudqjHmOfwOok6HHl/so5XfiQ.Q5KPQ/q	YADLA HEMALATHA	6303227038	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfk9u04xz10e080sxeu0j	26UEECE0143	26ueece0143@student.gvpihlr.edu.in	$2a$10$myd/LwU87ZIz4T2ygWueZuid0ThyCPld.psMJEVU3SJXobjKw5rq6	DAMMU PRABHASH	6302539976	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfka8053v10e0q35y3uyc	26UEECE0154	26ueece0154@student.gvpihlr.edu.in	$2a$10$wMcJIEkCbKn13cPOZYcCgOwsA6JeeSVNhXtSmxu76pDx1qrbMgk8S	VURAKARANAM HARSHIT PHANI VEER	9398111931	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N
-cmv0lfka9054510e0tvc5665g	26UEECE0166	26ueece0166@student.gvpihlr.edu.in	$2a$10$3Re.chaYnb2MUdB9pj0CjeeZt3VL2AASr8Xt8Yx56iGuZZ3HHPqBq	YERNINTI JAYA VARDHAN	9701603541	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N
-cmv0lfkap05a510e0nx3oaejk	26UEECE0183	26ueece0183@student.gvpihlr.edu.in	$2a$10$zk676FfUZleBkzRwFBsdz.q34U1aSzymNT0q3A3fLKgYG1uAZhvQ.	MUNJETI AKSHINI	9908474078	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N
-cmv0lfkaq05ak10e0i8yb0jxs	26UEECE0185	26ueece0185@student.gvpihlr.edu.in	$2a$10$DPFlO5WR1ECE7nmZ.bgYdepm7rXX.3nDKCmnIYQ7njrhnEbfBpnMS	CHELLURI TEJASWINI	9502157633	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N
-cmv0lfkb405gg10e0bl1ogb3u	26UEECE0198	26ueece0198@student.gvpihlr.edu.in	$2a$10$Po565udG3D7o78if23lfR.8cTYj4vMCp8teNXhSyg77AWfTExMDfa	DAMMU GOPI CHAND	9866304078	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N
-cmv0lfkb505gq10e0z43ko2gt	26UEECE0217	26ueece0217@student.gvpihlr.edu.in	$2a$10$UP/Jr5XsOM8doYetROFwh.ef2FoiatgNUiw42/YR55UoIz9x4h7si	PONNADA POOJITHA	7893296267	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N
-cmv0lfkbk05me10e0accafrvb	26UEECE0226	26ueece0226@student.gvpihlr.edu.in	$2a$10$hg2e.Cpct0lSaLtFRKBx4uSnVjd6dL8hik5qhk1d1ebPX9y1XSYOK	ANASURI ANAND	7794072396	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N
-cmv0lfkbl05mr10e0jkqqyz0t	26UEECE0234	26ueece0234@student.gvpihlr.edu.in	$2a$10$XfGlOOGikvxiHoM5YovlLOepj308AXVR46twVSAQHiL7QNO1qZapC	KANCHERLA SRUJAN	9849947431	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N
-cmv0lfkc105sv10e0sbltks85	26UEECE0255	26ueece0255@student.gvpihlr.edu.in	$2a$10$e8Ek6YiwaIaKPUA4Sfk9xOHi6zetXHtATlKHHGHV0xf42etz3ti9a	KOSURU YASASWINI	9701698804	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N
-cmv0lfkch05z610e0j46yuzgy	26UEECV0015	26ueecv0015@student.gvpihlr.edu.in	$2a$10$IMDL//n/R.JVrI/XDjRhRu9W0nCsSHyBEzBALcOZZ7phH10iZTLHW	KARRI GAGAN SURYA TEJA	9398679438	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkci05ze10e0n7m925hz	26UEECV0032	26ueecv0032@student.gvpihlr.edu.in	$2a$10$WoRgEPuQE4eAWLHRx60zp.3KS1n8JZquh4c44n4TOtIrVzvZso4ry	PEEDIKAKANDI CHACKRA MANJULA PREM	9052417300	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkcx065810e0r96ze8rv	26UEECV0041	26ueecv0041@student.gvpihlr.edu.in	$2a$10$NWgGjEgpcuzxAn3gfbAoPu1Tskl7PhzJ9S4o6bVbhg5xHwISwtdi.	RONGALA MANOJ	7731010977	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N
-cmv0lfkcy065p10e0zcil8wvi	26UEECV0049	26ueecv0049@student.gvpihlr.edu.in	$2a$10$xQHKa9o1Q7IoBjbdohCQSOYuMuFqjl6h9ouEL24itpbOVjMGNvYc6	VADRA PRAVEEN CHAND RAHUL	8522965959	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N
-cmv0lfkdd06bq10e0vo9ybw0s	26UEMEC0018	26uemec0018@student.gvpihlr.edu.in	$2a$10$5kA/umEqxAJYlCzfFNbok.JcsyA1AMosM5hr3mn5TIFKqxEBroVJC	GORLE MUKESH	9010544525	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkdt06hp10e0079oc9q4	26UEMEC0032	26uemec0032@student.gvpihlr.edu.in	$2a$10$E5WIkIhjBU/pY9BriMf/6.ezZmnyTFJEcTuJZlylz3hu5Iwj1e4Qy	KONNI SAI HEMANTH	9951769846	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N
-cmv0lfkdu06ia10e0za2w06kf	26UEMEC0057	26uemec0057@student.gvpihlr.edu.in	$2a$10$c5m9QX2Cek3j9S/cx4Q9s.LU3UH9tz2u7Z5H7zzjhQ/hUgHjeI03m	TATA SRI VARSHA	9441117848	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N
-cmv0lfke906nx10e0fopkd337	26UEMEC0066	26uemec0066@student.gvpihlr.edu.in	$2a$10$WWDZ/kBQ/Xdkvv/vQkHPr.dyH7UnS4uQFmhHrMxTpuI2Ghj.gDoIm	BOGA DINESH VENKATA YADAV	7659933999	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N
-cmv0lfkea06oi10e0p6yhzd2j	26UEMEC0079	26uemec0079@student.gvpihlr.edu.in	$2a$10$isneTro9j/.vhK/hLOFWeuL2.LAGyJGCt4kyEdVWg9JkKHBztJRzu	MATURI NANDA GOPAL	8639377030	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N
-cmv0lfkeo06u810e0zb33e9pv	26UEMEC0089	26uemec0089@student.gvpihlr.edu.in	$2a$10$nXGAvUAgVmoUA7MiMhjkAuKyNt7ilCt22xZPmdO73ozHgQNCnIJ6y	ONUMU SHYAM SHANKAR	7386460380	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkep06up10e0vm4y020q	26UEMEC0110	26uemec0110@student.gvpihlr.edu.in	$2a$10$VxSZVsv9kkW720b2Z6J1IOBbWiqiAuySxdSS6hL684mNZBoukR1ta	KANDI GOWTHAM	7095556156	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkf5070h10e0om84oks4	26UEMEC0116	26uemec0116@student.gvpihlr.edu.in	$2a$10$lCKR7tBQ1lTTEqCvovIdNOYOzyZM2ixKg01taZpeefTm2kG7vQ4J2	Pathri bharath	6303539401	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N
-cmv0lfkf6070v10e07dzjzcby	26UEMEC0129	26uemec0129@student.gvpihlr.edu.in	$2a$10$LF/VkbEe8IKu7px3R5WyeOw66dVQJGJekIqfZKPcaj5Fik9LpSrbK	KOMARA MAHESH BABU	9030881102	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N
-cmv0lfkfl076w10e0zmj1kkch	26UEMRB0009	26uemrb0009@student.gvpihlr.edu.in	$2a$10$iyRNcM1BgW.GYcGHk1q72unyz5tJ0ANd5jJKe8mkGVKnH6TAjcDKu	NAKKA MANI DEEP	7095941914	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N
-cmv0lfkfm077010e0uymjgd4n	26UEMRB0018	26uemrb0018@student.gvpihlr.edu.in	$2a$10$FmTjYdC9pGoxKSKXppohNe9F0MyQHPqCzWefmQwl30xBopHII3e1e	YANAPU BALADITYA	9032174975	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N
-cmv0lfkgc07d710e04kck74iq	26UEMRB0037	26uemrb0037@student.gvpihlr.edu.in	$2a$10$5ZwZO8YCIb1pQlH9tihEVuEdnlO7LApO84/5T.v.pXpzQg04QAQom	CHUKKA SAI SUDWIK	8106255559	t	f	\N	0	\N	2026-10-09 06:37:40.813	2026-10-09 06:37:40.813	\N
-cmv0lfk9e04rr10e0cspm38h2	26UEECE0120	26ueece0120@student.gvpihlr.edu.in	$2a$10$oc26.mqzLlHmmrLLdaOdFeOff2urC8KLLotm4La0wPPwlmKCy4gB6	P UJWAL KUMAR	9949007796	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N
-cmv0lfk9s04xe10e0hgp5jy9o	26UEECE0121	26ueece0121@student.gvpihlr.edu.in	$2a$10$SKSBaNVjvfFmdOtq9zQ7POzgAWJ4BhvBTPtc7GqohdWCGRl.2ZcwK	PALLI VEDA LATHA	9989719385	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfk9t04xq10e044l940p1	26UEECE0136	26ueece0136@student.gvpihlr.edu.in	$2a$10$sfh0PL6P8hSPI4/TanG4A.xx8ixnXDf7dACkHnyNS9PRrIUhnd1Bu	RAAVI VARSHINI	8341110228	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfk9t04xr10e03z7acqby	26UEECE0135	26ueece0135@student.gvpihlr.edu.in	$2a$10$zeE6Et7ueZgnFkcOylzlX.CIi0ymtaFcJWg8HHEzddJCliGtcseme	POTNURU TRISHANK	8712829866	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfk9u04y110e0eoi1bebk	26UEECE0144	26ueece0144@student.gvpihlr.edu.in	$2a$10$QNPHXGP/yslilvkycqFLzeVGJxJ7BtcJYfc8zKdiwIW7JFfGl3tse	SANKABATTULA HARSHA VARDHAN	9885199959	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N
-cmv0lfka8053o10e01atgpvu5	26UEECE0151	26ueece0151@student.gvpihlr.edu.in	$2a$10$z3E00YQ/DBxfLRSu4ZynXOzJTwwBJ5510ymWgxOFTzk2PHlYk0nAa	TONTIPAKA JAYASREE SHANKAR JASWANTH	9985039988	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N
-cmv0lfka8053z10e0f0dstd4n	26UEECE0162	26ueece0162@student.gvpihlr.edu.in	$2a$10$eeJEoFiWe0FQAqnk/BJ1DOgDyhVxpPFcggzxdwHDbQSP9Qzd8k1OO	MORAMPUDI LITHIKA SANTHOSHI	8019797535	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N
-cmv0lfka9054610e0cuoc0unh	26UEECE0168	26ueece0168@student.gvpihlr.edu.in	$2a$10$DaIDY.w8RgI9L448sNrhA.eFjmFIiwBxFJq4HxFE7aE7M4OqEyG6e	ALLURI SHREE HARSHINI	9581893866	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N
-cmv0lfka9054b10e0dodx4pka	26UEECE0157	26ueece0157@student.gvpihlr.edu.in	$2a$10$s5lny6JSZ567VHzca03dPeCiyBg2I7Dpczbuk9malpbj7EtWyUApe	KANCHAGARA GANESH VISHWATEJA	7382108278	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N
-cmv0lfkao05a210e0t3i6bfd4	26UEECE0179	26ueece0179@student.gvpihlr.edu.in	$2a$10$EgopwcHOrD8pg5eWlhksp.MxgAebDU/tCEVWtL6vHeBWPS0L7RTB6	RUTTALA YASHWANTH	9000662564	t	f	\N	0	\N	2026-10-09 06:37:40.608	2026-10-09 06:37:40.608	\N
-cmv0lfkap05a610e0mbhoi3r9	26UEECE0182	26ueece0182@student.gvpihlr.edu.in	$2a$10$vTkocY1KxqoXWCTRZuByc.KGlHM0ESHM.w76vEZcHEQdNGKSuNRci	PILLA SRAVANTHI	9885365628	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N
-cmv0lfkap05ad10e00tgpn9yi	26UEECE0193	26ueece0193@student.gvpihlr.edu.in	$2a$10$W29H0CgHQ4ovkAg1nxOJ5.HOOrL0/1.Cc/x0NiDl6xKEzrOFNai9C	ARUGULA DINESH	9281106149	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N
-cmv0lfkb405gd10e0b22z5blr	26UEECE0205	26ueece0205@student.gvpihlr.edu.in	$2a$10$ZhIqU35z7IlreZxngYtTwu/sLlzP7We26NBVfskSxK6xKqbJsIOBi	DHAVALA LOUKYA	9347828040	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N
-cmv0lfkb405gb10e0ps085ojm	26UEECE0204	26ueece0204@student.gvpihlr.edu.in	$2a$10$lmTIX7f8Rvx4KFEbnSYw/urIpYAeY307Ssp/Ovqz1TiwDX/2Z25zW	AKULA YASWANTH KUMAR	9985337016	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N
-cmv0lfkb405gf10e0gpl499v8	26UEECE0207	26ueece0207@student.gvpihlr.edu.in	$2a$10$2rtp4npgssbSgy/MCZHX2.hTE2/cJTOhUtrv6Qy20FbQsN2nj5rFG	JAGUPILLA GANESH SAI	9440375767	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N
-cmv0lfkb505gk10e0zfca1kxy	26UEECE0211	26ueece0211@student.gvpihlr.edu.in	$2a$10$Lsi0JXJ.KpYn73I4FGJvDuBBXFfw9ZJ44.RC/rjYUq4NZbS5mHJ6W	THIMMAREDDY MANASVI	8328383882	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N
-cmv0lfkb505gi10e0p9ctw9uw	26UEECE0209	26ueece0209@student.gvpihlr.edu.in	$2a$10$iunrDHRD/wYfWSU8Z40rBOxkJ2vDrzl/N1i.eUOTkhQSZqRXkPe7C	NEMANI SWARNA MAHATHY	9502480381	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N
-cmv0lfkb505gl10e04zy2x927	26UEECE0213	26ueece0213@student.gvpihlr.edu.in	$2a$10$PiR9haksuwsaIZDXVgclquGLB4EDPZObpwhJdT5OT/93TS0Zcyol2	ALLIPILLI JAIRAM	7386690600	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N
-cmv0lfkb505gp10e042erbgjk	26UEECE0216	26ueece0216@student.gvpihlr.edu.in	$2a$10$8goB85KBP6.3JTbE8v2feegqDCb9UWHdVogvx3wAJrRa/H0fAzgm2	ESAI VISHNU VARDHAN	9391730346	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N
-cmv0lfkbk05mi10e0nl4oqxbk	26UEECE0222	26ueece0222@student.gvpihlr.edu.in	$2a$10$zA2Y2VtMftIZ5t9AgmkuEuMlQZwj1Ykh31f2skvgtVGT4kGEh5h7S	GOLUSU V S S JAGADEESH	8333838563	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N
-cmv0lfkbk05mg10e00jzl7bd4	26UEECE0227	26ueece0227@student.gvpihlr.edu.in	$2a$10$EqtP74Mf6T/MpshrbDV2IeCrPRU.DzHnz/zE.pVeTVVwk060KlQ02	PULUGU AASHISH VIJAY SAI	7024843431	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N
-cmv0lfkbk05mn10e06887g3ac	26UEECE0232	26ueece0232@student.gvpihlr.edu.in	$2a$10$ECU6EpCjhC0R0/nHpSg52uwW4/pp8Ah6rhc2jfaBWH6K1WQz9yxGm	PULI TEJASWINI	9490036447	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N
-cmv0lfkbk05mm10e0xwht3b35	26UEECE0231	26ueece0231@student.gvpihlr.edu.in	$2a$10$XRiUkUdyjTUYpHoDAGTDu.9tiuyAE.iSTxbUrKGTMReXRPZ.8fxey	AVANTSA VENKATA PARIMALASRI HARINI	9490261183	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N
-cmv0lfkbl05mx10e0smi0nfmy	26UEECE0239	26ueece0239@student.gvpihlr.edu.in	$2a$10$vfvNmBQ6iyWtRh2h4pQ0NesMtG6KOXsIzTmfC7nTYCa6C/rhpzjk6	SALADI SAI SURYA TEJ	9989701978	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N
-cmv0lfkbl05my10e0ul9ym9p8	26UEECE0242	26ueece0242@student.gvpihlr.edu.in	$2a$10$QMQkFB952VN.q.AsZfM4M.jLytjgmycG.PDfOpj7B4jfKWRjDo6Ju	GULLIPILLI HASHINI	7981861760	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N
-cmv0lfkbl05mw10e0mw31rxzc	26UEECE0238	26ueece0238@student.gvpihlr.edu.in	$2a$10$6jFxs.PWwQsYiqPIdYyqH.cJZ9bzcRh.nc2465ZNzbGvMK9ibapo2	NOWDU SIVA SANDEEP	9440340698	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N
-cmv0lfkbl05mv10e0t7ythl9b	26UEECE0241	26ueece0241@student.gvpihlr.edu.in	$2a$10$yZLl8D0kpzf190D74bxg3O060J9r84XUFhGbIftzzed9vaopEms/u	YADLA VENU ABHIJIT REDDY	9989014886	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N
-cmv0lfkc105sx10e0uvn49baq	26UEECE0257	26ueece0257@student.gvpihlr.edu.in	$2a$10$FzFLYyDm/YJF1Pl.wIpKKevpq/oi9EhXNKzTX1JGBLUR50lOh9TTW	GORJA NIRANJAN NAIDU	7995806017	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N
-cmv0lfkc105ss10e0p6vtirc9	26UEECE0250	26ueece0250@student.gvpihlr.edu.in	$2a$10$KFt8FGZUBV7m1zHL0jzApOuvjUS0YWmH68m4liYiCpIAX5QlqbTRq	PILLA JAYANTH SREENIVAS	7981773243	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N
-cmv0lfkc105sq10e0ibifkxn7	26UEECE0254	26ueece0254@student.gvpihlr.edu.in	$2a$10$04f4COmQicMoN27GSzKzkuh7XmXubiI9/TXA5T56y36NzlLffYIgG	ANANTARAPU SAI CHETAN	7904752044	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N
-cmv0lfkc105sp10e0arrdx41d	26UEECE0249	26ueece0249@student.gvpihlr.edu.in	$2a$10$TFx2HB1vD.yc3H3Au0zRy.jJHFFii3vZt88Nqs5DnhNWE1ElAJjOC	CHINTAKAYALA ASHOK	9963815091	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N
-cmv0lfkc105so10e00up58vwf	26UEECE0248	26ueece0248@student.gvpihlr.edu.in	$2a$10$ccwqD5wif0/7Y4qpl0k/juKkbSSelXjYAwAP/mWGmd70m15ZG9H4.	KOMARAGIRI JESWANTH ABHISHIKTH	9885569987	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N
-cmv0lfkc105sw10e0silxfdpw	26UEECE0252	26ueece0252@student.gvpihlr.edu.in	$2a$10$KQApOilYYWn9iy2aypW/oeQpNFlOHjOK/a92X9xWO3wJTFag7Q5zy	ADDURU KANAKA PRAGNA	9390057519	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N
-cmv0lfkc105sy10e0iuiipp07	26UEECE0247	26ueece0247@student.gvpihlr.edu.in	$2a$10$BdT9Na2z39sOmSQXp20tPebM2x04kXLG68Er3PwayUeXdRILgvvMa	MAHAVRATAYAJULA LAKSHMI RAJESWARI SAHASRA	9393456575	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N
-cmv0lfkc205t010e0nf43w6g2	26UEECV0002	26ueecv0002@student.gvpihlr.edu.in	$2a$10$2./l7lMYnhsi5c8ZoTzDIOQeq4kEpFlcGVMY6sXsSeAdqw3z0AWeq	ALLANKI SESHANK	7730071750	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N
-cmv0lfkc205t410e0lvk3f995	26UEECV0009	26ueecv0009@student.gvpihlr.edu.in	$2a$10$.5VEGCKAFRNVGNPNbCzwGOGNkjYBV0p0hztTJyPDGPoKM2RWX3l1K	GINAGAM LATIKA SRIPRIYA	7207577373	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N
-cmv0lfkcg05yx10e05jk0u8yj	26UEECV0014	26ueecv0014@student.gvpihlr.edu.in	$2a$10$FVGQFQwt1sq3Ei2bHZmBEuzGGKVZJwCjfBScNY72Nh4hVu69k1Q8G	K SAI SURYA ASRITH	6302691154	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkci05z910e0l08pjsto	26UEECV0030	26ueecv0030@student.gvpihlr.edu.in	$2a$10$DyNJ0UtzZ5H4UExT4N8/p.mEOeV1f2QN8Lkaz7tzzNMerLGCSPBty	MUPPARAJU PRAHASITHA	8919484609	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkcx065710e0xekbd6n3	26UEECV0043	26ueecv0043@student.gvpihlr.edu.in	$2a$10$ex.Uo0yiT1fnGQZXd79WKe8SBO15kl6NVKwujEnRUEgWIOXQnuspS	TYADA YESWANTH VAISHNAV CHARAN	9989073223	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N
-cmv0lfkcy065i10e0q2mqceey	26UEECV0054	26ueecv0054@student.gvpihlr.edu.in	$2a$10$YVQM0jBYUxLY4NxYti8M..Tyk.MTOfJI0T0PdVL8JDskLrJwECyXO	YERRA RESHMA	7093779404	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N
-cmv0lfkdd06bp10e0bfyd32da	26UEMEC0020	26uemec0020@student.gvpihlr.edu.in	$2a$10$KbXip7dn0k6EMo5mNLGVuemTtpWuVEc1N/tZ4ylrjhl0SyzxsOZfW	VIPPARTHI PRATHIK	9954879708	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkde06c010e0vveisw7y	26UEMEC0031	26uemec0031@student.gvpihlr.edu.in	$2a$10$pUnsB1nYdoJHAcZUTz62u.6lJm/oAwUwolST7Sx3bTvY.MpsWnC9G	BETA SURYA PRAKASH	9014144214	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkdt06hv10e0q39a0vw3	26UEMEC0042	26uemec0042@student.gvpihlr.edu.in	$2a$10$xR9LeDxrmBtx46NZ/h2tS.Tsi3VV1iUPK4erYIMBkGJbavGraAUc6	NEELATHI ROHITH SAYIE	7989186717	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N
-cmv0lfkdu06i410e01gjx0i8s	26UEMEC0052	26uemec0052@student.gvpihlr.edu.in	$2a$10$q53n4aWa6wrad6MDR9AD8.0FA5T8iEL.I.QsCiziyLPciGpnApCsm	SHAIK NIHAN	9154216869	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N
-cmv0lfkea06oe10e09nvk90ri	26UEMEC0077	26uemec0077@student.gvpihlr.edu.in	$2a$10$kDs6l1TB8U9AkbGysI9s5.ViO90.czYROGkznFJnwfbXjyqEqRl4q	PITHANA POORNA BHARATH	9908600257	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N
-cmv0lfkeo06uf10e0hlmi3hx8	26UEMEC0097	26uemec0097@student.gvpihlr.edu.in	$2a$10$1cYznM5Eo5jbnFDWPoDeuO3MiBX7dlf.vM8H/B1uANPsn//Xb7tom	KOTTALI YASWANTH	9912681603	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkep06un10e0a1aw8e2o	26UEMEC0107	26uemec0107@student.gvpihlr.edu.in	$2a$10$K1UoBpZgow47MKBQaqsr1.x6e6oMif6tKeOB.YWsNfwt6HP1qJra2	SHAIK SOHAIL AHMED	9989482576	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkf5070n10e003g38x66	26UEMEC0118	26uemec0118@student.gvpihlr.edu.in	$2a$10$HM0UMDHdz3tnEjGzSOqaNuXvPoFucj3/D/HmEwnyz6FNN0GtmNOU.	RAVADA GANESH KUMAR	9542022347	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N
-cmv0lfkf6071110e0ft7tmqiu	26UEMEC0135	26uemec0135@student.gvpihlr.edu.in	$2a$10$bpMEz3cOrd1NbvMgh7OOpeHb8S/Y6fAPkQPFBuXqz10blc1LcvEq2	YAGATI LIKHIT KUMAR	9177331604	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N
-cmv0lfkfl076v10e0nm02mr1s	26UEMRB0005	26uemrb0005@student.gvpihlr.edu.in	$2a$10$QZR2DDTsFOwDVTWhaGqsT.0qv0bSJiobjkR5o1Ekix.aCZbkvdiYG	INJARAPU DRUVAS BALAJI	7075170635	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N
-cmv0lfkfm077910e0t9xau8jo	26UEMRB0023	26uemrb0023@student.gvpihlr.edu.in	$2a$10$5sqPtNdTuCXfp6LyhK15H.FidvzVKhDGK9EBlrjYtnQ6jRkGkOfNa	YERUMAKU TARUN TEJ	9948607520	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N
-cmv0lfkgc07d310e0txu8t8nr	26UEMRB0033	26uemrb0033@student.gvpihlr.edu.in	$2a$10$N.EIiAFpw18ayAig1D.ZNeIXircGniMGjRzJVez3vrvjFvumTYuci	BOLLA RITHESH	9059372897	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N
-cmv0lfkc205t310e04o0rik2k	26UEECV0008	26ueecv0008@student.gvpihlr.edu.in	$2a$10$0oSaNneuc1Kxf1htKWhnIONszJVwJEcdAjso7io1ffNgmNcyokj9a	GARIKIPATI SAI VIGNESWARA PRAMODIT	8978021288	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N
-cmv0lfkcg05z410e0tx4blow9	26UEECV0023	26ueecv0023@student.gvpihlr.edu.in	$2a$10$1/JCjspKXKHYwyH2VXp0qOXVKupvbeXZJylmdTBxZLeu3syXc2hCi	KALABANDALAPATI VENKATA SAI HARSHIL	9177765914	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkci05zg10e04vyalmnz	26UEECV0037	26ueecv0037@student.gvpihlr.edu.in	$2a$10$1/HYm8J.cXM3wASOXRw1T.qo.eEcVCTCWkfOtibWQorlDMnLB9TnC	PULAPA HARENDRA NATH	9553355577	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkcx065510e0w91w1xhf	26UEECV0040	26ueecv0040@student.gvpihlr.edu.in	$2a$10$Kl8pSeSlrFZM56P33OJv8.NXnXPz2QLT9iDs..3WrwnXLllhkviU2	REESU GREESHMA HASINI	8008215254	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N
-cmv0lfkcy065l10e0bbowpfjz	26UEMEC0001	26uemec0001@student.gvpihlr.edu.in	$2a$10$ZSOXV7ELcF7ZfaZRacWedepyac9vCxGJdM3s6apzUArnWEjYoxrwi	BAGGAM BHAVANI SIVA SAI SREEKAR	9246662355	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N
-cmv0lfkdd06bn10e0wxi35xx6	26UEMEC0017	26uemec0017@student.gvpihlr.edu.in	$2a$10$.QJeasEWYkWibPDfFiRwlOsQFly6wFySb.ZMy6Yni7AQTemi1UHbS	GEMBALI JAYA VARDHAN	8340057383	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkde06c110e02vz8hx33	26UEMEC0019	26uemec0019@student.gvpihlr.edu.in	$2a$10$zM7kO4JpzVmmg.K8J9FXtO9p.oJStrg9KSkmM76PvDwR9xIzeohES	KOTEDDI DEEPAK REDDY	7702497922	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkdt06hx10e0bypdsta5	26UEMEC0045	26uemec0045@student.gvpihlr.edu.in	$2a$10$GGq8pbhhT1Lt6D1H.f7l.ObSdbuFXs4NOy5as7sFHjsQQtgg8SYRO	PENTELA VIRI	7396127757	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N
-cmv0lfkdu06ib10e0hg2eob58	26UEMEC0046	26uemec0046@student.gvpihlr.edu.in	$2a$10$.3zmpEhv5uJRdbxJrdNdSu9AhuWSJgfSnwjJdDbaxG48PTP4UC7PC	PILLI MOHITH VIKASH REDDY	9391288485	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N
-cmv0lfke906o810e07oqaiy4k	26UEMEC0071	26uemec0071@student.gvpihlr.edu.in	$2a$10$lVIedZpsx4ZiDee.fcvhyukBEjpS2n9LvA0cV.kVDnfa/qfBGhRiu	NEELAMSETTY SESHWAR	8143112759	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N
-cmv0lfkea06ok10e0rd2soagx	26UEMEC0083	26uemec0083@student.gvpihlr.edu.in	$2a$10$dYNDi.AglTmg.E3nWv7XSuEBk9hm8CScCwBuTbBxTKnmjlDCiAApG	NARAYANA SETTY RAGHAVA	7989265501	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N
-cmv0lfkeo06u710e00ouju5rw	26UEMEC0084	26uemec0084@student.gvpihlr.edu.in	$2a$10$0YKOCiY0eiKoUNWF2D.Hmu1JanHmbJYBNgXdWGz4Nmv9jKos8OwfO	PATHIVADA YASWANTH VINAY	9949971802	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkep06uj10e0g73f94y0	26UEMEC0100	26uemec0100@student.gvpihlr.edu.in	$2a$10$J0taV.dAlVO5Q6AQrhmKWuKPKVy4JY7vYkcvAxpWD4N0yKv5MN36O	DHARMANA KALYAN RAM	9963063209	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkf5070f10e02dl3oadh	26UEMEC0111	26uemec0111@student.gvpihlr.edu.in	$2a$10$WpJOX8lyjXW2KoHc8HHA2euQxYxqWuZX5gW.ddIB9ea6WbszpFjS6	CHAPPA HITESH	9296102789	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N
-cmv0lfkf6070x10e0xhld35kq	26UEMEC0131	26uemec0131@student.gvpihlr.edu.in	$2a$10$xxCNshgnD1abCPRBI.vuGuwV2kP2HeqN2Rbi8etcsDGivxY85EftK	MORAM BALA VARDHAN KUMAR	9493574464	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N
-cmv0lfkfl076n10e0yms9sw6i	26UEMRB0003	26uemrb0003@student.gvpihlr.edu.in	$2a$10$KGyrbpBtuL.eocaU.qi0TuNl/bX.jMGVMndbON/ZPa7KWpEoX7pX6	BANDARU ROHIT	6301548053	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N
-cmv0lfkfm077610e0foejpbh0	26UEMRB0020	26uemrb0020@student.gvpihlr.edu.in	$2a$10$pxVTMOa/L93YoMSJgVloW.9sIE/J0.wgfHyqCsP8BpHab11pTvqUW	USURUMATI MRUNADHAR	9440000103	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N
-cmv0lfkgc07d210e0837hdeh6	26UEMRB0029	26uemrb0029@student.gvpihlr.edu.in	$2a$10$u/VcEbA2M3bP3xTwQnA6N.sm/ROiPHft64v5mxuoyeABwMRX6syXu	RAMA LOKESH	7416420075	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N
-cmv0lfkc205t510e0t7ewefon	26UEECV0004	26ueecv0004@student.gvpihlr.edu.in	$2a$10$/59akOpUL5gKMf04Our2IehBn8fOuzkemJHclwB8z3lGsDHl/Gnom	VIYYURI VEERA SATYA DURGA REVANTH	6300128872	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N
-cmv0lfkcg05z310e0lulyw7if	26UEECV0022	26ueecv0022@student.gvpihlr.edu.in	$2a$10$iU5.hasCmRhoP4nqCy1Ed.A6vGlkB8aAdoevjYnQFttv0I8H.GRNC	MANDAVA SAI KEERTHANA	8142343999	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkcx065f10e0ox80scg7	26UEECV0051	26ueecv0051@student.gvpihlr.edu.in	$2a$10$w63Yz0/A48xX6X8m.vZVE.bnbydpt2CCWs97ukZbHUZF1FQYFfSau	VASAMSETTI SURYA TEJASWI	9390985995	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N
-cmv0lfkcy065q10e08kolry2t	26UEMEC0003	26uemec0003@student.gvpihlr.edu.in	$2a$10$V9/MNIruu/zNCM4M/FkideSgQlWd2uvIMF4dibNOzAmzTnEc0rY3C	BALLA RAVI TEJA	9182532004	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N
-cmv0lfkdc06bi10e0m0rrktlk	26UEMEC0013	26uemec0013@student.gvpihlr.edu.in	$2a$10$CAu2k1tukKaOM61deI8W4erTFVfclnzZeWLreZFbD6Yrq.H20Reca	ENDALA SRINIVASU	9347292446	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkde06bv10e071nbf2eh	26UEMEC0029	26uemec0029@student.gvpihlr.edu.in	$2a$10$EEItXnwwES7gOY8rxGTwRuYqybOuTKirbEbbZG.EkVTiBt4d.ToXu	KOLLU RISHI RAJ	9553158357	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkdt06hr10e002lp7x6s	26UEMEC0039	26uemec0039@student.gvpihlr.edu.in	$2a$10$e05Lx/QeGfRxITQIJ435g.1dIhrnEM7taKWyNwImcweWxOBSgf3Dq	MUPPANA CHAKRADEV	9290255851	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N
-cmv0lfkdu06i610e0larcg97i	26UEMEC0043	26uemec0043@student.gvpihlr.edu.in	$2a$10$/O4KLcTbiv2huiAtbY1zQ.lzwAZPJ3A.1wQy.gY7lNs9e.N3UmYFu	PALAKURTHI PAVAN KALYAN	7981617656	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N
-cmv0lfke906o310e0em45152f	26UEMEC0067	26uemec0067@student.gvpihlr.edu.in	$2a$10$qOEj48TxLhN1lYboVniZhuhs5.dD61G.5evASm5Iett1wMrchuyqC	VANAPALLI NITHIN	9290053561	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N
-cmv0lfkea06oh10e0u0spp1bv	26UEMEC0082	26uemec0082@student.gvpihlr.edu.in	$2a$10$RSjvdXQElTG.H9U6KSYftOduwsUdXQCxnNXTK2OzsP2r7.yv5FOcy	BUDAGATLA LIKHIL	7675078436	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N
-cmv0lfkeo06u610e0zfaxsqxv	26UEMEC0086	26uemec0086@student.gvpihlr.edu.in	$2a$10$U5T2zQXKxOj38b1JLLveCeG58v9eQ/RtRUAtnyrb2E1/Z2eBcx0Qm	INDUGUBILLI BARALI SRI BHANU	9346013305	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkf5070k10e0e49zdgf9	26UEMEC0112	26uemec0112@student.gvpihlr.edu.in	$2a$10$M8Z/RfHeAHCgy8w5aoEkKei4AA9z00/omv.EMdG4Z.g9N159dA40y	REDDI KALYAN	8985082256	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N
-cmv0lfkf6070u10e0037sj0rh	26UEMEC0128	26uemec0128@student.gvpihlr.edu.in	$2a$10$FrfOFZE4XKUiA0wJzD1cN.GERMxLtVPUcgb/ftRd5GAPgK034CPDi	KODIBOINA RAHUL	9346043642	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N
-cmv0lfkfl076p10e0uzzchh1f	26UEMEC0137	26uemec0137@student.gvpihlr.edu.in	$2a$10$9WClomIhiVPzIiITxH05Ee6yW5tLIlq8w44SZRGMRhZNXrp9ehNuW	Dudi jagadeesh kumar	9392649116	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N
-cmv0lfkfm077210e0ieyug8sl	26UEMRB0015	26uemrb0015@student.gvpihlr.edu.in	$2a$10$ryl27MgRXxyh8Rem7duqjeq6uDpfUoN6MLqdLKMWGeaaoHCZjAt7u	TOTA THARUN BABU	8790367793	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N
-cmv0lfkgc07cw10e0207g47h0	26UEMRB0028	26uemrb0028@student.gvpihlr.edu.in	$2a$10$GzKoeHULIgOhyomvdmD6KOJ4XXxJhubDA8E9h.T94OdrmEuZZw4Ny	KOTYADA SAI BHARAT TEJA	7755889967	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N
-cmv0lfkgd07d910e0u3wd3ztc	26UEMRB0039	26uemrb0039@student.gvpihlr.edu.in	$2a$10$rbbfIodVKkSv.rPlgcKc/eAW2gDOYI9WMae36uzyb6ho6FhPiHega	MAREMANDA SHANMUKH	9491715885	t	f	\N	0	\N	2026-10-09 06:37:40.813	2026-10-09 06:37:40.813	\N
-cmv0lfkc205t710e025ff6ogc	26UEECV0011	26ueecv0011@student.gvpihlr.edu.in	$2a$10$TjCqvyNmgGBfaqe8HX0uZe0hn3PXjvNwK2UKLfzQUkWxjOfBL/qii	GONDELA ALEKHYA	9704855525	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N
-cmv0lfkcg05z010e0wtioqp3d	26UEECV0018	26ueecv0018@student.gvpihlr.edu.in	$2a$10$saxjNepozd5OQfIGT0WkRODEx1EOF3qtrBQiIO7puvNkcdCLCeSL6	IRIGINENI VENKATA SAI PUNIT	7381090094	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkci05zf10e0kzaz5trq	26UEECV0035	26ueecv0035@student.gvpihlr.edu.in	$2a$10$g/W/tHwpOWp58XipMWYr.OWP7i8hRbP7ohFPGLRfabubOnI9kZ68e	PILLA SHANMUKA RAO	8121443748	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkcx065e10e0zenn240i	26UEECV0044	26ueecv0044@student.gvpihlr.edu.in	$2a$10$f8se48XBQYQC73SQ1QGulexJTySdEbyiVcHR6q/U0TCizpsO549/e	SANAPALA JASMITHA	9704054360	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N
-cmv0lfkcy065n10e02pf5hf90	26UEECV0047	26ueecv0047@student.gvpihlr.edu.in	$2a$10$h3x2aIZJHodHKUq9GbN7P.8sH36dNj8uxYeaBD16kw4Ztgr4cIBLi	UMMADISETTY RISHITHA	9440087779	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N
-cmv0lfkdd06bo10e0xrt7pn30	26UEMEC0009	26uemec0009@student.gvpihlr.edu.in	$2a$10$dp7LGmpSQg/3xH.P72Jf2OAAl55KYxisDoDSzrz6R946oRG/HKpJy	CHEEKATI PRASANTH NAIDU	8639902337	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkde06c210e0a5xnwjzd	26UEMEC0021	26uemec0021@student.gvpihlr.edu.in	$2a$10$Un/6PybZg6mzTgTZFKpSfONAmpvmWdoWPGrA6jSo3NPf6/gksAiwm	KALLA TEJAS	9247180040	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkdt06ho10e0fm2f4uat	26UEMEC0035	26uemec0035@student.gvpihlr.edu.in	$2a$10$.SqR.q63JGwhEDlFsy4fsuftEmcbH.cfwk6W96whn46FHuo2CyBeK	KUNCHI AVINASH	7981930879	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N
-cmv0lfkdu06i710e044sxj31v	26UEMEC0056	26uemec0056@student.gvpihlr.edu.in	$2a$10$FBnDCxlQ8SjLQTYaqUS3mOvui..BsVmIoPfxRmCPF7wJWPhkoxpcy	TANGETI JASHITH PAWAN	8309041193	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N
-cmv0lfke906o710e0g51bl4zt	26UEMEC0059	26uemec0059@student.gvpihlr.edu.in	$2a$10$dqN0CHgpaGALfmUIbqW.KeNdqSxTyr8RxB4kAWqgDPFAXWF.bBRuS	YEDLA VENKATA SAI HARSHITH	7337478070	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N
-cmv0lfkea06oj10e077mgp21j	26UEMEC0080	26uemec0080@student.gvpihlr.edu.in	$2a$10$4rDqkseqLMtptM0tI1ACJOBl7Sz70OCPShNQeJpmU2jgRwEQ7WrPK	POTHINA GOPI	9959335917	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N
-cmv0lfkeo06uc10e0dsdcm66w	26UEMEC0091	26uemec0091@student.gvpihlr.edu.in	$2a$10$zCZV9WSXgXFq8FoM8DdkvuYxsbf8tnkGhzJx1ba71PEeTq25rjPC2	BATTINA BHARAT CHANDRA	7989157516	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkep06ur10e07720t8jw	26UEMEC0099	26uemec0099@student.gvpihlr.edu.in	$2a$10$lnQUUtzFXKFv9OIXqU1vRe0WhbtCWO91aGmfiOePi5TPqJp6zahfi	OMMI UDAY SAI MANIKANTA	6305554046	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkf5070l10e01nihtx34	26UEMEC0120	26uemec0120@student.gvpihlr.edu.in	$2a$10$Gt1VNx4yQgCfXBE4/16DkeIN5siIZ7IU4lnKeoLFv1nipgyGVU3Rq	PYLA RAJA ROHIT	9398896275	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N
-cmv0lfkf6070s10e0zf9ropcl	26UEMEC0126	26uemec0126@student.gvpihlr.edu.in	$2a$10$iFntC1T9/NbFzXrMkW2txejyXOuqwpO5ld/iRMTVsFmTNfevheaLC	ZETTI NIKHIL RATNAM	6302662503	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N
-cmv0lfkfl076x10e0szu995r4	26UEMRB0011	26uemrb0011@student.gvpihlr.edu.in	$2a$10$34R3JJh7QnhVXbykgX.c/ePz3YRH6Y0lFtbHlAbY6HaNiEvyqTiwu	PERAMBUDUR SHYAM SUPRATIK	9010244944	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N
-cmv0lfkfm077310e02jed44tw	26UEMRB0019	26uemrb0019@student.gvpihlr.edu.in	$2a$10$/ykGAIFclBeMEp4R7tDHFe4PD7wWow5NNRwyolstXdOA4Tr3PgWn6	YERRAMSETTI DILESH SRIRAM SAI	6304401274	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N
-cmv0lfkgc07d610e0fbbm4mob	26UEMRB0038	26uemrb0038@student.gvpihlr.edu.in	$2a$10$xmXvKhr1Gs9zphA0pdIq/.YHnlQALOXTNdlg5TtFchoghNN6UTwOe	KANDI RINEE SUSHANTH	7207074630	t	f	\N	0	\N	2026-10-09 06:37:40.813	2026-10-09 06:37:40.813	\N
-cmv0lfkc205t810e06gm8t0ca	26UEECV0012	26ueecv0012@student.gvpihlr.edu.in	$2a$10$R2J4dYkUHv30MuxSBO.IPOAyN8tSEwfOVt8.FQCgs1RB78QcwUeoS	GURI SHANMUKH SRI SAI	9966984455	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N
-cmv0lfkcg05yy10e0ai2kxbq7	26UEECV0020	26ueecv0020@student.gvpihlr.edu.in	$2a$10$sYpimttm2CXa7ANXQY.rIOTiKyVy78vHGu4Uiv20NFSuw2Juek3/i	MAMIDI INDHU VARSHITHA	9440837151	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkcj05zk10e0i48p73lt	26UEECV0026	26ueecv0026@student.gvpihlr.edu.in	$2a$10$qFU3MZIYKGBfAoRU62MvRujA5K6MpeserFE9PFE3PL82G7/dO4A7m	NAKKA NAMRATHA MAHI	7569611852	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkcx065610e0u9y84yhs	26UEECV0039	26ueecv0039@student.gvpihlr.edu.in	$2a$10$XP0BNR0fjt3ePSS6QwoA1u3zPlba9tjHcZHhK9glv0ylQvc7gkVea	RATALA VENKATA SRI	9014380661	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N
-cmv0lfkcy065m10e09x3999yp	26UEECV0057	26ueecv0057@student.gvpihlr.edu.in	$2a$10$vVcoopBA/MKSECc5UshOAO09nju0BhoXiBJt4dxjUnEeNU44KkEyO	VISAKOTI HARINI	9492023167	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N
-cmv0lfkdc06bg10e0j7qrmj2o	26UEMEC0008	26uemec0008@student.gvpihlr.edu.in	$2a$10$OrcQC6gORgryYMTQhRHBHeQkXuC6RdAhkaXZrK19.PN9OVOBJW6We	CHAMARTHY VEDA VIVEK	7993398996	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkde06bt10e001f0ilxh	26UEMEC0024	26uemec0024@student.gvpihlr.edu.in	$2a$10$Td4IAOUIYiWuHaYswlQIPOzHo9pF8SIJ4wovq.OO0mIsnwUNDXaOG	KARROTU VENKATA SAI SIRI VARSHINI	9959899096	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkdt06hn10e043ez3h4w	26UEMEC0037	26uemec0037@student.gvpihlr.edu.in	$2a$10$VUf7Cx.WnPGzaW4R/GBxweQovhMynk3l.IRq9MgV8eAY90DHRi/xm	MANDA BHAVESH KUMAR	9032460316	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N
-cmv0lfkdu06i010e0usp404de	26UEMEC0049	26uemec0049@student.gvpihlr.edu.in	$2a$10$WKWL.Xxk5kG4BBGKQ7ykBOoFtLy5oTkSYFDVIdh5jMlySqVeBDwfm	SAPPATI GUNASEKHAR	7981295829	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N
-cmv0lfke906o110e0t5iwu115	26UEMEC0065	26uemec0065@student.gvpihlr.edu.in	$2a$10$opw.o/x6vpa8MxTsoeFDvu1ya7yFq6Y8gBZvrCDC1j.ooA21N0.cS	MENDA PRUDHVITEJA	9441320420	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N
-cmv0lfkea06od10e0le1s3d40	26UEMEC0074	26uemec0074@student.gvpihlr.edu.in	$2a$10$CdRTGwW8gtLC2u8egQC8/ejyTMhwcV8vXNjAAKkH5hrR45nG8J996	M MOHAN VAMSI	9885057992	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N
-cmv0lfkeo06u910e0oq62e3fc	26UEMEC0087	26uemec0087@student.gvpihlr.edu.in	$2a$10$mtyJKPzpV6z0rXRCpd.geOsoF/adTgYPHKDkHamDOy4bqGCbcv1rK	GADI TARUN	9618221848	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkep06um10e0gkv9wgyv	26UEMEC0104	26uemec0104@student.gvpihlr.edu.in	$2a$10$qMPgeb8yWoKHfL5P1eNKxeqkES5BGRmNSvi0TBOrdmdaCDzb49MGu	PINAKANA SIDARDHA	7690915627	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkf5070j10e0c2a8e3tn	26UEMEC0119	26uemec0119@student.gvpihlr.edu.in	$2a$10$hhWUZ5uKq.uVGoQUja1joOCxq91bsr.58olAMdE/A8tc1Dl1Szxt2	GAJULA JWALA PRASAD	9441872429	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N
-cmv0lfkf6070z10e0mmi2mr01	26UEMEC0133	26uemec0133@student.gvpihlr.edu.in	$2a$10$QgBZy57PKk2nVlTFaAOiU.wzwVWJsSwh8iU7XLgsTBU3emtGF83F6	Mypala Sai Satya Phanendra	9494612467	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N
-cmv0lfkfl076t10e0bpt6fg0p	26UEMRB0008	26uemrb0008@student.gvpihlr.edu.in	$2a$10$8SH2mFO7j2Wp2anyFFXBhuYBEZqQJdK/4yHJhiTkcNwK1jGJ4LnzS	NIMMAKAYALA VENKATA SATYA ABHIRAM	9849292426	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N
-cmv0lfkfm077410e0cjkr1eo9	26UEMRB0016	26uemrb0016@student.gvpihlr.edu.in	$2a$10$/lYOJNUmRc4mMY2Miysj7OwFLWS8vnvJgxm195iwRjspiCx4Yy7p6	VALETI SRIKAR	8688181415	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N
-cmv0lfkgc07d510e0lhx6kkvs	26UEMRB0036	26uemrb0036@student.gvpihlr.edu.in	$2a$10$Zf9nKODItUak5RYr9d9zq.tyXaxF6T3HSg9JYAyvhW2.cLTgEJ1He	KAREDLA SAI PRAVALLIKA	9949981211	t	f	\N	0	\N	2026-10-09 06:37:40.813	2026-10-09 06:37:40.813	\N
-cmv0lfkc305ta10e0kdyhmoav	26UEECV0013	26ueecv0013@student.gvpihlr.edu.in	$2a$10$Bu0mBdy2t6odxi67aD6FoehNnpkBjH580mY6ScGvjhOLhgcAJVErq	IPPILI KEERTHIKA	9492202567	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N
-cmv0lfkcg05yz10e0cieg6tii	26UEECV0019	26ueecv0019@student.gvpihlr.edu.in	$2a$10$zlAldPzNEZ79fvzADb.DIeZncWglhLYMl/4Tgf01qMPbTvkDMEkwi	SURAVARAPU CHARITHA NAIDU	8790186970	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkch05z810e0arq2qzp1	26UEECV0029	26ueecv0029@student.gvpihlr.edu.in	$2a$10$1CqC2r9AHlMQSP5vBCOwjOC19knGBWeTQDjXWlKsb4RC.vZM9k5iK	NARASIMHA DATH PAPPU	7396701281	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkci05za10e0xaswshxp	26UEECV0031	26ueecv0031@student.gvpihlr.edu.in	$2a$10$k02fz3pCm5kuB2oizkU6Ee/2cIAu1eLE3ZviUVdzx1d3WIdLzQIAy	PEDDINTI SAI CHARAN TEJA	6304190675	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkci05zb10e0r34iq5zw	26UEECV0027	26ueecv0027@student.gvpihlr.edu.in	$2a$10$xY8z/vNsBJlS3/RmDHM/tuiCsjjzi2g5d2W0t1nHuWxINO7t.WG7e	NALAMATI RISHI	\N	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkcx065a10e07ns357ov	26UEECV0046	26ueecv0046@student.gvpihlr.edu.in	$2a$10$Rp2je/H9Kng2lRCYD4SWMerRMjVdnzPznw91HQKmaIGWxCeEdZBFG	SURU BHARATH KUMAR	9849669006	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N
-cmv0lfkcy065h10e0n71270ld	26UEECV0053	26ueecv0053@student.gvpihlr.edu.in	$2a$10$kqIdAEuHQo45AexYJi5LFuGlv5Yc8eCj6zVBDFu9V4.guiLvv4pIa	YERRA RAASHMI	7993724402	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N
-cmv0lfkcy065k10e0x90xdpjf	26UEECV0055	26ueecv0055@student.gvpihlr.edu.in	$2a$10$fMCEmJVA9XpBxZBhjcFexePpEjOzkscWSefP0kMrZldsrszWsiF96	RAPETI CHARAN	\N	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N
-cmv0lfkcz065t10e0eswxgq8z	26UEMEC0006	26uemec0006@student.gvpihlr.edu.in	$2a$10$5D6K6JnZbaR4V/aF8Vm.IuhZ3/ByrtUrL2cdDlx4SOSfIZz8ByNRG	KARROTHU BHANU PRASAD	8688441247	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N
-cmv0lfkdd06bm10e0m5phuuzj	26UEMEC0015	26uemec0015@student.gvpihlr.edu.in	$2a$10$9rvThAGylX1mHiDkeO2CHObm5ohvEa6.tLmS.9MPtBhvJyLLrlyBm	GANTA KRITIKA	6261925281	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkdc06bk10e0gzvswgry	26UEMEC0011	26uemec0011@student.gvpihlr.edu.in	$2a$10$3ZwZLsjXoZsA7/9KQ/ZtWudMfyKjXHIqiYRYo9bT9Y7G0SjX9iJ8G	DESETTI THANMAYA CHARAN	9490648768	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkde06bx10e0p5mt0fha	26UEMEC0025	26uemec0025@student.gvpihlr.edu.in	$2a$10$yhaHsEuuLVvH5xc5pnR8MeN4qN.ddK.RkKTyllR1tFTBxIzC3CV5e	KASIMIKOTA RAMAKRISHNA	9550931433	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkde06by10e09oavzim4	26UEMEC0030	26uemec0030@student.gvpihlr.edu.in	$2a$10$GfTa8Ay5yYl9AjtlvIHnj.AVLf0Hlp/yxXJOV224MYKa05nqW38AO	KOLURU RISHI BRAHMAI	9030344367	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkdt06hw10e0crexwnke	26UEMEC0044	26uemec0044@student.gvpihlr.edu.in	$2a$10$iOofTGo4Wgk.oDrsE0.VE.8RdWwBKo5XFYvXuG/L2AQSIxU23eMJm	PALLANTLA GEETH	6304185118	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N
-cmv0lfkdt06hz10e0xax932oa	26UEMEC0034	26uemec0034@student.gvpihlr.edu.in	$2a$10$i9l4T6hInJnwXeCAiaGSR.C59pKNpE4V.eT48W5bkVP6rgczFj6yK	KORUPOLU VENKATA JAPESH	7416468094	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N
-cmv0lfkdu06i510e0a2by9661	26UEMEC0053	26uemec0053@student.gvpihlr.edu.in	$2a$10$guzf9UNJz2FaPz2ZNq7EDuscEaKo9614YZKWaO7mZrVqrO2HpKNLy	BODDETI SNEHITH	7680831323	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N
-cmv0lfke906o010e0sgrv40az	26UEMEC0058	26uemec0058@student.gvpihlr.edu.in	$2a$10$93C8Cncektf6ri6a2D0vMOyHZpdfTIXUFQp3orLBhaqeTVV/9SNWu	VEGI PEDA VENKATA SAI MANIKANTA	9398669015	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N
-cmv0lfke906o410e0axpxqoi0	26UEMEC0069	26uemec0069@student.gvpihlr.edu.in	$2a$10$mVeGpq9.9cCfUymjK3pScOo8rA5zo2VBaOZq0cAOPj.fGx33cV45q	VANKA DINESH	8248587400	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N
-cmv0lfkea06of10e01c8h7vrh	26UEMEC0078	26uemec0078@student.gvpihlr.edu.in	$2a$10$utDRZFVxxBkWy35nuEK.2uV9U0q/3DwCLR/hvVXYTQbYLcA33ijtK	KURAMANA SAKETH HARSHA	8919421188	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N
-cmv0lfkea06oc10e0tuhl4bzp	26UEMEC0072	26uemec0072@student.gvpihlr.edu.in	$2a$10$HT2pI7AJyH85587589fGGulWwJxWAMssGM3kGPikMWK3MCY8g4v9K	TOLETY BHASKARA SEETAN	7780548436	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N
-cmv0lfkeo06u510e0khkjng0x	26UEMEC0088	26uemec0088@student.gvpihlr.edu.in	$2a$10$0tX7sp1hj0WTgJTlgPD7feerc6lfK/IsKNSJiiP9KuGYFZdaxMFIK	MOHAMMED SAIFAN	7337004924	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkep06uh10e0hanfp4hz	26UEMEC0093	26uemec0093@student.gvpihlr.edu.in	$2a$10$V5FYLd/vmMoi6qSRYdwSfuOGbZ2SKWwvJjbkGv3IUizzHjUKczaRC	VEGI JAYADEV	9885277229	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkep06ui10e08bvztlsi	26UEMEC0101	26uemec0101@student.gvpihlr.edu.in	$2a$10$gdUotUkR4cPxWP2VQ.WU.u.1fhNmsO7SslyF6HHfzN.7nOSWLJ08W	DUPPALA HARSHIT KUMAR	7056067327	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkeq06ut10e0joqf2p5l	26UEMEC0108	26uemec0108@student.gvpihlr.edu.in	$2a$10$2V7RCtVX3EjcojScWYDgleeYEZDQJQxfv7ivX9dTvhsfubjUICnH.	SUNKARA JAI RAM CHARAN	9492056565	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkf5070i10e0jlg4mbmz	26UEMEC0114	26uemec0114@student.gvpihlr.edu.in	$2a$10$Y9upRg5FBiI1OxHn7dkQJes9hlQk0BH9rqrMDkzeN5Ng1yRCU1BFC	Senna Lokesh	6304231727	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N
-cmv0lfkf5070e10e0cw2bouer	26UEMEC0113	26uemec0113@student.gvpihlr.edu.in	$2a$10$Ql6UymiIbLrQJ9BDuBAaO.ahqAXkwappVL7MkpFQiAn9eIGm2CqPW	REGANI VEERA VENKATA KRISHNA SAI YASWANTH	7036879010	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N
-cmv0lfkf6070t10e00x629o2a	26UEMEC0127	26uemec0127@student.gvpihlr.edu.in	$2a$10$5xtQA/9AlDruEq3sMQpoIeoSHqyqrYho2ecOkSAw26Wxx1U54ao3u	BONDA PRANAV	9908234486	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N
-cmv0lfkf6070w10e04a5rctuc	26UEMEC0130	26uemec0130@student.gvpihlr.edu.in	$2a$10$18qLMC/wuFqYlDvi.LjCbeRp.9VtR0oCGeFE04kgd1UG9cUIlDuya	MALLUVALASA RAMESH	6301975811	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N
-cmv0lfkfl076r10e06gl5v9sw	26UEMRB0006	26uemrb0006@student.gvpihlr.edu.in	$2a$10$2uA0avrNlr7QW.gqwJjRTuvK1bgD6GbopMX/PnvrG5syAAO7YDYwS	KODUKULA R S GAUTAM	9182374320	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N
-cmv0lfkfl076y10e0993hu6id	26UEMRB0013	26uemrb0013@student.gvpihlr.edu.in	$2a$10$bHINrLYngej1hwPw/fdwaOzy7SLrtOjdz./MMBUn.1OeBSh/lrq3.	POTLADA DILLESHWARA ASHISH	7207409515	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N
-cmv0lfkfm077b10e044rhn09p	26UEMRB0022	26uemrb0022@student.gvpihlr.edu.in	$2a$10$O9L/EwqlWli21Wrs1EmWiuYH37xvqklrvv665QpZIMwiCA5UKFuf6	VANA RADHA KRISHNA	9849145747	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N
-cmv0lfkgc07d110e0bn1nh9dr	26UEMRB0026	26uemrb0026@student.gvpihlr.edu.in	$2a$10$5WbKQ1vf7bnc3LwnCus0l.6Uo5oOcLKdPUQ49gtpWf2VrCmNCltZi	MANIPATRUNI RAJNI	9989105102	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N
-cmv0lfkgc07d810e0s8dsucy5	26UEMRB0035	26uemrb0035@student.gvpihlr.edu.in	$2a$10$x4vodSWLaP.P.OSjciqwtuJ25VL6cjJtHIkYKMqdUSIZBSaJ5djEK	LINGISETTY SAI ASHWITH	9985582826	t	f	\N	0	\N	2026-10-09 06:37:40.813	2026-10-09 06:37:40.813	\N
-cmv0lfk52037d10e0q9nitk8l	26UECSC0055	26uecsc0055@student.gvpihlr.edu.in	$2a$10$Cnn1fVYpOAOcKDfcB34pmegMKcmm/2IKu9lFy7ESgO7eP.WYDCXL6	GANTA KRISHNA SAI	9491951559	t	f	2026-10-09 08:32:11.295	0	\N	2026-10-09 06:37:40.405	2026-10-09 08:32:11.296	\N
-cmv0lfkfm077a10e0jt1y7xf7	26UEMRB0024	26uemrb0024@student.gvpihlr.edu.in	$2a$10$wpElSv5EsYq2yl24W7ihouPecQzqPRSw5PDpWJIsmR9sbBRPcm5GG	MUVVALA RAMCHARAN GOPI	7799868899	t	f	2026-10-09 08:41:25.934	0	\N	2026-10-09 06:37:40.786	2026-10-09 08:41:25.935	\N
-cmv0lfkc205t910e0tmwsucv5	26UEECV0005	26ueecv0005@student.gvpihlr.edu.in	$2a$10$m3nU360KLgOVrxzO1gzRUusNnOyjph8X4NOzX5Sby6dPeTwckMwCm	CHALAPAKA VENKAT NEERADH	7993612629	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N
-cmv0lfkch05z510e0uoftzd0f	26UEECV0024	26ueecv0024@student.gvpihlr.edu.in	$2a$10$9Qw.klQUOP/whlgLCTJ8qO9SE65gBn1TyJoJprPkTcldpq0KENX4S	METTA MANUSHRI	6302262613	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkci05zd10e01rnyt7m4	26UEECV0033	26ueecv0033@student.gvpihlr.edu.in	$2a$10$0Ujairk8q37y2NlTaDYDoeJ0CNaNhHKE7uBUGwheQzrt9ipz38WwO	PERI GAYATRI	9494420789	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkcy065g10e0hnbo1l2k	26UEECV0052	26ueecv0052@student.gvpihlr.edu.in	$2a$10$.6tsR8yoMxjp/atq7Cj8D.MhAWf.X.HpNHwmDM2O2yU6T/VxDvBZq	VUGGINA SHANTANU KUMAR	9989961222	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N
-cmv0lfkdc06bh10e0y4ot9xpx	26UEMEC0010	26uemec0010@student.gvpihlr.edu.in	$2a$10$bSVzTHVj282G/tukOYNPQu20mlpzO/M9AuWc0UrGbFc6J8jt.fOtm	DAMODARA BHAVESH	9848022342	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkde06bs10e0x8jkmql2	26UEMEC0022	26uemec0022@student.gvpihlr.edu.in	$2a$10$AavHl0onarkmiqebrtji7OUZKP0uOQRoVNdNhAGsqJGy7Mgt.qAKy	KALLURI GOPI CHANDU	9390706441	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkdt06hs10e0z50mmnbq	26UEMEC0036	26uemec0036@student.gvpihlr.edu.in	$2a$10$ctXMEC8xiaobz/Il.wxF5uym1y8xi5qQOzumVu6ZihaVLuKWJUv2C	MARMALA SESHA SAI KARUNAKARA KASHYAP	9440576824	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N
-cmv0lfkdu06i810e0qi51hauk	26UEMEC0054	26uemec0054@student.gvpihlr.edu.in	$2a$10$nnjnrbuszI.N4Cppp3hqROFOo2EMdoadW.uFsSusFKj1fyUC5bgOW	SUGGU DHUSHYANTH KUMAR REDDY	7671028979	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N
-cmv0lfke906o510e0c1zsou4q	26UEMEC0068	26uemec0068@student.gvpihlr.edu.in	$2a$10$f7yPwfBY4xB3qA/AkjCcoejeytXQbEu8Pr2c2yGem2.pRd.4SEsz.	DADI BALA MANOJ	9866081307	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N
-cmv0lfkea06og10e0izgeilui	26UEMEC0081	26uemec0081@student.gvpihlr.edu.in	$2a$10$p4flZ0hyps90gXLFbVg4Ze.LiodAXZMJagcLIfDrl02T6ugSxM/IO	MEGHANADH KODA	6281092971	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N
-cmv0lfkeo06ud10e0yp3zm4bl	26UEMEC0090	26uemec0090@student.gvpihlr.edu.in	$2a$10$Ju9VDPDJadT3ecKkl/tPx.0JZcR7s5RQI3jMdt8KzWkw01qQKjjbq	RITTAPALLI DEENESH	9866470281	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkep06ul10e0w6hhmap7	26UEMEC0103	26uemec0103@student.gvpihlr.edu.in	$2a$10$docAvY9Q6aBYkQFMOP5.meBBjkVjwFXQQUP0UNbJnYEGYVcYjubZS	LEKKALA JNANADEEP	9182296951	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkf5070g10e0mpqujno2	26UEMEC0117	26uemec0117@student.gvpihlr.edu.in	$2a$10$lNhxlOFIwgLbORHFdKsnZO4NKS9I1E5.BNEaPBkovoEY3O5nRcYAu	NAIDU ASISH SIVA SAI	8328215111	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N
-cmv0lfkf6070r10e0gfi8hqoj	26UEMEC0125	26uemec0125@student.gvpihlr.edu.in	$2a$10$RDZyAmIBqvn6Z9ADko0Tku5BWWrV/9CFuPTraHTZ9JOIMYABJHPye	BURLI CHARAN	6300383650	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N
-cmv0lfkfl076q10e0ecdcsh6t	26UEMRB0004	26uemrb0004@student.gvpihlr.edu.in	$2a$10$Ld5Og3C8b48Q2Lie3NfImO.0nqcNCdBtONFT2oxbXhEZsFbmt2ez6	DANDU UDAY KIRAN	8688363028	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N
-cmv0lfkfm077710e0p2mhm44a	26UEMRB0001	26uemrb0001@student.gvpihlr.edu.in	$2a$10$W.PgLHxzrA0y8iWsru6nneZLC3Q7Hgao/GxSNhvp3PEZMJ5TLtCJ2	BADATYA SHYAM	8331906760	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N
-cmv0lfkgc07cx10e09ui8a4ld	26UEMRB0031	26uemrb0031@student.gvpihlr.edu.in	$2a$10$MVPASA0.70miqtDuo9KdROxss7HXK0.wGmbsyauUjXPviISMUvu4u	DONTHALA TEJASREE	9550114406	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N
-cmv0lfkgd07da10e0upfezo53	26UEMRB0040	26uemrb0040@student.gvpihlr.edu.in	$2a$10$0PB.rWaTTxClb8OpzO/kg.obdsN8Gr3E0LCq8ZzxrjURC1xURr8k.	ROKALLA CHIRANJEEVI KUSHAL REDDY	9440566555	t	f	\N	0	\N	2026-10-09 06:37:40.813	2026-10-09 06:37:40.813	\N
-cmv0lfkc305tb10e0kncmqtmo	26UEECV0010	26ueecv0010@student.gvpihlr.edu.in	$2a$10$u7UpjNQxGom.d9wxsdo4eOF9AfdKvEmTRHyvyKD10.U26ulPwuH4i	GOMPA GURU CHARAN YADAV	7075618131	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N
-cmv0lfkcg05z110e0ov6g8blq	26UEECV0017	26ueecv0017@student.gvpihlr.edu.in	$2a$10$lzljaaYr6kjS07nKA8Oyd.gSWJhhtmoy6D9gLsntW3e9aQhl6Beam	LACHIREDDI SUDHEER	9676405319	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkci05zh10e0953s2o12	26UEECV0036	26ueecv0036@student.gvpihlr.edu.in	$2a$10$Qy6Ja.6ijOErG1HrV7zcK./D03pXCQCAIOE57qKze/uUrkJKR9VDG	PONNAGANTI JOSHITHA	9440713888	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N
-cmv0lfkcx065d10e04v0xqbsd	26UEECV0048	26ueecv0048@student.gvpihlr.edu.in	$2a$10$RYwNuGgQxazLQfeMK5D13eHxmExcnnh5X.RrYikKYFgdpAbW8KNT6	VADDI JYOTSNA	9989183506	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N
-cmv0lfkcz065s10e0i9ipyiyv	26UEMEC0005	26uemec0005@student.gvpihlr.edu.in	$2a$10$Dsdr6dzS0M6TEIInjg1iq.ULCK.rrGUDTNus/CQRwalO5uHVClD5O	BHUMA SAI CHANUKYA	9247789897	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N
-cmv0lfkdc06be10e0vdbylsxr	26UEMEC0012	26uemec0012@student.gvpihlr.edu.in	$2a$10$WO6rJ/FhslRYoxOjEZD5kOM3d88Nivolc9h9OOe/KWN/.B4ohbSAq	DUKKA SAIKIRAN	9848172922	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkdd06br10e0sno7kh7o	26UEMEC0023	26uemec0023@student.gvpihlr.edu.in	$2a$10$MYIzSPV6FKZdYWY7ycTog.JGmSRRGwkEt2wkvEXctsBxn2Jjh1JGG	KARANAM DIVYA TEJA	9246644676	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N
-cmv0lfkdt06hq10e0hak7osi4	26UEMEC0033	26uemec0033@student.gvpihlr.edu.in	$2a$10$m7QSk4bsvS9wM6pbvEeYiOZIf7LVTz2.jO0vPB.6gyh8QdmOVvKDe	KORUKONDA SUSHANTH	8074013090	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N
-cmv0lfkdu06i110e0fzgag1f5	26UEMEC0048	26uemec0048@student.gvpihlr.edu.in	$2a$10$uK8rc9D3aKeMfKIPYPz9..VJ6Z4pdoMjtx3GJL32FMHtvR3ud0GUm	REDDY SARAN TEJA	8317612926	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N
-cmv0lfke906ny10e0yup2om2s	26UEMEC0063	26uemec0063@student.gvpihlr.edu.in	$2a$10$CKYWt0DdzwlrX1NSF.3jNuLDbv8gejBRdqdQkZzUwU8k3rbE6RRQO	GANDI GIRISH KUMAR	8341810683	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N
-cmv0lfkea06ob10e0wgr5y4iw	26UEMEC0076	26uemec0076@student.gvpihlr.edu.in	$2a$10$bTEfY1TuLH/1z0ryvTL8i.UsPD2zzQYRQyOchyu11B1eY2IOtbq..	NIDDARA SIVA KUMAR	9951529630	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N
-cmv0lfkeo06ue10e0a5kwpnj4	26UEMEC0094	26uemec0094@student.gvpihlr.edu.in	$2a$10$cxGRG/VSGV7pZt3UIoK1wOArvV18I5LEz0Dlc0J0Xzcu.Ba/Yacoa	NEELADRI HEMANTH	8688889148	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkep06uk10e0b2jvb6bn	26UEMEC0105	26uemec0105@student.gvpihlr.edu.in	$2a$10$QoNrjrEyJDrjsZYJE1ysvePvWvGQINSFM92eX46QO533JipoZRiLK	SADI YOGESH	8456964697	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N
-cmv0lfkf5070m10e0y7gk7dep	26UEMEC0121	26uemec0121@student.gvpihlr.edu.in	$2a$10$LcxKnRTWTuoMeLsqjshvpO9Td5Sd8rseDk8Fw5Qc3W2oZ/g7IH0wC	GUNDA VAMSI KRISHNA	9959433243	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N
-cmv0lfkf6070y10e0coksc98s	26UEMEC0132	26uemec0132@student.gvpihlr.edu.in	$2a$10$AAmj8bvVcBdwLMwiNVionOQFo2WVzjXhWdk31CM8UR/UQS0xsZWFa	MUMMANA PAVAN	8125571717	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N
-cmv0lfkfl076z10e0rve3p6ob	26UEMRB0012	26uemrb0012@student.gvpihlr.edu.in	$2a$10$085YdfwpMJuz5HqDcRT/KOimGpqEWvyXl17GVDCrZUaP/YZ44KsW2	PILLA MAHALAKSHMI	9951955780	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N
-cmv0lfkgc07cz10e0tzt4nmyq	26UEMRB0027	26uemrb0027@student.gvpihlr.edu.in	$2a$10$OfU3tn9MDv88kMp3TSmQauMe8.FVGWtxqLCNETBZlc5v.KOKJgGQK	MORRI HASINI	8106174393	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N
-cmuzu9oof003iydphgyvr3cii	BSK	bsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. B Santosh Kumar	+91 9440112233	t	f	2026-10-12 14:14:32.509	0	\N	2026-10-08 17:57:16.72	2026-10-12 14:52:18.437	\N
-cmuzu9oox004rydph03f490gx	GSK	gsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. G Santosh Kumar	+91 9440112233	t	f	2026-10-08 18:00:33.331	0	\N	2026-10-08 17:57:16.737	2026-10-12 14:52:18.442	\N
-cmv5cxakt000110wnsmb2rfxg	office	office@gvpihlr.edu.in	$2a$12$eHRDQeKY5VRYfvRvea56qe.3rUAtZNlnupZqsbbT635dtHW221Z1C	GVPIHLR Central Academic Office	+91 891 2739507	t	f	2026-10-13 04:49:30.789	0	\N	2026-10-12 14:38:22.157	2026-10-13 04:49:30.79	\N
-cmv98chky002014e0otlmvk1u	26UEMEC0138	26uemec0138@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	RAVURI JAYENDRA PAVAN	7989675713	t	f	\N	0	\N	2026-10-15 07:41:17.698	2026-10-15 07:41:17.698	\N
-cmv98chlt002714e09ns7053d	26UEMRB0042	26uemrb0042@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	Dudi jagadeesh kumar	9392649116	t	f	\N	0	\N	2026-10-15 07:41:17.729	2026-10-15 07:41:17.729	\N
-cmv98chmy002e14e0h8uggo9b	26UECSE0175	26uecse0175@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	ADAPA GNANA LAHARI	9390678999	t	f	\N	0	\N	2026-10-15 07:41:17.771	2026-10-15 07:41:17.771	\N
-cmv98chn4002l14e0zl6qdcpv	26UEMEC0062	26uemec0062@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	KALINGI PAVAN KUMAR	7989201225	t	f	\N	0	\N	2026-10-15 07:41:17.776	2026-10-15 07:41:17.776	\N
-cmv98chn7002s14e0kpt2cqg3	26UECIV0019	26ueciv0019@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	RAYUDU HASINI	8008270119	t	f	\N	0	\N	2026-10-15 07:41:17.779	2026-10-15 07:41:17.779	\N
-cmv6bio250001wlgnf01b2c0s	incharge	incharge@gvpihlr.edu.in	$2a$12$DACBbHg15IyRSP8lHGwRAe1l4CbSFlZuQ.03oE3eOaTalwW7Q/Ltu	First Year Incharge	+91 9876543211	t	f	2026-10-13 06:55:09.373	1	\N	2026-10-13 06:46:46.35	2026-10-13 06:59:31.725	\N
-cmv98chna002z14e0on5z02b0	26UECIV0038	26ueciv0038@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	Salapu jaswanth	9949630187	t	f	\N	0	\N	2026-10-15 07:41:17.783	2026-10-15 07:41:17.783	\N
-cmv98chnd003614e028lq8211	26UEECE0275	26ueece0275@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	MATHALA PUJITHA	8919880979	t	f	\N	0	\N	2026-10-15 07:41:17.786	2026-10-15 07:41:17.786	\N
-cmv98chng003d14e0f8nj3pzx	26UEECE0280	26ueece0280@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	SIRIKI TEJESWAR	9398545151	t	f	\N	0	\N	2026-10-15 07:41:17.789	2026-10-15 07:41:17.789	\N
-cmv98chnl003k14e0ymammkfc	26UEMEC0041	26uemec0041@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	NARAMSETTY YOGESWAR	7013412594	t	f	\N	0	\N	2026-10-15 07:41:17.793	2026-10-15 07:41:17.793	\N
-cmv98chnq003r14e05p2bi5ru	26UEMEC0096	26uemec0096@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	BODDU SAI CHARAN	8008642352	t	f	\N	0	\N	2026-10-15 07:41:17.798	2026-10-15 07:41:17.798	\N
-cmv98chnt003y14e02myhd7jl	26UEMRB0030	26uemrb0030@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	RUDRI PARDHASARADHI	8247526531	t	f	\N	0	\N	2026-10-15 07:41:17.801	2026-10-15 07:41:17.801	\N
-cmv98chnw004514e0w0p2gv9q	26UEMRB0041	26uemrb0041@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	CHITTIPALA HARSHA VARDHAN	8639068635	t	f	\N	0	\N	2026-10-15 07:41:17.805	2026-10-15 07:41:17.805	\N
-cmv6bio1q0000wlgnrfs3tz71	firstyearincharge	firstyearincharge@gvpihlr.edu.in	$2a$12$DACBbHg15IyRSP8lHGwRAe1l4CbSFlZuQ.03oE3eOaTalwW7Q/Ltu	First Year Incharge	+91 9876543211	t	f	2026-10-13 07:25:28.241	0	\N	2026-10-13 06:46:46.335	2026-10-13 07:25:28.242	\N
-cmv0jr1ap002smzmye42lwppp	26UECHE0003	26ueche0003@student.gvpihlr.edu.in	$2a$10$qHWxhRVDpvqla30KI.psQeGfeZsNzUmA1IhMptuhBoU5gG2TsdKea	BATHINA TARUN SAI	6303291136	t	f	2026-10-22 06:21:37.018	0	\N	2026-10-09 05:50:36.599	2026-10-22 06:21:37.019	\N
-cmv0lfk4202ui10e0i0ku2h2a	26UECSD0014	26uecsm0189@student.gvpihlr.edu.in	$2a$10$kgCiA2r8gWxrW8B3b8XjGu9luh5uh7pU9h2xG2kLVeMy4QJsqWZLy	ARISINGALA NAGA VINAYAKA JEEVAN	9177554366	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-15 07:40:00.529	\N
-cmv98ch16000214e0vh43yq5y	26UECIV0039	26ueciv0039@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	DOLA HARSHA VARDHAN	8074627167	t	f	\N	0	\N	2026-10-15 07:41:16.987	2026-10-15 07:41:16.987	\N
-cmv98ch30000914e0wunxrfbl	26UECSC0085	26uecsc0085@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	JAMMU KARTHIK	\N	t	f	\N	0	\N	2026-10-15 07:41:17.052	2026-10-15 07:41:17.052	\N
-cmv98ch3s000g14e0u4izpwso	26UECSE0012	26uecse0012@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	ADAPA MOHIT SIVA SAI	7997877153	t	f	\N	0	\N	2026-10-15 07:41:17.08	2026-10-15 07:41:17.08	\N
-cmv98chg8000n14e0ug8lh1hv	26UEECE0258	26ueece0258@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	NAGULAPALLI DEVI NARASIMHA SAI CHARAN	8639099035	t	f	\N	0	\N	2026-10-15 07:41:17.528	2026-10-15 07:41:17.528	\N
-cmv98chgp000u14e0nhqm2wb9	26UEECE0259	26ueece0259@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	YOGESH KOTAMSETTI	6303167679	t	f	\N	0	\N	2026-10-15 07:41:17.546	2026-10-15 07:41:17.546	\N
-cmv98chgt001114e0btho1itr	26UEECE0260	26ueece0260@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	CHUKKA JAGADISH	9948769465	t	f	\N	0	\N	2026-10-15 07:41:17.549	2026-10-15 07:41:17.549	\N
-cmv98chi0001814e0ga2onszt	26UEEEE0060	26ueeee0060@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	KOMMU SEETA RAM NAIDU	7995968399	t	f	\N	0	\N	2026-10-15 07:41:17.593	2026-10-15 07:41:17.593	\N
-cmv98chi4001f14e0y3pymvg9	26UEEEE0061	26ueeee0061@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	YAMPADA SANDEEP REDDY	9391819058	t	f	\N	0	\N	2026-10-15 07:41:17.597	2026-10-15 07:41:17.597	\N
-cmv98chk1001m14e07d9h5yjb	26UEMEC0102	26uemec0102@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	DWADASI SAI VENKAT VISHAL	8499811954	t	f	\N	0	\N	2026-10-15 07:41:17.666	2026-10-15 07:41:17.666	\N
-cmv98chke001t14e0stynzgy7	26UEMEC0115	26uemec0115@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	Damarasingh kartikeya	8688661181	t	f	\N	0	\N	2026-10-15 07:41:17.679	2026-10-15 07:41:17.679	\N
-cmuzp7hsc000bbynpr08m4i25	admin	admin@gvpihlr.edu.in	$2a$12$olLcQ23IA0/wz/9ao901q.un91tdowzuc1DUEvtNvPsUZ2sGYuR5q	GVPIHLR Super Administrator	+91 9876543210	t	f	2026-10-22 06:30:22.915	0	\N	2026-10-08 15:35:36.396	2026-10-22 06:30:22.916	\N
-cmuzu9ore00dsydph0i05x8t6	NVSK	nvsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. NV Siva Krishna	+91 9440112233	t	f	2026-10-22 06:29:57.256	0	\N	2026-10-08 17:57:16.826	2026-10-22 06:29:57.258	\N
-cmv0jr1am002pmzmyhq3k4q28	26UECHE0001	26ueche0001@student.gvpihlr.edu.in	$2a$10$HZMHHs5f2Zp0J2Ce0aM8FOjzTBDfg6R6cKGzdtKRsz0d3zm3o4CYO	ADIRAJU SRI NAGA PRADYUMNA	8019888678	t	f	2026-10-22 06:20:28.078	0	\N	2026-10-09 05:50:36.599	2026-10-22 06:39:41.726	\N
+COPY public."User" (id, username, email, "passwordHash", "fullName", phone, "isActive", "mustChangePassword", "lastLoginAt", "failedAttempts", "lockedUntil", "createdAt", "updatedAt", "deletedAt", "activeDeviceIp", "activeDeviceSummary", "activeSessionId", "lastHeartbeatAt", "sessionExpiresAt") FROM stdin;
+cmuzu9oo4003dydph8jx0miue	SP	sp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. S Padma	+91 9440112233	t	f	2026-10-08 18:00:31.18	0	\N	2026-10-08 17:57:16.709	2026-10-12 14:52:18.433	\N	\N	\N	\N	\N	\N
+cmuzu9ooh003nydph6y8e5jp1	KVNL	kvnl@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. KV NagaLakshmi	+91 9440112233	t	f	2026-10-08 18:00:31.615	0	\N	2026-10-08 17:57:16.722	2026-10-12 14:52:18.438	\N	\N	\N	\N	\N	\N
+cmuzu9ooj003sydph9ysvw492	KVP	kvp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. KV Padmavathi	+91 9440112233	t	f	2026-10-08 18:00:31.828	0	\N	2026-10-08 17:57:16.724	2026-10-12 14:52:18.438	\N	\N	\N	\N	\N	\N
+cmuzu9ool003xydphdqvmbd0b	MRR	mrr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. M Rama Rajeswari	+91 9440112233	t	f	2026-10-08 18:00:32.041	0	\N	2026-10-08 17:57:16.726	2026-10-12 14:52:18.439	\N	\N	\N	\N	\N	\N
+cmuzu9ooo0042ydph2cf7s60u	PSR	psr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. P Srinivas Rao	+91 9440112233	t	f	2026-10-08 18:00:32.255	0	\N	2026-10-08 17:57:16.728	2026-10-12 14:52:18.439	\N	\N	\N	\N	\N	\N
+cmuzu9ooq0047ydphbogdnye1	RN	rn@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Rani Nanda	+91 9440112233	t	f	2026-10-08 18:00:32.47	0	\N	2026-10-08 17:57:16.731	2026-10-12 14:52:18.44	\N	\N	\N	\N	\N	\N
+cmuzu9oos004cydphwkuc88w2	SA	sa@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. S Ashok	+91 9440112233	t	f	2026-10-08 18:00:32.683	0	\N	2026-10-08 17:57:16.733	2026-10-12 14:52:18.44	\N	\N	\N	\N	\N	\N
+cmuzu9oou004hydphvofh0ip3	BV	bv@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. B Vidya	+91 9440112233	t	f	2026-10-08 18:00:32.899	0	\N	2026-10-08 17:57:16.734	2026-10-12 14:52:18.441	\N	\N	\N	\N	\N	\N
+cmuzu9oov004mydphjg2s99np	DM	dm@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. D Manasa	+91 9440112233	t	f	2026-10-08 18:00:33.114	0	\N	2026-10-08 17:57:16.736	2026-10-12 14:52:18.441	\N	\N	\N	\N	\N	\N
+cmuzu9ooz004wydph7tohke43	PM	pm@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. P Manikanta	+91 9440112233	t	f	2026-10-08 18:00:33.547	0	\N	2026-10-08 17:57:16.739	2026-10-12 14:52:18.442	\N	\N	\N	\N	\N	\N
+cmuzu9op00051ydph57trnn42	VBR	vbr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. V Bhaskar Rao	+91 9440112233	t	f	2026-10-08 18:00:33.763	0	\N	2026-10-08 17:57:16.741	2026-10-12 14:52:18.443	\N	\N	\N	\N	\N	\N
+cmuzu9op20056ydph0wtyy3la	GS	gs@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mrs. G Sravani	+91 9440112233	t	f	2026-10-08 18:00:33.979	0	\N	2026-10-08 17:57:16.743	2026-10-12 14:52:18.443	\N	\N	\N	\N	\N	\N
+cmuzu9op4005bydphxwgxubzc	BHP	bhp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Bh Padma	+91 9440112233	t	f	2026-10-08 18:03:11.13	0	\N	2026-10-08 17:57:16.744	2026-10-12 14:52:18.443	\N	\N	\N	\N	\N	\N
+cmuzu9op6005gydphddh9mtce	DC	dc@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. D Chandravathi	+91 9440112233	t	f	2026-10-08 18:00:34.411	0	\N	2026-10-08 17:57:16.746	2026-10-12 14:52:18.444	\N	\N	\N	\N	\N	\N
+cmuzu9op9005qydpho4pjs8iq	ADP	adp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. A Dhanunjaya Prasad	+91 9440112233	t	f	2026-10-08 18:00:34.842	0	\N	2026-10-08 17:57:16.749	2026-10-12 14:52:18.446	\N	\N	\N	\N	\N	\N
+cmuzu9opb005vydpha49v7tmk	BBK	bbk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. B Bala Krishna	+91 9440112233	t	f	2026-10-08 18:00:35.059	0	\N	2026-10-08 17:57:16.751	2026-10-12 14:52:18.447	\N	\N	\N	\N	\N	\N
+cmuzu9opc0060ydphcbp9oo8l	DAK	dak@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. D Arun Kumar	+91 9440112233	t	f	2026-10-08 18:00:35.275	0	\N	2026-10-08 17:57:16.752	2026-10-12 14:52:18.447	\N	\N	\N	\N	\N	\N
+cmuzu9opd0065ydphxdu1ouox	MA	ma@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. M Anil	+91 9440112233	t	f	2026-10-08 18:00:35.494	0	\N	2026-10-08 17:57:16.754	2026-10-12 14:52:18.447	\N	\N	\N	\N	\N	\N
+cmuzu9opf006aydphzzilc6xg	DMVP	dmvp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mrs. DMV Priya	+91 9440112233	t	f	2026-10-08 18:00:35.713	0	\N	2026-10-08 17:57:16.755	2026-10-12 14:52:18.448	\N	\N	\N	\N	\N	\N
+cmuzu9opg006fydphssjkc4go	CA	ca@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. C Aparna	+91 9440112233	t	f	2026-10-08 18:00:35.931	0	\N	2026-10-08 17:57:16.757	2026-10-12 14:52:18.448	\N	\N	\N	\N	\N	\N
+cmuzu9opi006kydphjl44uiyy	GSL	gsl@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. G Sathee Laxmi	+91 9440112233	t	f	2026-10-08 18:00:36.147	0	\N	2026-10-08 17:57:16.758	2026-10-12 14:52:18.448	\N	\N	\N	\N	\N	\N
+cmuzu9opj006pydphp024wu8u	KS	ks@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. K Swathi	+91 9440112233	t	f	2026-10-08 18:00:36.365	0	\N	2026-10-08 17:57:16.76	2026-10-12 14:52:18.449	\N	\N	\N	\N	\N	\N
+cmuzu9opl006uydphxq8zd8up	SLA	sla@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. S Laxmi Aparna	+91 9440112233	t	f	2026-10-08 18:00:36.582	0	\N	2026-10-08 17:57:16.761	2026-10-12 14:52:18.449	\N	\N	\N	\N	\N	\N
+cmuzu9opn006zydphae7jr1mr	DBVJ	dbvj@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. DBV Jagannadham	+91 9440112233	t	f	2026-10-08 18:00:36.8	0	\N	2026-10-08 17:57:16.763	2026-10-12 14:52:18.449	\N	\N	\N	\N	\N	\N
+cmuzu9opo0074ydphr5czmqqq	ISR	isr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. I Srinivas Rao	+91 9440112233	t	f	2026-10-08 18:00:37.018	0	\N	2026-10-08 17:57:16.764	2026-10-12 14:52:18.449	\N	\N	\N	\N	\N	\N
+cmuzu9opp0079ydph48ejt3tu	MN	mn@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. M Neelima	+91 9440112233	t	f	2026-10-08 18:00:37.234	0	\N	2026-10-08 17:57:16.766	2026-10-12 14:52:18.45	\N	\N	\N	\N	\N	\N
+cmuzu9opr007eydphr66l82pw	VA	va@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. V Adinarayana	+91 9440112233	t	f	2026-10-08 18:00:37.453	0	\N	2026-10-08 17:57:16.767	2026-10-12 14:52:18.45	\N	\N	\N	\N	\N	\N
+cmuzu9ops007jydph2w4telgt	VS	vs@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mrs. V Sridevi	+91 9440112233	t	f	2026-10-08 18:00:37.67	0	\N	2026-10-08 17:57:16.768	2026-10-12 14:52:18.45	\N	\N	\N	\N	\N	\N
+cmuzu9opu007tydph3tkyvaxq	KJR	kjr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. K Jhansi Rani	+91 9440112233	t	f	2026-10-08 18:00:38.105	0	\N	2026-10-08 17:57:16.771	2026-10-12 14:52:18.451	\N	\N	\N	\N	\N	\N
+cmuzu9opw007yydphn9klb1vx	PRSS	prss@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. PR Sri Satya	+91 9440112233	t	f	2026-10-08 18:00:38.324	0	\N	2026-10-08 17:57:16.772	2026-10-12 14:52:18.451	\N	\N	\N	\N	\N	\N
+cmuzu9opx0083ydphujxl4qb4	ARS	ars@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. A Ravi Shankar	+91 9440112233	t	f	2026-10-08 18:00:38.542	0	\N	2026-10-08 17:57:16.773	2026-10-12 14:52:18.451	\N	\N	\N	\N	\N	\N
+cmuzu9opz008dydphf45zjzey	PKD	pkd@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. PK DAS	+91 9440112233	t	f	2026-10-08 18:00:38.979	0	\N	2026-10-08 17:57:16.776	2026-10-12 14:52:18.452	\N	\N	\N	\N	\N	\N
+cmuzu9oq1008iydphx72end76	CHS	chs@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ch Sowjanya	+91 9440112233	t	f	2026-10-08 18:00:39.199	0	\N	2026-10-08 17:57:16.777	2026-10-12 14:52:18.452	\N	\N	\N	\N	\N	\N
+cmuzu9oq60092ydphh6540ixl	JRR	jrr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. J RajaRatnam	+91 9440112233	t	f	2026-10-08 18:00:40.079	0	\N	2026-10-08 17:57:16.783	2026-10-12 14:52:18.453	\N	\N	\N	\N	\N	\N
+cmuzu9oqa009hydph4c12wqt6	PBSKR	pbskr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. PBS Krishnamuraju	+91 9440112233	t	f	2026-10-08 18:00:40.732	0	\N	2026-10-08 17:57:16.786	2026-10-12 14:52:18.454	\N	\N	\N	\N	\N	\N
+cmuzu9oqc009rydph4a3z44gt	CHVVDP	chvvdp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. CH VVD Prasad	+91 9440112233	t	f	2026-10-08 18:00:41.171	0	\N	2026-10-08 17:57:16.788	2026-10-12 14:52:18.454	\N	\N	\N	\N	\N	\N
+cmuzu9opt007oydphtvdybf62	BDS	bds@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. B Divya Sati	+91 9440112233	t	f	2026-10-08 18:00:37.888	0	\N	2026-10-08 17:57:16.77	2026-10-12 14:52:18.45	\N	\N	\N	\N	\N	\N
+cmv989gfm0000jynf2ep5brs7	26UECHE0048	\N	$2a$10$UDNtNIk7I2dWc5NojiUIKusNfLdTLVZMIhTUC5zuSzP4IzMQ18ZOW	GORLE SREE CHARAN	9676727799	t	f	\N	0	\N	2026-10-15 07:38:56.242	2026-10-15 07:38:56.242	\N	\N	\N	\N	\N	\N
+cmuzu9opy0088ydphf2ak7hvm	MVPL	mvpl@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. MV Pankaj Lahari	+91 9440112233	t	f	2026-10-08 18:00:38.761	0	\N	2026-10-08 17:57:16.775	2026-10-12 14:52:18.451	\N	\N	\N	\N	\N	\N
+cmuzu9oq2008nydphukhr80tr	BMF	bmf@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. BM Florence	+91 9440112233	t	f	2026-10-08 18:00:39.416	0	\N	2026-10-08 17:57:16.778	2026-10-12 14:52:18.452	\N	\N	\N	\N	\N	\N
+cmuzu9oq4008sydphhvcxhf7x	CHA	cha@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Ch Alekya	+91 9440112233	t	f	2026-10-08 18:00:39.643	0	\N	2026-10-08 17:57:16.78	2026-10-12 14:52:18.453	\N	\N	\N	\N	\N	\N
+cmuzu9oq5008xydph5s3lk30w	IRS	irs@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. I Rajasekhar	+91 9440112233	t	f	2026-10-08 18:00:39.862	0	\N	2026-10-08 17:57:16.781	2026-10-12 14:52:18.453	\N	\N	\N	\N	\N	\N
+cmuzu9oq70097ydphk9ko7f09	NVL	nvl@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. N Vijaya Lakshmi	+91 9440112233	t	f	2026-10-08 18:00:40.298	0	\N	2026-10-08 17:57:16.784	2026-10-12 14:52:18.453	\N	\N	\N	\N	\N	\N
+cmuzu9oq8009cydph5icd3mme	VVLUR	vvlur@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. VVL Usha Ramani	+91 9440112233	t	f	2026-10-08 18:00:40.515	0	\N	2026-10-08 17:57:16.785	2026-10-12 14:52:18.454	\N	\N	\N	\N	\N	\N
+cmuzu9oqb009mydphxpmnxv51	MBS	mbs@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. M Bhanu Sridhar	+91 9440112233	t	f	2026-10-08 18:00:40.952	0	\N	2026-10-08 17:57:16.787	2026-10-12 14:52:18.454	\N	\N	\N	\N	\N	\N
+cmuzu9oqd009wydph37vthpub	SVM	svm@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. S Vinod Manikantha	+91 9440112233	t	f	2026-10-08 18:00:41.39	0	\N	2026-10-08 17:57:16.789	2026-10-12 14:52:18.455	\N	\N	\N	\N	\N	\N
+cmuzu9oqe00a1ydphofwglgxa	ASL	asl@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. A Suseelatha	+91 9440112233	t	f	2026-10-08 18:00:41.611	0	\N	2026-10-08 17:57:16.791	2026-10-12 14:52:18.455	\N	\N	\N	\N	\N	\N
+cmuzu9oqf00a6ydphz8r5sbiv	BB	bb@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. B Bharathi	+91 9440112233	t	f	2026-10-08 18:00:41.833	0	\N	2026-10-08 17:57:16.792	2026-10-12 14:52:18.455	\N	\N	\N	\N	\N	\N
+cmuzu9oqh00abydphyrk6wo0i	CHAN	chan@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Ch Appala Naidu	+91 9440112233	t	f	2026-10-08 18:00:42.055	0	\N	2026-10-08 17:57:16.793	2026-10-12 14:52:18.455	\N	\N	\N	\N	\N	\N
+cmuzu9oqj00agydpho3hnmh32	CHVS	chvs@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Ch V Sreedhar	+91 9440112233	t	f	2026-10-08 18:00:42.273	0	\N	2026-10-08 17:57:16.796	2026-10-12 14:52:18.455	\N	\N	\N	\N	\N	\N
+cmuzu9oql00alydphrnz57sid	KLSP	klsp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. K L Sai Prasad	+91 9440112233	t	f	2026-10-08 18:00:42.491	0	\N	2026-10-08 17:57:16.797	2026-10-12 14:52:18.456	\N	\N	\N	\N	\N	\N
+cmuzu9oqm00aqydphkyxl6nml	KVSS	kvss@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. KVS Sarma	+91 9440112233	t	f	2026-10-08 18:00:42.719	0	\N	2026-10-08 17:57:16.799	2026-10-12 14:52:18.456	\N	\N	\N	\N	\N	\N
+cmuzu9oqo00avydphnyap4rgv	NGB	ngb@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. N Giribabu	+91 9440112233	t	f	2026-10-08 18:00:42.94	0	\N	2026-10-08 17:57:16.8	2026-10-12 14:52:18.456	\N	\N	\N	\N	\N	\N
+cmuzu9oqq00b5ydphkng76q2y	SSAS	ssas@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. SS Ayyappa Sastri	+91 9440112233	t	f	2026-10-08 18:00:43.378	0	\N	2026-10-08 17:57:16.803	2026-10-12 14:52:18.457	\N	\N	\N	\N	\N	\N
+cmuzu9oqs00baydphep82obna	TPK	tpk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. T Poornakantha	+91 9440112233	t	f	2026-10-08 18:00:43.597	0	\N	2026-10-08 17:57:16.804	2026-10-12 14:52:18.457	\N	\N	\N	\N	\N	\N
+cmuzu9oqu00bfydphgpni5k4s	AS	as@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Anand Solanki	+91 9440112233	t	f	2026-10-08 18:00:43.818	0	\N	2026-10-08 17:57:16.806	2026-10-12 14:52:18.457	\N	\N	\N	\N	\N	\N
+cmuzu9oqv00bkydphx9krsdp7	BVSAK	bvsak@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. BVS Arun Kumar	+91 9440112233	t	f	2026-10-08 18:00:44.036	0	\N	2026-10-08 17:57:16.807	2026-10-12 14:52:18.458	\N	\N	\N	\N	\N	\N
+cmuzu9oqw00bpydph8durqqw8	MBK	mbk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. M Bhaskar Kumar	+91 9440112233	t	f	2026-10-08 18:00:44.256	0	\N	2026-10-08 17:57:16.809	2026-10-12 14:52:18.458	\N	\N	\N	\N	\N	\N
+cmuzu9oqy00buydphmu6in27s	YPR	ypr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. Y Prasad Reddy	+91 9440112233	t	f	2026-10-08 18:00:44.474	0	\N	2026-10-08 17:57:16.81	2026-10-12 14:52:18.458	\N	\N	\N	\N	\N	\N
+cmuzu9oqz00bzydph4zpmmvbe	KMK	kmk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. K Manikyakanthi	+91 9440112233	t	f	2026-10-08 18:00:44.694	0	\N	2026-10-08 17:57:16.811	2026-10-12 14:52:18.458	\N	\N	\N	\N	\N	\N
+cmuzu9or000c4ydphqv593sn2	PKM	pkm@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. P KiranMayi	+91 9440112233	t	f	2026-10-08 18:00:44.913	0	\N	2026-10-08 17:57:16.812	2026-10-12 14:52:18.458	\N	\N	\N	\N	\N	\N
+cmuzu9or100c9ydphnmpwh80l	TAJ	taj@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Ms. Taj	+91 9440112233	t	f	2026-10-08 18:00:45.133	0	\N	2026-10-08 17:57:16.814	2026-10-12 14:52:18.459	\N	\N	\N	\N	\N	\N
+cmuzu9or200ceydphygnpfuwb	BN	bn@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. B Nagarjun	+91 9440112233	t	f	2026-10-08 18:00:45.353	0	\N	2026-10-08 17:57:16.815	2026-10-12 14:52:18.461	\N	\N	\N	\N	\N	\N
+cmuzu9or400cjydphst18nqf0	BRB	brb@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. B Rajesh Babu	+91 9440112233	t	f	2026-10-08 18:00:45.574	0	\N	2026-10-08 17:57:16.816	2026-10-12 14:52:18.462	\N	\N	\N	\N	\N	\N
+cmuzu9or500coydphf8sxkt85	CHR	chr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Ch Rajesh	+91 9440112233	t	f	2026-10-08 18:00:45.795	0	\N	2026-10-08 17:57:16.817	2026-10-12 14:52:18.462	\N	\N	\N	\N	\N	\N
+cmuzu9or600ctydph7010w0q9	CHSL	chsl@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. Ch S Lakshmi	+91 9440112233	t	f	2026-10-08 18:00:46.013	0	\N	2026-10-08 17:57:16.818	2026-10-12 14:52:18.462	\N	\N	\N	\N	\N	\N
+cmuzu9or700cyydph5yd0ba42	DSK	dsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. D Santhosh Kumar	+91 9440112233	t	f	2026-10-08 18:00:46.232	0	\N	2026-10-08 17:57:16.819	2026-10-12 14:52:18.463	\N	\N	\N	\N	\N	\N
+cmuzu9or800d3ydph0v6t83c5	NSSVRR	nssvrr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. NSSV Raja Rao	+91 9440112233	t	f	2026-10-08 18:00:46.451	0	\N	2026-10-08 17:57:16.821	2026-10-12 14:52:18.463	\N	\N	\N	\N	\N	\N
+cmuzu9or900d8ydphreapmzgd	PVR	pvr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. PV Rajeswari	+91 9440112233	t	f	2026-10-08 18:00:46.67	0	\N	2026-10-08 17:57:16.822	2026-10-12 14:52:18.463	\N	\N	\N	\N	\N	\N
+cmuzu9ora00ddydphvr1vi0wp	RP	rp@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. R Praveena	+91 9440112233	t	f	2026-10-08 18:00:46.89	0	\N	2026-10-08 17:57:16.823	2026-10-12 14:52:18.464	\N	\N	\N	\N	\N	\N
+cmuzu9orc00diydphpybxtk7h	VSJ	vsj@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr.V Siva Jahnavy	+91 9440112233	t	f	2026-10-08 18:00:47.111	0	\N	2026-10-08 17:57:16.824	2026-10-12 14:52:18.464	\N	\N	\N	\N	\N	\N
+cmuzu9ord00dnydphdwln95zi	KAR	kar@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. K AyyaRaju	+91 9440112233	t	f	2026-10-08 18:00:47.331	0	\N	2026-10-08 17:57:16.825	2026-10-12 14:52:18.464	\N	\N	\N	\N	\N	\N
+cmv0jr1al002nmzmy4qn3dp3q	26UECHE0022	26ueche0022@student.gvpihlr.edu.in	$2a$10$Cpo3QST8B/sWtw7.kCcFOe1PavvaVyxHL6LhAbnVjZVs5jWO29reW	LANKA STEPHEN	7893721745	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.898	\N	\N	\N	\N	\N	\N
+cmv0jr1af002gmzmyutljclbh	26UECHE0021	26ueche0021@student.gvpihlr.edu.in	$2a$10$6kJKtjpPg.8HdFGsh2VQfOFiYwZjwrT2PaAI8UTJ.luvtaRejPS6q	NOONELA SARATH CHANDRA	9298759573	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N	\N	\N	\N	\N	\N
+cmv0jr1ah002imzmy871ufi1r	26UECHE0023	26ueche0023@student.gvpihlr.edu.in	$2a$10$mQmecLoN1kAaco//4ceNkeSZitXz.H6eUCc14QdI/A687iN7w/56u	BONUGU DINESH	7382473690	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N	\N	\N	\N	\N	\N
+cmv0jr1ai002jmzmykm1z53il	26UECHE0024	26ueche0024@student.gvpihlr.edu.in	$2a$10$1WEKfm3OZ5N27qQUMzzg6.DVWEWXDkV8AXVnZYyhB7fztLC64cbJG	PENTAKOTA GOWTHAM	8341361889	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.898	\N	\N	\N	\N	\N	\N
+cmv0jr1ae002fmzmydvmpw0l6	26UECHE0006	26ueche0006@student.gvpihlr.edu.in	$2a$10$.FODIAy/ojnGYKvZ65vWE.gOWzyH59E/S7j/XcgHQsXPSvtlA6PWK	J NIKHIL SAI	9000597053	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.897	\N	\N	\N	\N	\N	\N
+cmv0jr1ag002hmzmy8acxzo92	26UECHE0004	26ueche0004@student.gvpihlr.edu.in	$2a$10$B.R538KSb5dob4QWlungZOfyZmuXNseIM80s9CEyiILYmPdiOPNOO	BATTULA TEJASWINI	9949553232	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.897	\N	\N	\N	\N	\N	\N
+cmv0jr1ai002kmzmybqxjcl9g	26UECHE0025	26ueche0025@student.gvpihlr.edu.in	$2a$10$ckJKvAj7f..QMRp.DdFwPut4hP2dFVOs6D7gnjqJleNDfgdsyz5aG	GIDUTURI CHAITANYA KUMAR	8465094281	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.898	\N	\N	\N	\N	\N	\N
+cmv0jr1aj002lmzmy70pr7ifw	26UECHE0013	26ueche0013@student.gvpihlr.edu.in	$2a$10$3huzHPHKuaQbTl2dv2Xy6.vs8K0eF.tZlKR7Gw8ItWc4wa3uQUeBm	R CHARISHMA	9052334886	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.898	\N	\N	\N	\N	\N	\N
+cmv0jr19z002emzmyd5zpihkg	26UECHE0002	26ueche0002@student.gvpihlr.edu.in	$2a$10$czYM05f0LgmAE5X7ZP4mUO4x/Ab0kGN2Hyo/ts1urWdnNZMf3kdg6	ANAPARTI HEMA AMRUTHASRI	7780375160	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N	\N	\N	\N	\N	\N
+cmv0jr1ak002mmzmyml7sr464	26UECHE0010	26ueche0010@student.gvpihlr.edu.in	$2a$10$KCwdWLdfiIKKUbd5rlFCm.z0vUoH925aK5wxNZ9sGc3UVr.TtRSjW	MADICHARLA SRI CHARAN	9866569376	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.897	\N	\N	\N	\N	\N	\N
+cmv0jr1b3003zmzmyx06ovo5d	26UECHE0005	26ueche0005@student.gvpihlr.edu.in	$2a$10$wN8Z.YhNC5bu8fs/p7HnauYjjWqNKPjQX2JJOaL.rsIcMX6fH4Sce	GARE BHUVANA SREE PANNA	9160885161	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N	\N	\N	\N	\N	\N
+cmv0jr1ap002tmzmy2j8ovwkd	26UECHE0018	26ueche0018@student.gvpihlr.edu.in	$2a$10$7ZYr4.rxj7sJfRQYR9TudeOw8UmczroD7w.12/HP42VwimAQYmoee	MEDAPALLI THANUSH KUMAR	8074285898	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N	\N	\N	\N	\N	\N
+cmv0jr1b9004dmzmys413oyv8	26UECHE0012	26ueche0012@student.gvpihlr.edu.in	$2a$10$IG37aJMrDnjY/N/PM5D2jeLT/3YJxZY6vRysvmAt.r89zLLrKjL1e	OMMI GREESHMA	9849601979	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.897	\N	\N	\N	\N	\N	\N
+cmv0jr1an002qmzmysy279aw5	26UECHE0015	26ueche0015@student.gvpihlr.edu.in	$2a$10$6vQYdRJJdjO.hTk1FtyTueQmCoJNdGfIYtPXdUHv/MNB6s0ZnxJFu	SARAGADAM ASHVIK	7780527369	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.897	\N	\N	\N	\N	\N	\N
+cmv0jr1al002omzmyral3hro5	26UECHE0008	26ueche0008@student.gvpihlr.edu.in	$2a$10$tU1VXnRosykXyH9HTByy/ODECGQbdN1qV8rn.7aW.Q1NY7V7cU7Me	KARINKI NAGA VENKATA SAI SURYA KARTHIK	7989080306	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.897	\N	\N	\N	\N	\N	\N
+cmv0jr1bm005hmzmyc4n1frv8	26UECHE0020	26ueche0020@student.gvpihlr.edu.in	$2a$10$macYVtEMmm4OArdouLB6YeeKAVJHx/J4TUOvyXoW8RGXks0ZDX7be	VAJRAPU SHANMUKHA	7702641912	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N	\N	\N	\N	\N	\N
+cmv0jr1bm005gmzmy1z6noegq	26UECHE0019	26ueche0019@student.gvpihlr.edu.in	$2a$10$KJ0mpgJBrCFFt3gAfPzF/uPdA8QKaRCAQ5NM7Bp/Ax9JS3BOlzZzO	TRIVEDULA AKSHAYA	9704585257	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.897	\N	\N	\N	\N	\N	\N
+cmv0jr1be0056mzmy7uq4abht	26UECHE0017	26ueche0017@student.gvpihlr.edu.in	$2a$10$Tp8/QhRxdQDQ8PzZBfougut7Ye8JA3c5izX2CMLR97ZOCxNBrpUf6	ALAJANGI SRIYATHI	7658945749	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N	\N	\N	\N	\N	\N
+cmv0jr1an002rmzmyjasrt9ev	26UECHE0014	26ueche0014@student.gvpihlr.edu.in	$2a$10$ZSDVd3JqFEPbcFaZ1gkDrOx8FUN0q1LsI57feFrbjNisiStKFUZoS	YANDAMURI STEPHEN TANISH ROY	7330877559	t	f	\N	0	\N	2026-10-09 05:50:36.6	2026-10-09 06:37:39.897	\N	\N	\N	\N	\N	\N
+cmv0jr1cc008qmzmyaditphgn	26UECHE0033	26ueche0033@student.gvpihlr.edu.in	$2a$10$LrLHc37U8d1f0hPVPGGvUuxEiz3cUuElS9EpNsgcRm4g2BZNc3gGK	KANDIPILLI PALLAVI PRANATHI SRI	9666610617	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N	\N	\N	\N	\N	\N
+cmv0jr1cc008ymzmyizf1zi80	26UECHE0029	26ueche0029@student.gvpihlr.edu.in	$2a$10$liFP4ZTK7mMAsmW0pzYHOuRMlWdQQkvxBAbcsMXWET.jCWLiI8FY2	CHITTA AMRUTHA	9290269636	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N	\N	\N	\N	\N	\N
+cmv0jr1cc008omzmyyi37u3rq	26UECHE0030	26ueche0030@student.gvpihlr.edu.in	$2a$10$oA5w1GoYZ7E5IUQHHbEri.iOK735hseAhTEVoiEGyIr.LDCmAsMJW	PALETI SAI YASHWANTH	8688439396	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N	\N	\N	\N	\N	\N
+cmv0jr1cc008vmzmyn0phgub3	26UECHE0027	26ueche0027@student.gvpihlr.edu.in	$2a$10$LClLo3j3ME1RRBIFowYfl.X9vIXq8M5dVSpjpz9BaioTYqJmZpW7e	SABBAVARAPU TARUNA KEERTHI	9989720503	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N	\N	\N	\N	\N	\N
+cmv0jr1bk005bmzmypv7n6va2	26UECHE0016	26ueche0016@student.gvpihlr.edu.in	$2a$10$2GMQ2dPtBMYMOk10SrLccOm4634eraX.T558HZ9xqnBT3YfTJkH1O	SHAIK RIZWAN	8500095508	t	f	2026-10-09 08:31:32.316	0	\N	2026-10-09 05:50:36.599	2026-10-09 08:31:32.317	\N	\N	\N	\N	\N	\N
+cmv0jr1cd0098mzmy03aw4iw8	26UECHE0047	26ueche0047@student.gvpihlr.edu.in	$2a$10$6tF1PkUb4qVK8jld2d69BeECxt2kj9L1UwDU7gsW7btwOZM2ZFRgu	BOKKA AKARTHIK	9515138974	t	f	\N	0	\N	2026-10-09 05:50:36.685	2026-10-09 06:37:40.052	\N	\N	\N	\N	\N	\N
+cmv0jr1d200exmzmyxrmu9axh	26UECIV0007	26ueciv0007@student.gvpihlr.edu.in	$2a$10$ixUiuWlJGk54Ihcl9clST.pZW3JnxnhP3OD1p4rTbSY3b/jUM140C	LADI ROHIT	8520060099	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N	\N	\N	\N	\N	\N
+cmv0jr1d300f9mzmyovyfdqyi	26UECIV0017	26ueciv0017@student.gvpihlr.edu.in	$2a$10$zdzYl6Wj8L1XJlzATsELK.fq9Z4c4mZZfcfuPnIObFcGrGW21gkd2	SINGUPURAM MANOJ KUMAR	9121488898	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N	\N	\N	\N	\N	\N
+cmv0jr1ds00ldmzmyh6aqaxvm	26UECSE0003	26uecse0003@student.gvpihlr.edu.in	$2a$10$h6RRqdXQmvi9BHFqyurII.ataffSIPo9dxo7xbWzekFU81nQsgyo.	ATTULOORI YASASWINI	9701574499	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.086	\N	\N	\N	\N	\N	\N
+cmv0jr1dt00ljmzmy9bl2wx7e	26UECSE0007	26uecse0007@student.gvpihlr.edu.in	$2a$10$3YcXmgu3J5weXTQcAFEA.uMpn0aWmZkm6e1yUCU2Eikdpjhaq/xc2	ROUTHU SASANK	9063892997	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N	\N	\N	\N	\N	\N
+cmv0jr1eb00rimzmyeh8jb5we	26UECSE0019	26uecse0019@student.gvpihlr.edu.in	$2a$10$PwflZMvBe7/7/2hhGq0fCulVwcddFdtBktKm1eUpV1wRIo03CiLwy	CHEEKATI NAVITHA	9704217074	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmv0jr1ed00rvmzmyua7dwhac	26UECSE0037	26uecse0037@student.gvpihlr.edu.in	$2a$10$l5Sjj1rEkAi75vy4/hyyVOwmwmhWvrCrkj6SFHt4aQd6ITbgiA.0K	GOGINENI SRI GANA SRAVANI	6300796589	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmuzu9op7005lydphc9foztkf	KR	kr@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. K Rohini	+91 9440112233	t	f	2026-10-09 05:10:51.011	1	\N	2026-10-08 17:57:16.748	2026-10-12 14:52:18.444	\N	\N	\N	\N	\N	\N
+cmuzu9oqp00b0ydphx5t2pbfg	SAK	sak@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. S Ashok Kumar	+91 9440112233	t	f	2026-10-08 18:00:43.159	0	\N	2026-10-08 17:57:16.802	2026-10-12 14:52:18.456	\N	\N	\N	\N	\N	\N
+cmuzu9orf00dxydphmg1iayhn	PSSA	pssa@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. PSS Appalacharyulu	+91 9440112233	t	f	2026-10-08 18:00:47.768	0	\N	2026-10-08 17:57:16.827	2026-10-12 14:52:18.465	\N	\N	\N	\N	\N	\N
+cmuzu9org00e2ydphu05asr0i	VVVSN	vvvsn@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. VVV Satyanarayana	+91 9440112233	t	f	2026-10-08 18:00:47.987	0	\N	2026-10-08 17:57:16.828	2026-10-12 14:52:18.465	\N	\N	\N	\N	\N	\N
+cmv0jr1et00xomzmyko4eicb7	26UECSE0045	26uecse0045@student.gvpihlr.edu.in	$2a$10$lRThSmXiMJKXOvbf/SrQYOJZY4mvN8DXNacYhAFGRjs4BYiA7Dn1C	INDUKURI SAI AMRUTHA	9866364696	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N	\N	\N	\N	\N	\N
+cmv0jr1eu00y1mzmyq5suuqzy	26UECSE0059	26uecse0059@student.gvpihlr.edu.in	$2a$10$hxxYAms9ORVPFdAFcW/BKeUhao9JmrqprhqUFCrcoWB95nNdZATYy	KARTHIKA HARSHINI	9490637937	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N	\N	\N	\N	\N	\N
+cmv0jr1fh0141mzmyklk8zbmm	26UECSE0076	26uecse0076@student.gvpihlr.edu.in	$2a$10$hJeIJnSP5vF6TkD5bv2KAepBVHkUIa5T.2suMptuviivAXXCcSU.u	MAHADASYAM RITHVIKESH	9000040957	t	f	\N	0	\N	2026-10-09 05:50:36.798	2026-10-09 06:37:40.13	\N	\N	\N	\N	\N	\N
+cmv0jr1fj014bmzmy90xglian	26UECSE0086	26uecse0086@student.gvpihlr.edu.in	$2a$10$gASvHiux2F1NRDbaY.qKYe3wavaQ2iagdbQKzMdSznatbcBB/6NNm	NAGIREDDY NAGA VENKATA LAKSHMI CHARISHMA	8688871526	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N	\N	\N	\N	\N	\N
+cmv0jr1fy01a8mzmyc3j9rxkj	26UECSE0099	26uecse0099@student.gvpihlr.edu.in	$2a$10$pBGGiI0DcUj/v5vlKX08XeOAiNeXg1P87N0xBwRYbzVZMQmwsc6dO	PIDUGU LAKSHMI PRASANTH	9963021855	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N	\N	\N	\N	\N	\N
+cmv0jr1fz01ajmzmyt88vl7vj	26UECSE0107	26uecse0107@student.gvpihlr.edu.in	$2a$10$a/8kgJZ7OJShOXz9xVixne37E6v06CjpCob3U.C/.oee5eb/7JKpu	POTNURU SHYAMA SRI	8341088727	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N	\N	\N	\N	\N	\N
+cmv0jr1gh01gzmzmy412zedn3	26UECSE0121	26uecse0121@student.gvpihlr.edu.in	$2a$10$5BYFZcRBuT2XE/GCrK094.w5IfXf9sV1WdGEsbHwZ94LvmN9xBdMW	ALLA YOGESH YESHWANTH	90325579670	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N	\N	\N	\N	\N	\N
+cmv0jr1gx01mrmzmygv4upgmv	26UECSE0147	26uecse0147@student.gvpihlr.edu.in	$2a$10$hkYeTa7113r3VehvCxioJufnhFQP15amhC1zrMqL1nybVuviYfRTq	POTHULA SAI KIRAN	9705313284	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1gy01n9mzmyat1bxiee	26UECSE0168	26uecse0168@student.gvpihlr.edu.in	$2a$10$ZKaM8lUnJlFLYbiYzZidX.DVxF.RtMnRpGIIVhWyNjR3wcVBo3j5y	JALLEPALLI JAYA CHANDRA	8919729409	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1hd01swmzmylv4ym3a4	26UECSE0176	26uecse0176@student.gvpihlr.edu.in	$2a$10$7UDYquTO2Flq.osSj.nz1OoXZD.v5bf5k/NL4AbN.B7Z63LkGD57u	AYUSHI PATNAIK	8801809615	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N	\N	\N	\N	\N	\N
+cmv0jr1he01t9mzmyckfkkojx	26UECSE0187	26uecse0187@student.gvpihlr.edu.in	$2a$10$PNgiGaONPuGv.KvD1U2Ma.BTJ/29rtxSSzKrUdaGi7hkqEzUWWj.K	KOTTAKOTA GIRISH KUMAR	9704336976	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N	\N	\N	\N	\N	\N
+cmv0jr1hu01zrmzmyicml3gck	26UECSE0215	26uecse0215@student.gvpihlr.edu.in	$2a$10$BI/jPXgJhAIOIkqueU4N2um5IX0tps.avZ0DFNlv.jkGwWrYDXvv6	MOHAMMAD SHABEER AMAN	9848608335	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N	\N	\N	\N	\N	\N
+cmv0jr1ht01z7mzmy5if6oc6t	26UECSE0199	26uecse0199@student.gvpihlr.edu.in	$2a$10$1ng5oP29Y/QWcYNH.LQB0ujvTAmDmSSV5eBZCoB96gP6wtIHMG3/C	VARANASI PRABHAV SRI SAI	8886959222	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N	\N	\N	\N	\N	\N
+cmv0jr1ia0262mzmy3qze5n9s	26UECSE0231	26uecse0231@student.gvpihlr.edu.in	$2a$10$pqJDg8/UfI.VtLbyIlBY..aLtCnoGBABYLwQ9fIgd.srRNiTx.cl.	GARAPATI VAMSI	9533266296	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.225	\N	\N	\N	\N	\N	\N
+cmv0jr1i9025mmzmyugpvth54	26UECSE0232	26uecse0232@student.gvpihlr.edu.in	$2a$10$4UOdKMW385aqFpMiRx7tiuVjr9WGYnVtd/xLPPttquo2gBmWIrCOK	KANCHIPATI VASU VARDHAN	9247179469	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N	\N	\N	\N	\N	\N
+cmv0jr1ir02bwmzmy4jdtaldo	26UECSM0006	26uecsm0006@student.gvpihlr.edu.in	$2a$10$Mmpx2ANtqmLjv6ZeWftKguVhYFpNpbUAo1HBbEpKV8Bj3mC5PKJae	BHAGYARAJU BARATAM	9490223499	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N	\N	\N	\N	\N	\N
+cmv0jr1is02c3mzmyryvm1s4z	26UECSM0022	26uecsm0022@student.gvpihlr.edu.in	$2a$10$wPPYFD82YveCDebLN2exMOltLYKbR5zJNPPmDKjTVLQrdjlqi/Y5y	GARBHAM SAI JESWITHA	9866381994	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N	\N	\N	\N	\N	\N
+cmv0jr1j702i1mzmyd0iqtbl1	26UECSM0038	26uecsm0038@student.gvpihlr.edu.in	$2a$10$Iduq27zc7PyAsGxKxGJ0zO1bDL1wy0cN49fIZSK2sKACoc8W99Xza	KELLA LAVANYA	7780229339	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N	\N	\N	\N	\N	\N
+cmv0jr1j902igmzmyeod9z5kc	26UECSM0046	26uecsm0046@student.gvpihlr.edu.in	$2a$10$57WI66PWtO0pQVT7/OtSsekyvFNiBALwIu7NM2JngcQtYTR6FMXtW	MANUKONDA LOHITH MOHAN	7989656466	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N	\N	\N	\N	\N	\N
+cmv0jr1jo02o9mzmy6dq7au8k	26UECSM0060	26uecsm0060@student.gvpihlr.edu.in	$2a$10$5f4bzRtlSx8gJpl615BFyeYoVneRnkfez9iIRt7weqVR7xWjyasVq	NOWDU TEJASWINI	9705729473	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.27	\N	\N	\N	\N	\N	\N
+cmv0jr1jp02olmzmyfc90nz17	26UECSM0072	26uecsm0072@student.gvpihlr.edu.in	$2a$10$J61PH3PPjIPPXY7E.9XoZehGnfNvg0grf.yB.D8SUCVSUX.MF6F5O	SURAMPUDI SANJAY RAHUL PRASAD	9848281030	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N	\N	\N	\N	\N	\N
+cmv0jr1k302ummzmyx3oiutew	26UECSM0085	26uecsm0085@student.gvpihlr.edu.in	$2a$10$BHqSkDvn875lSJJSsyn6rOdXJCVTrsFw9SwMZ8WZZZfxjVPXKoMsC	YELLUMAHANTHI SAI SARATH	6302230034	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1k402uumzmyc3acfqyv	26UECSM0096	26uecsm0096@student.gvpihlr.edu.in	$2a$10$GXxVMqi.G.Nx8kTwG0qm8ecoUVIi.YwTkZoJw2XtD4ev/La4TbSPO	AKELLA NAGA SAI MEGHANA	9866176526	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1kj030zmzmy4qt0dild	26UECSM0116	26uecsm0116@student.gvpihlr.edu.in	$2a$10$Sc6PVXRN.VYLCoRKfnZEauPjt7x9xwoQ1NPHGXBnPKoST9JCWi7cu	KARRI YASHASWANI	9456377805	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N	\N	\N	\N	\N	\N
+cmv0jr1kj0317mzmy2cg9lqqo	26UECSM0124	26uecsm0124@student.gvpihlr.edu.in	$2a$10$Cty7WnmKKP3UVDtjEVmeru5Y7x3I6UrVrNXZjlLNQ2p7qfopcB6rq	ADDALA TEJASWANI	8121560002	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N	\N	\N	\N	\N	\N
+cmv0jr1cd008zmzmy91lay2eb	26UECHE0036	26ueche0036@student.gvpihlr.edu.in	$2a$10$46VvwQP4Hf6pFFgn1MQ/Veb7FadQ75N9lpX4o7Mjcm6CAIISbavey	BANDARU RAGADEEPTHI	8639932928	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.051	\N	\N	\N	\N	\N	\N
+cmv0jr1d200f4mzmy0eph2sjm	26UECIV0009	26ueciv0009@student.gvpihlr.edu.in	$2a$10$t6xBTPEXIenLfEf/x2DbEOJDAckPkoVMMo5RafcpjEQDPDkO3w/6W	METTA PRAHARSHINI	9032539527	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N	\N	\N	\N	\N	\N
+cmv0jr1d300famzmyj60x439y	26UECIV0021	26ueciv0021@student.gvpihlr.edu.in	$2a$10$685fzDuISlQYOKoG.EduAup2HaK9.qPedZf2v.2sk3Cn9S78wrqte	GURIVILLI KOMALI	8125760419	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N	\N	\N	\N	\N	\N
+cmv0jr1ds00lbmzmy6vmgdnyd	26UECSE0005	26uecse0005@student.gvpihlr.edu.in	$2a$10$VG6rSY3xamreGmy3u8PNheL9oYSiy/D.pByAB2QVCDsrsNZChg2kK	BONUMUDDULA JAHNAVI	9491569580	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.086	\N	\N	\N	\N	\N	\N
+cmv0jr1dt00limzmyvzjuirde	26UECSE0006	26uecse0006@student.gvpihlr.edu.in	$2a$10$bqLvXyWRzXq5UO54CtbbjukoL7cOX9FkQ950Nve2iHzUzHeYSk.7u	BALLA SANJANA	7674913156	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N	\N	\N	\N	\N	\N
+cmv0jr1eb00rmmzmyma8i9tt4	26UECSE0027	26uecse0027@student.gvpihlr.edu.in	$2a$10$XZhUhhD.kxn9y7iSp5U.3.zEI7IykFKjUdqjoopABX9QM906RcIJu	DOKULA VARSHINI	7670987328	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmv0jr1ed00rwmzmyqmm7smpp	26UECSE0042	26uecse0042@student.gvpihlr.edu.in	$2a$10$RrQf/NceN3y5X058s5y4N.oMIs8AU0.tmyVTfNSGhw.ba0BJRoiX.	GURIVELLI CHETANA	6304344878	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.103	\N	\N	\N	\N	\N	\N
+cmv0jr1et00xymzmy1fzeacct	26UECSE0055	26uecse0055@student.gvpihlr.edu.in	$2a$10$GeG/HPiuQfp09OB3alpVku0icF3xq.c5oDT/fmicb2v7IrLZL6SN6	KANDULA HOMAJA VEERA	9347334494	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N	\N	\N	\N	\N	\N
+cmv0jr1eu00y8mzmy4wh50pm7	26UECSE0068	26uecse0068@student.gvpihlr.edu.in	$2a$10$baYKAFAJ0vbquE0LdZBmAexafsRHEWvifJrfWak7DJu8ZhOU.uCaO	ANTHARAKONDA HARIKA	8328081246	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N	\N	\N	\N	\N	\N
+cmv0jr1fh0140mzmyji02tjk1	26UECSE0072	26uecse0072@student.gvpihlr.edu.in	$2a$10$TNQmK1r8BOV24/Gl2pT.KuOUJqKTRrLSksQiGKHMMCklzR6KEEK5O	MAJJI CHARITA PADMAZ	9063756504	t	f	\N	0	\N	2026-10-09 05:50:36.797	2026-10-09 06:37:40.13	\N	\N	\N	\N	\N	\N
+cmv0jr1fj0149mzmy5bjhcw27	26UECSE0084	26uecse0084@student.gvpihlr.edu.in	$2a$10$sUXtCc1Z/PRJFw0l/fBGT.p2GgtXNGY/YMA4lDhX79RfqZo/4guK.	MULLAPUDI BINDHU SRI	9949611789	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N	\N	\N	\N	\N	\N
+cmv0jr1fy01aemzmyrv2wpsf7	26UECSE0105	26uecse0105@student.gvpihlr.edu.in	$2a$10$slavCOnE5EuOL6/otqHsie5V9lu0ZYAJ0e8hRDZi1FwGULguwN6mS	POTHINA LIKHIL AKSHAY	7013927973	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.144	\N	\N	\N	\N	\N	\N
+cmv0jr1fz01akmzmy6tqxscpj	26UECSE0109	26uecse0109@student.gvpihlr.edu.in	$2a$10$7pffsUIP8SUXa2APQXNRj.7DltAj0ZpYZ3Z9kOZqBFRjzezq.cPNy	REDDY SAI VENKATA PUSHPAK	7981215765	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N	\N	\N	\N	\N	\N
+cmv0lfk6r03w610e0ix1rwcr6	26UEEEE0040	26ueeee0040@student.gvpihlr.edu.in	$2a$10$FMWZEXOihaJpgYgb33Ld1eHVBozG/4YcstFrnMJ6SR83x2OYxYk.q	RAMPILLI VAMSI KUMAR	7013730486	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0jr1gf01gjmzmyw00xlw1n	26UECSE0128	26uecse0128@student.gvpihlr.edu.in	$2a$10$pM3sIWl6KDV/3XC3p4dM8O2QNNkeNmRA.MCplvAnURs2u8oPPnX9W	TANIKELLA V N L SURYA SANJAY BHARADWAJ	6281209634	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N	\N	\N	\N	\N	\N
+cmv0jr1gh01h0mzmy58wfo517	26UECSE0142	26uecse0142@student.gvpihlr.edu.in	$2a$10$tMesv0BZO1DMpdK8WgDRUu4CyVI7CnKw6Gi8WQwSihHLoQlU.nzRW	CHILUKURI MANOGNA	9494400742	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N	\N	\N	\N	\N	\N
+cmv0jr1gx01mvmzmyyey3dn87	26UECSE0150	26uecse0150@student.gvpihlr.edu.in	$2a$10$N./9XIeg2EIhyV/kIUhWNe4gzeNGKswQ6C2frzPBRGRHfjhfe9XY.	BHEESETTY V N CHAKRA PRAHAAS	9948748737	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1gy01n3mzmyfrek2ivj	26UECSE0159	26uecse0159@student.gvpihlr.edu.in	$2a$10$iP00J6/gFFg8z8CB0zZcT.jGagsHubSdpQvkKmWGWOxumpmjT4OiS	KALLA SUDHEER	7993679248	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1hd01t1mzmyhxk8yjnh	26UECSE0178	26uecse0178@student.gvpihlr.edu.in	$2a$10$XzoOCU5LdUtfcNeHs1pK5.b8nXDw84Y1oygELdx3uuaqSEjY4vkmC	PAMPANBOYINA SAHITHI	9121994139	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N	\N	\N	\N	\N	\N
+cmv0jr1he01tamzmymwz99zf8	26UECSE0189	26uecse0189@student.gvpihlr.edu.in	$2a$10$d1GUySEZjQ.POB6Op9YRnuqcXBE6YWoD8Uiu2q5csAOq48VaG/n8W	L SARANYA LAKSHMI	8179013662	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N	\N	\N	\N	\N	\N
+cmv0jr1hu01zpmzmyvr0mj96g	26UECSE0214	26uecse0214@student.gvpihlr.edu.in	$2a$10$BgqN38M.EaGdypQNnm/DZeLTKGDBYqIYu.TptvCKgxjDzfLfAWX8C	TOPALLI DHARANI KEERTHIKA	9392831088	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N	\N	\N	\N	\N	\N
+cmv0jr1ht01z5mzmyndqjbrf0	26UECSE0195	26uecse0195@student.gvpihlr.edu.in	$2a$10$qbyshZNoSja9mUrNr3ZRUuxmfCiA6owfUF/xGwPnUULRvmZ.kIPFq	SAI YUKTA SATVIKA PRAGADA	6305321076	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N	\N	\N	\N	\N	\N
+cmv0jr1i9025jmzmyr47rzton	26UECSE0227	26uecse0227@student.gvpihlr.edu.in	$2a$10$g4zf1OTneTe8sZ70eawuzud36UmhLNbSxtfCZeqardILlHxxf8rkC	DOKKARI VAISHNAVI	9441032497	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N	\N	\N	\N	\N	\N
+cmv0jr1ia025tmzmyuz3kccyr	26UECSE0237	26uecse0237@student.gvpihlr.edu.in	$2a$10$JCEPtnA1ksZFjrvtr/tZA.mVcDAvuBQJiXqwP86DYm/ImQQypii2O	MEESALA CHAITANYA RAM	9490971398	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N	\N	\N	\N	\N	\N
+cmv0jr1is02c0mzmycde5rriz	26UECSM0018	26uecsm0018@student.gvpihlr.edu.in	$2a$10$OSQAgLq.HLjJmIsGEKhUNeooPlaB1AgSsH5CFzdL0FLraZJFRuLci	DOMATHOTI SAI VENKATA MRUDL SATHVIK	9985330150	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N	\N	\N	\N	\N	\N
+cmv0jr1ir02btmzmyspubfqjm	26UECSM0017	26uecsm0017@student.gvpihlr.edu.in	$2a$10$Fn1yKFNDGihaAhAK1wIl8.u2Ig2voirGGIOzmsP2BAqymBHBSF22u	DEVATHA SUSRITHA	6281757554	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N	\N	\N	\N	\N	\N
+cmv0jr1j702hxmzmy21kexyrs	26UECSM0032	26uecsm0032@student.gvpihlr.edu.in	$2a$10$wgTOBCTCulDzwHYkg1P2/OTEK8Ccy2p8BibLF2PeNeP.PTjtnskjO	KANDALAM SRI RANGA ANANYA LAASYASRI	9963414500	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N	\N	\N	\N	\N	\N
+cmv0jr1j902ikmzmyb8ptjzqf	26UECSM0053	26uecsm0053@student.gvpihlr.edu.in	$2a$10$9SKrma4V.DYX9IFa0/L4c.Hng0uUV0mHIH84qN5d1iHsJMlDXYZiq	MUDIGANTI SASHI KIRAN	9398068843	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N	\N	\N	\N	\N	\N
+cmv0jr1jo02oamzmytzfcsz3q	26UECSM0057	26uecsm0057@student.gvpihlr.edu.in	$2a$10$8y6q81msKvZuS4EJNmsk3eVYqezzf70GcS4HuDcwLB5b7p1jRYyQC	NARAMSETTI YOGENDRA	6006607548	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.27	\N	\N	\N	\N	\N	\N
+cmv0jr1jp02oimzmyehavjskh	26UECSM0067	26uecsm0067@student.gvpihlr.edu.in	$2a$10$4TPX20nNYjIvcWf.Pz.kDe13Dkh.2ltmh/2ZbbA7gxfpMlVadD.Ty	RAGI SAI SASANKA CHOWDARY	9177691639	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N	\N	\N	\N	\N	\N
+cmv0jr1k302unmzmybcub5k67	26UECSM0090	26uecsm0090@student.gvpihlr.edu.in	$2a$10$KYtDYBEIyxKXyWOlU1GD/.z1PoKALyTMYRorayfT0xk4l1mvr0PHe	ILLA RUPESH	9951974863	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1k502v2mzmy0h4ugq0w	26UECSM0100	26uecsm0100@student.gvpihlr.edu.in	$2a$10$HhiP4I/UMaZm4XTa6pTNO.0cz0jwZFQqgpw5ohfQhukrcUqXTYtnK	MASARAPU PRANEETHA SAI SREE	9642010043	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1ki030omzmycwoo9dcr	26UECSM0105	26uecsm0105@student.gvpihlr.edu.in	$2a$10$0MX3qMUcyJuh1RS3l9QhVeZYps1FkoRaQJadkoAke1e0oL0gP1dhq	HOTA SAI MEGHANA	9440535761	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N	\N	\N	\N	\N	\N
+cmv0jr1kj0312mzmylh99qu5r	26UECSM0120	26uecsm0120@student.gvpihlr.edu.in	$2a$10$tTyAIVIDKjjE3l71UM92F.o5nH4kWDV9szTDB6TEnFusE5btfGsT2	MANTHENA JASHMITHA	6302017543	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N	\N	\N	\N	\N	\N
+cmv0jr1cd009amzmy0y0djxpi	26UECHE0038	26ueche0038@student.gvpihlr.edu.in	$2a$10$AD49EjzUFJy3WjpxwOdKj.0maB8l5iZktsf3Bzn8Jb2k5Wb2tJwne	NUKALA SAI RANGA HARA RIDHEEV	6303608826	t	f	\N	0	\N	2026-10-09 05:50:36.685	2026-10-09 06:37:40.052	\N	\N	\N	\N	\N	\N
+cmv0jr1d200f2mzmyandssth5	26UECIV0010	26ueciv0010@student.gvpihlr.edu.in	$2a$10$xmuJ0O.hVO.KIIsk5XdC2edn6LGk8SLNBVUgYm9.6wHx/P/Ri.sYu	P. BHANU PRASAD	7095199651	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N	\N	\N	\N	\N	\N
+cmv0jr1d400fdmzmyi73invo6	26UECIV0024	26ueciv0024@student.gvpihlr.edu.in	$2a$10$Q3z96D3ytkaZGEMZCU0jG.7RjWojR0fEbjOuKN02BJi8FfRvYK2c6	LOLLA VASU DEV	9666737356	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N	\N	\N	\N	\N	\N
+cmv0jr1ds00lcmzmyewu8kkof	26UECIV0036	26ueciv0036@student.gvpihlr.edu.in	$2a$10$9O8VPKQLY2ROUknFV.tHTOhnwmq.zfXjq.X2xqcdWWOeRy6e8M.x6	MUNAKALA DEVA HARSHA	8919766559	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.085	\N	\N	\N	\N	\N	\N
+cmv0jr1dt00llmzmyp3jdjwes	26UECSE0008	26uecse0008@student.gvpihlr.edu.in	$2a$10$tZsu5VS8jTRJrEsbS9GUOuJIP.4Ooit2Oio2.mVpZhiTWH.iwRvaC	BANDARU REVANTH	9246615264	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N	\N	\N	\N	\N	\N
+cmv0jr1eb00rkmzmycuhdlwva	26UECSE0021	26uecse0021@student.gvpihlr.edu.in	$2a$10$wKUkELHOXTv2/3.FpztCfu75WdtfPtyqwAwUtlrTfXqecDGwSX4HK	CHALLA DAKSHINYA	9494922289	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmv0jr1ed00s0mzmy4en4oi2s	26UECSE0041	26uecse0041@student.gvpihlr.edu.in	$2a$10$4EIlFRm3VSzlCgakaO8lQuMk7XRRIQUrG8qFyDDkJZRgIcCG95Uv6	GUNTREDDI MEENAKSHI	9392420847	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.103	\N	\N	\N	\N	\N	\N
+cmv0jr1et00xxmzmy07ic879b	26UECSE0054	26uecse0054@student.gvpihlr.edu.in	$2a$10$ufdCrO2a5ca372SYlb..zeYteXrVr./oPkRjZCrGqDUk3ke9VMRl2	KANDARAPA INDU BHARGAVI	9515664006	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N	\N	\N	\N	\N	\N
+cmv0jr1eu00y4mzmy8107yu58	26UECSE0064	26uecse0064@student.gvpihlr.edu.in	$2a$10$70vQHR7sga2D1HF3FoPizu2oMcbvwCuGuEFf3mn.wKu.Qe3dIPHPe	KORADA SATISH KUMAR	6305543438	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N	\N	\N	\N	\N	\N
+cmv0jr1fh0143mzmytbo0x38y	26UECSE0075	26uecse0075@student.gvpihlr.edu.in	$2a$10$.wPCWhVzm4vOud5FD9Rkmesa03DThIeCo3VxYNWG5m45l0pxwH6c6	MADDALA VASHIST	9966680388	t	f	\N	0	\N	2026-10-09 05:50:36.798	2026-10-09 06:37:40.13	\N	\N	\N	\N	\N	\N
+cmv0jr1fj014gmzmyldr8np1f	26UECSE0089	26uecse0089@student.gvpihlr.edu.in	$2a$10$vIz4x1MjEv0pSiS8ZrMWS.32Vex10WohKGp85NOBSmGARztMvm2XW	NANDA HEMA SUNDAR	9866841440	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N	\N	\N	\N	\N	\N
+cmv0jr1fy01a6mzmyw5s7qjgp	26UECSE0095	26uecse0095@student.gvpihlr.edu.in	$2a$10$QV3Cf0ToczA1jNubWitAeO6JlssxDadpOyuFZmihpgHBhhSbQ4BqG	PANCHIKATLA GAGAN	9866109946	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N	\N	\N	\N	\N	\N
+cmv0jr1fz01asmzmymz1mjxfh	26UECSE0117	26uecse0117@student.gvpihlr.edu.in	$2a$10$b/Bx1.Qnsbj/KBrtvvsZN.XmV0KbqvClwcUpp.Y1ivXufi6vlTI5C	SOMAROUTHU RUPESH	7921579297	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N	\N	\N	\N	\N	\N
+cmv0jr1gf01ggmzmy65uuo6aj	26UECSE0119	26uecse0119@student.gvpihlr.edu.in	$2a$10$KUcyZ2TKnk7nO9204SamoOZN8JzbAAhE1JMRei2hlbeE2VHdDEhJC	SANGINEEDI VENKATA SATYA DEVI VARUN	7780291719	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N	\N	\N	\N	\N	\N
+cmv0jr1gg01gsmzmyijka9vs2	26UECSE0130	26uecse0130@student.gvpihlr.edu.in	$2a$10$YrNPGz5nu7OW8TbasZru5egImN7g/8t2xN.ZKxerU4Hrnfj6Wx0uW	MUTHIREDDY TEJESH	9492230335	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N	\N	\N	\N	\N	\N
+cmv0jr1gx01mumzmys5ze8j5j	26UECSE0149	26uecse0149@student.gvpihlr.edu.in	$2a$10$HtSv/bwmFvDKrMz0fAAqce02oxQI1w7HH6tz8p1vDiIvoJ9qcqWaa	V.AMRUTHA VARSHINI	8008170916	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1gy01n8mzmyzrrct8z8	26UECSE0167	26uecse0167@student.gvpihlr.edu.in	$2a$10$zGFpeXX97JcOjooyaATj8Ojf9sgEb9OGS/HpTiCnCXTQ3Il4QfcHq	MARRAPU DAYANA	9985964534	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1he01t8mzmyfr6v1vfe	26UECSE0169	26uecse0169@student.gvpihlr.edu.in	$2a$10$pvCZ6ihCBPdVG9KiLaMPu.iBRKRn6nZ.ywwXzPN2hLV2Ss16xr1Mu	PAIDI AMRUTHA	9347659128	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N	\N	\N	\N	\N	\N
+cmv0jr1hf01tkmzmy8seh3n70	26UECSE0194	26uecse0194@student.gvpihlr.edu.in	$2a$10$I5wiFis2azWaqEAedl5tvOoHZ1epYYM8tVc32v/D06U1PYNPskig6	PONDURU DIVYA	9391264955	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N	\N	\N	\N	\N	\N
+cmv0jr1hu01zhmzmyc45t1vnr	26UECSE0196	26uecse0196@student.gvpihlr.edu.in	$2a$10$S2AlKde6MoUYnECTru5zj.Z.rwdjJxocmYatuVdEorp5R5lLfbBS2	SMITA PANDA	9993562287	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N	\N	\N	\N	\N	\N
+cmv0jr1i9025hmzmybijauumw	26UECSE0226	26uecse0226@student.gvpihlr.edu.in	$2a$10$ajCFvYimD7E4TQ7rElSY7ePc/QVUvuTpl9yGNr6hVBni6KP4zImsS	BOKKA SAI NISHANTH	9573594399	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N	\N	\N	\N	\N	\N
+cmv0jr1ia025zmzmyeaq121cw	26UECSM0001	26uecsm0001@student.gvpihlr.edu.in	$2a$10$ADdm59sUOtUuFLczTKMZa.z9mDkaeA9/gynRs8B9mLQpwn5Jrh9LC	ALAPATI YASWANTH	8886731626	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N	\N	\N	\N	\N	\N
+cmv0jr1ir02bpmzmy46964ltr	26UECSM0004	26uecsm0004@student.gvpihlr.edu.in	$2a$10$Nu1UXWG3OzoUfPrXOoHSTevmxmJ8f3UIvVSvEG7bmuBislznjUYxy	BHAMIDIMARRIL S S N CHANDRA MOULI	9885076812	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N	\N	\N	\N	\N	\N
+cmv0jr1is02c5mzmy365jod9a	26UECSM0023	26uecsm0023@student.gvpihlr.edu.in	$2a$10$Fbd6ilfd1.sah68YMQ3xaOwxCcEyEbr9Rpvh3OqPUdQD.si.BzsCy	GOPARAJU DWARAKA SATYA	9948988774	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N	\N	\N	\N	\N	\N
+cmv0jr1j802i8mzmyqz2r2i7x	26UECSM0031	26uecsm0031@student.gvpihlr.edu.in	$2a$10$Sk5XktgFla58yJuq9HF27ukcJocaAhezmEPi1irdFD6L4e39/nb7e	KAMISETTI RAVI MANI KUMAR	9963710533	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N	\N	\N	\N	\N	\N
+cmv0jr1j902iamzmyntayupz9	26UECSM0044	26uecsm0044@student.gvpihlr.edu.in	$2a$10$P2vUf55wyvdhNRYgiqT5HOM/4I2QKI.k2G0vqEbTpepi62hZot1qm	KUPPILI MADHU VAISHNAV REDDY	6303058826	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N	\N	\N	\N	\N	\N
+cmv0jr1jo02oemzmy8zoa5551	26UECSM0065	26uecsm0065@student.gvpihlr.edu.in	$2a$10$nEP4HaqVKj1DUiO72by3TuDa8XxeSJLaAy68UHjHm1kvd79rsKVKW	POTTURI SAI VIGNESH	9885344077	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N	\N	\N	\N	\N	\N
+cmv0jr1jq02otmzmyyhnubyvg	26UECSM0078	26uecsm0078@student.gvpihlr.edu.in	$2a$10$9YYm14yNIANk0gA.EV/F.OTztyQGuFZTVHh6O7LGO.xae.9O9S4Oq	TULUGU BHAVYASRI	9491935654	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N	\N	\N	\N	\N	\N
+cmv0jr1k402uwmzmy35nsxl01	26UECSM0093	26uecsm0093@student.gvpihlr.edu.in	$2a$10$9LXxgVXtcTPwKFGCWO18rudWgGDQvTQqbMdZgnIQ93.34KcoacNPW	KOVILA SWATHI PRIYA RAMANI	9849544454	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1k302ulmzmy78adlo54	26UECSM0087	26uecsm0087@student.gvpihlr.edu.in	$2a$10$ZE51DiZeNjc5stzxgvQpUOyClIVkBqcxme5alus03D.IUPXrAhi1W	TAMMANA SAI PREETHAM	9948902226	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.285	\N	\N	\N	\N	\N	\N
+cmv0jr1kj030ymzmytgpn7wre	26UECSM0110	26uecsm0110@student.gvpihlr.edu.in	$2a$10$tIIgChwVZJwo0TXZRzWYu.w0xJw0QDdBcBdK.VoS.Rw1lQ7FvKaZC	DADI VINAY VASANTH	6300755383	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N	\N	\N	\N	\N	\N
+cmv0jr1kk031bmzmy4glxgjcm	26UECSM0128	26uecsm0128@student.gvpihlr.edu.in	$2a$10$1gBK0wEeSPteGzY87dqScuRBqlldFUn2DaIAyQyM1U6MHDHmrLQKO	VASANTADA SIVA SAI RAJ	9014095568	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N	\N	\N	\N	\N	\N
+cmv0jr1ce009bmzmy95dvc0f8	26UECIV0002	26ueciv0002@student.gvpihlr.edu.in	$2a$10$RCsauOAZ14nM3oJgpMeCrOvNy9vePQmmFys9NQzuYSXBCiYfFy892	TIMADANI NANDINI	7989295774	t	f	\N	0	\N	2026-10-09 05:50:36.685	2026-10-09 06:37:40.052	\N	\N	\N	\N	\N	\N
+cmv0jr1d200f3mzmyz3lwhpat	26UECIV0014	26ueciv0014@student.gvpihlr.edu.in	$2a$10$Yb2N5lLWl8hBOD6unRGTIuqm9yoThS0OWsgCAo.crUGOm10bzPVZy	RAVUPALLI ESWAR SAI PUNEETH	6300253943	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N	\N	\N	\N	\N	\N
+cmv0jr1d400ffmzmyu16z6255	26UECIV0025	26ueciv0025@student.gvpihlr.edu.in	$2a$10$GWkpZYA3RkUf11q8lZnFwe58Nnh4PaMJXbMbvOzg2I3sUWKJV8//6	BOMMAREDDY DAYANA REDDY	9515499416	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N	\N	\N	\N	\N	\N
+cmv0jr1ds00l5mzmy8ogojgeb	26UECIV0031	26ueciv0031@student.gvpihlr.edu.in	$2a$10$wx0P3qR4BCjQWmMaQGHk8OzMKgM7kyShFt4jr2UglEVTevyebg0C2	MATHI ANKIT	8179425705	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.085	\N	\N	\N	\N	\N	\N
+cmv0jr1dt00lpmzmy4niar14o	26UECSE0013	26uecse0013@student.gvpihlr.edu.in	$2a$10$9Mh0YcnFweVLh6KaipJJfOHOqRfVoCd6tgwbw3fSvloyxP9gcNH32	BOGADI YOKANTHI TEJESWANI	9392837691	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N	\N	\N	\N	\N	\N
+cmv0jr1ec00rpmzmyessn6mau	26UECSE0031	26uecse0031@student.gvpihlr.edu.in	$2a$10$c2OikXRbhfIznzyiCgxgteJgtFMtEW4OFlkarp4VdtTIRWozOutea	GARUGU VENI ANANYA	9849798399	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmv0jr1ed00rxmzmynfjpu8we	26UECSE0040	26uecse0040@student.gvpihlr.edu.in	$2a$10$VgpcbmwuxiGOyET5mHZjGugQlG7XFenExkZ.zO4guD2gjdTuPjP6S	PUVVALA GOWTHAM NAIDU	9618050869	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.103	\N	\N	\N	\N	\N	\N
+cmv0jr1et00xvmzmyj55znump	26UECSE0052	26uecse0052@student.gvpihlr.edu.in	$2a$10$tQbgncTYXcn3C.HWcPma/eUJCAJkI2CmKc/V9cd2cdFODIAJTlDgS	KANCHANA PREM SAI	8309618295	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N	\N	\N	\N	\N	\N
+cmv0jr1eu00ybmzmyh6m5nj04	26UECSE0056	26uecse0056@student.gvpihlr.edu.in	$2a$10$bw3JO8eYYAOQFHNqqCwHmulLx7.YLgaDxuzP11ezgZ3cVeBTemrzq	KANKATALA VISWESH	9989264278	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N	\N	\N	\N	\N	\N
+cmv0jr1fh013zmzmy4o2ub38u	26UECSE0073	26uecse0073@student.gvpihlr.edu.in	$2a$10$NZaNljCDgMf108mzARk6ROPvAtMRqKq2JNkoos1RlcWcXcWWNwfSi	KOTHARI YUDHIRA	8247672465	t	f	\N	0	\N	2026-10-09 05:50:36.797	2026-10-09 06:37:40.13	\N	\N	\N	\N	\N	\N
+cmv0jr1fj014fmzmyqdt6c325	26UECSE0088	26uecse0088@student.gvpihlr.edu.in	$2a$10$BmPPWfTzm/vimFWweLGzjet9HSeIgWZLttbVGM71cPzMDSlSV6Inm	NAMBARI PRASANTH	7569691699	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N	\N	\N	\N	\N	\N
+cmv0jr1fy01a7mzmyrmtv1b6k	26UECSE0096	26uecse0096@student.gvpihlr.edu.in	$2a$10$Jf5q2MN4M636b.1tjN1RIuy1DidQDdWyL4dzJHNrC15hZIMfYMVeW	PANDIRIPALLI LIKHITHA	7893381774	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N	\N	\N	\N	\N	\N
+cmv0jr1fz01anmzmygoipd21g	26UECSE0114	26uecse0114@student.gvpihlr.edu.in	$2a$10$uexNg.xeOl37.R4zYD/B/.QQsIXM0GhnU5o1PsFkYq5KOUsBxUN5a	RAVIPATI MOHAL SAMPATH	8464855559	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N	\N	\N	\N	\N	\N
+cmv0jr1gg01gpmzmygdzzeycx	26UECSE0123	26uecse0123@student.gvpihlr.edu.in	$2a$10$Z8t2jUfeNRFOCFkbZitbcOOUsxKiHi6GlEpW3GPzt5msASd/RJSia	SIRIVELLA TARUN KUMAR	9059516034	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N	\N	\N	\N	\N	\N
+cmv0jr1gh01h2mzmy4pmdw353	26UECSE0134	26uecse0134@student.gvpihlr.edu.in	$2a$10$4RgbGQ8kDHmLgztdS3IrbunUxs/vDandKGxvTDytDAjkDMXmIuYf.	VANDANA MANOJ KUMAR	7842653722	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N	\N	\N	\N	\N	\N
+cmv0jr1gx01mtmzmyc4scqkv6	26UECSE0154	26uecse0154@student.gvpihlr.edu.in	$2a$10$ybGVGEU5L70CrYAFy5j2ZuF/8ZL2w7S.C1KE4XGW7TzdKGeYcl1OO	ALLURI SREE PRASEEDA	8500003002	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1gy01n5mzmymb1bgqo2	26UECSE0161	26uecse0161@student.gvpihlr.edu.in	$2a$10$yOxKP9RyfGraeRSks2RPDeh8T5gSO/HV9A4tg2q.lqQ4JWC3sIhYO	MUDDAPU RITHIKA	8978104155	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1he01timzmyevvk3pvb	26UECSE0173	26uecse0173@student.gvpihlr.edu.in	$2a$10$fJFYDTO5DMgGYWIjK4nBduklxjSjjrMcaTrnloqbb.7g4GJ/nVpYa	KOTIKALAPUDI SRIDHARI	7032249239	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N	\N	\N	\N	\N	\N
+cmv0jr1hd01t6mzmyremb94r6	26UECSE0183	26uecse0183@student.gvpihlr.edu.in	$2a$10$aA0ybGNtn/5kRBP.GlbQsu9OVeyUPyiS4CGmumGJhrnNjviCKkKIO	GUNTREDDI BHARATH KUMAR	9676679433	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.188	\N	\N	\N	\N	\N	\N
+cmv0jr1ht01z8mzmy2lccahd1	26UECSE0201	26uecse0201@student.gvpihlr.edu.in	$2a$10$ltyM9qPds.pPnkPBnkfM/.ksIgXtabhfeCaOZlBcYrbIrKUyyd/MO	KOTHAPALLI HARSHIT	8143045899	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N	\N	\N	\N	\N	\N
+cmv0jr1hu01zqmzmylgon9saw	26UECSE0217	26uecse0217@student.gvpihlr.edu.in	$2a$10$ry0/2LAanWOxQ73M8C156um/m9somm4h9XJqm0s7S8v6au1lYnHVO	KARANAM RISHI PAVAN	9182853142	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N	\N	\N	\N	\N	\N
+cmv0jr1i9025omzmy5eyq5r0v	26UECSE0220	26uecse0220@student.gvpihlr.edu.in	$2a$10$x4hv7OekUJyViKev/F./HukzwquOYJU7wQgnBPhcZJBnOA14Lz.AG	VASIREDDY DHARMATEJA	9682374856	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N	\N	\N	\N	\N	\N
+cmv0jr1ia025xmzmy5napoyrx	26UECSE0228	26uecse0228@student.gvpihlr.edu.in	$2a$10$ezTxV391dmhmOaNk3N1Ise1oP54FQjY0KydoG.i56qaLPigHOVMUy	KODAVALI VENKATA KARTHIK	9390959785	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N	\N	\N	\N	\N	\N
+cmv0jr1ir02bsmzmyfq017yvk	26UECSM0012	26uecsm0012@student.gvpihlr.edu.in	$2a$10$CR6szfgb/UaCB6Eom6OTu.Cb54sF3zMWT40yRTqc8SJnSSkyQAW3S	CHHAVI CHAUHAN	9014882797	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N	\N	\N	\N	\N	\N
+cmv0jr1is02c7mzmypwopzjyh	26UECSM0015	26uecsm0015@student.gvpihlr.edu.in	$2a$10$FKnyIDzUZW7OyiAaxoW/oukF1r3tQMXEH6NzA.EPkxpsckzC.NNCm	DANTULURI LAASYA SRI	8019018313	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N	\N	\N	\N	\N	\N
+cmv0jr1j902ibmzmyio84e6a6	26UECSM0035	26uecsm0035@student.gvpihlr.edu.in	$2a$10$ZYfeySMT8Rsdj6/NdffMl.KGde3mGS5BzoNMbjjVAEkr./x7TNLae	KARRI DURGA SARANYA	7995761428	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N	\N	\N	\N	\N	\N
+cmv0jr1j802i7mzmym6qsbpb4	26UECSM0037	26uecsm0037@student.gvpihlr.edu.in	$2a$10$NIEK9sjcfXhuTASnmu.HHOLZTpb9DXUCtlmZrIJSKGAs4HU0SHKLe	KEERTHI CHINNARI	7675908579	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N	\N	\N	\N	\N	\N
+cmv0jr1jp02ogmzmycwss741r	26UECSM0066	26uecsm0066@student.gvpihlr.edu.in	$2a$10$xd3lfDooYi7giXTznU3WSOKhM2pVZ3imbVeZccChwLyxrzM9WMsCa	PUSAPATI VEDA SAMHITA	9908856964	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N	\N	\N	\N	\N	\N
+cmv0jr1jp02oqmzmydt0eknls	26UECSM0075	26uecsm0075@student.gvpihlr.edu.in	$2a$10$y2qht10p4RCS.NdYZeTr2O8VmL/lv0ozwIbJEP0ANAu1d5GVwsj9C	TANDYALA ROSHINI	8185091181	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N	\N	\N	\N	\N	\N
+cmv0jr1k402usmzmywum5qiwf	26UECSM0094	26uecsm0094@student.gvpihlr.edu.in	$2a$10$QHgAWnTQYxPzdDZlYuqA9.bl140K2E4J3K0UwPjqkazo6E6qWY/ne	BILLA VENKATA SAI DEVA AKHIL VARMA	9848486769	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1k302uemzmyfr2oxyqa	26UECSM0083	26uecsm0083@student.gvpihlr.edu.in	$2a$10$KZnxB58Soo0gEQ8pok1G.esFXUw/3/nlMniPobbW7Ya4pdhXqnekq	VERUKONDA DONY VIGNESH PAVAN	7981378159	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1ki030nmzmyzp1cl4bu	26UECSM0109	26uecsm0109@student.gvpihlr.edu.in	$2a$10$hJiXmJuDCkapayWdXSPrIO0xsNNsHorWjTfr/ospeBUkodM2D5.Si	PENKI DHARMIK	6304988047	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N	\N	\N	\N	\N	\N
+cmv0jr1kj0311mzmybil8ldyl	26UECSM0121	26uecsm0121@student.gvpihlr.edu.in	$2a$10$zVJZ72QfFXGpSEouOZtBrODJF5BZd7GJn4CTnKavS0R.XRtoEanDu	KARRI JASWANTH	8884515819	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N	\N	\N	\N	\N	\N
+cmv0jr1cd0099mzmyb8v14luk	26UECIV0003	26ueciv0003@student.gvpihlr.edu.in	$2a$10$YZD2kP6s3wVq.XwNEPZg0eZb1OCSei6dR2ghTslCDqw7rnalylT96	GUTTULA LOHITH	7569307945	t	f	\N	0	\N	2026-10-09 05:50:36.685	2026-10-09 06:37:40.052	\N	\N	\N	\N	\N	\N
+cmv0jr1d200f7mzmy0ezzy6ns	26UECIV0015	26ueciv0015@student.gvpihlr.edu.in	$2a$10$cxX6Dnil1isx5lYc/PY4t.ERQFjBg8kCtwBuhcfDNgge9P8c9sbGm	SHAIK ASHRAD	8639334493	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N	\N	\N	\N	\N	\N
+cmv0jr1d400fimzmyq2gifhfa	26UECIV0018	26ueciv0018@student.gvpihlr.edu.in	$2a$10$lgZnqWJE3.whCudT6nuwZeYEi97kiaWQmW0Ednn9hITxoaF2JYBgq	PITHANI NITISH KUMAR	7997634819	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N	\N	\N	\N	\N	\N
+cmv0jr1ds00lgmzmya4jscrc2	26UECIV0037	26ueciv0037@student.gvpihlr.edu.in	$2a$10$Sj5TaZZ9z8Y.vKyzH2sVt.jt.ITua6ue8Wlbp4RZxD1UY.w6QTHr.	MANDADI JAYAVENKATA JASWANTH REDDY	8074001975	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.085	\N	\N	\N	\N	\N	\N
+cmv0jr1dt00lnmzmykxixaqjm	26UECSE0011	26uecse0011@student.gvpihlr.edu.in	$2a$10$18NZUfAm.UyTwl0KGJKO..ESrkTcAjzVRaUsXBteGrCxGVjYcZiii	BESETTY LIKITH KUMAR	8977174410	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N	\N	\N	\N	\N	\N
+cmv0jr1eb00rnmzmygwv0miw9	26UECSE0028	26uecse0028@student.gvpihlr.edu.in	$2a$10$3lFH9Y.lRfFAH45vPQTL8uvcgvDZehZB8maclZbyGlkT7uNiS7yqm	DONKADA SOWMYA PATNAIK	8341406235	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmv0jr1ed00rtmzmy8n4kaf38	26UECSE0035	26uecse0035@student.gvpihlr.edu.in	$2a$10$uTj5vgsIlc6qfcHGYG8pweNamB4VDlwByahOiioKdkYUhnboVG112	GODAVATHI UPENDRA SASHANK	9154576846	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmv0jr1eu00y2mzmyzx287m7r	26UECSE0066	26uecse0066@student.gvpihlr.edu.in	$2a$10$qiEIUtTVmN5x3.nSed3ype0P4w12aWprIgF2w7dIrwp9FWibAezaW	KOTA MAANASA	\N	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N	\N	\N	\N	\N	\N
+cmv0jr1et00xumzmyald6g8o4	26UECSE0053	26uecse0053@student.gvpihlr.edu.in	$2a$10$OCPJXOiWbp6Np96J8PViUewF/qrswEw13CIJUoZn6.tMKATlfSLaa	KANCHUGUMMAM JNANA VIGHNESH	9908799208	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.117	\N	\N	\N	\N	\N	\N
+cmv0jr1fi0144mzmyzqyqk7sx	26UECSE0074	26uecse0074@student.gvpihlr.edu.in	$2a$10$0e3X.Z5VGL7K.K0ReN2w/uq4mnuaY5SEKLcDsNV49GAOMnMtJyJ2m	MUDADLA JAHANIVI	6304151857	t	f	\N	0	\N	2026-10-09 05:50:36.798	2026-10-09 06:37:40.13	\N	\N	\N	\N	\N	\N
+cmv0jr1fj014jmzmy36l2qkl4	26UECSE0091	26uecse0091@student.gvpihlr.edu.in	$2a$10$cg5yRm3BLbshgsEOwxkpwuOhYeGaFaR8ySti4Cc0znn5bLRZruD4C	NARTHU BHARGAVA YADAV	8074367215	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N	\N	\N	\N	\N	\N
+cmv0jr1fy01aamzmyv3dfifzk	26UECSE0101	26uecse0101@student.gvpihlr.edu.in	$2a$10$sMiiegwzOnq7i4LS7.ol0eeE7PcHmBPfM9sPiBCVDlaUcm5p53Y.q	PININTI YOGENDRA SAI	9441921248	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N	\N	\N	\N	\N	\N
+cmv0jr1fz01apmzmyg34d27h0	26UECSE0113	26uecse0113@student.gvpihlr.edu.in	$2a$10$h9vQI/TfvSWTRrMr4Hfj8O1dS17EPN6stfLVyAW5LX15zpIWlcON2	RASILLA BHUVANESH	8341176531	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N	\N	\N	\N	\N	\N
+cmv0jr1gf01gemzmy0glovxtl	26UECSE0125	26uecse0125@student.gvpihlr.edu.in	$2a$10$nmNbqrYOsVTR7KSgJQymi.5BQqUK9IFgtkFKCnq2g9CbL4avhF5NG	PATIVADA GOVIND SRICHARAN	8074981680	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N	\N	\N	\N	\N	\N
+cmv0jr1gg01gvmzmyj1lm7aud	26UECSE0138	26uecse0138@student.gvpihlr.edu.in	$2a$10$wsLV0L9N56Glza9SWflMxuaS1DtqmMcf0YbScbdio0GFZbbIJNNOO	YANAMANDRA VARUN TEJA	8247786619	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N	\N	\N	\N	\N	\N
+cmv0jr1gx01mnmzmyrosftj4i	26UECSE0144	26uecse0144@student.gvpihlr.edu.in	$2a$10$1bd25Hfk8Zq6O3vAIFX6Iey7iWI4WqxD4td6eWv.mM1X35ux.7Iwi	BOLLA SAI CHARAN	7674900109	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1gy01n1mzmy85s0vsvm	26UECSE0158	26uecse0158@student.gvpihlr.edu.in	$2a$10$Tno9BL8lxSC9DJh4srdFWucBFo9mdUpFJ1RPGtCmKmfenG.E3.I5u	MALYAKULA UMA SAI CHARAN	6301016253	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1he01tfmzmylfxnif7g	26UECSE0179	26uecse0179@student.gvpihlr.edu.in	$2a$10$hp0ffN02U5n3SZK5g2kJhO7dvKJx1e44CUAyDPv7GvDSbGMpNxaPe	CHAVALI  VENKATA MANI KOUSIK	9441756345	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.187	\N	\N	\N	\N	\N	\N
+cmv0jr1hd01t5mzmy3s1mm7by	26UECSE0172	26uecse0172@student.gvpihlr.edu.in	$2a$10$6gAGdnudtXXJi4kDZxB0PuRFV70wwKnDGHlec52KNiusfP/Nw9Mcq	KARRI LAKSHMI YASHIKA	6303065624	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N	\N	\N	\N	\N	\N
+cmv0jr1hu01znmzmyc4bn8qdg	26UECSE0213	26uecse0213@student.gvpihlr.edu.in	$2a$10$6KfbZ6jNSak.V3n0l4Q6XuxdZ6Dg4/YxFftN4KojJyM2cBWxmG5c2	SURAVARAPU ADITYA	7842334233	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N	\N	\N	\N	\N	\N
+cmv0jr1ht01zamzmy2uv5r1js	26UECSE0202	26uecse0202@student.gvpihlr.edu.in	$2a$10$GCw3oU1Z9y5AkFR2TOlwk.vtNFbt62D/O/Tsyldyak.kGYUyDNbZu	KORLA AMRUTHA	8985021150	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N	\N	\N	\N	\N	\N
+cmv0jr1ia025ymzmyzynjpm5j	26UECSM0002	26uecsm0002@student.gvpihlr.edu.in	$2a$10$lG9LtGYJJ5B3Xk9H2wD7aeMymbu7ll/jXUyJ33UMqZy3zpAM8TlIe	HARSHADA PATIL	7995972353	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N	\N	\N	\N	\N	\N
+cmv0jr1i9025pmzmynzc0mdjh	26UECSE0230	26uecse0230@student.gvpihlr.edu.in	$2a$10$rHehAP8YZapKYkvT20OL4eBt.TEDe05slQHXH73xRa7vEK7PiAjtC	GANIVADA DESHIK	9948826128	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.226	\N	\N	\N	\N	\N	\N
+cmv0jr1ir02bnmzmy5sikaabk	26UECSM0008	26uecsm0008@student.gvpihlr.edu.in	$2a$10$mWVBUJiMQm5WueRVsUxdqu/fpelgtx4fO35zH/.suIcgRa7P6A0SW	PULAPA BHUVANESH HARINADH	9676656348	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N	\N	\N	\N	\N	\N
+cmv0jr1is02c1mzmy9grgzr04	26UECSM0019	26uecsm0019@student.gvpihlr.edu.in	$2a$10$wKfl2SyT5PRP3jGItP00ueKeL2cLzZds.4/o1E5G/kjrumQVzOFGW	DONTHALA MAMATHASRI	9398819629	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N	\N	\N	\N	\N	\N
+cmv0jr1j702i0mzmyvx2sq22o	26UECSM0033	26uecsm0033@student.gvpihlr.edu.in	$2a$10$YoumGgjqE.Wt9Nd7EFhIXuwjiiInASsbs84FJcMFAQpC5HA9iTHam	KARRA SHYAM VIJAY	9948132844	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N	\N	\N	\N	\N	\N
+cmv0jr1j902icmzmy0g5glpq3	26UECSM0047	26uecsm0047@student.gvpihlr.edu.in	$2a$10$j8A4Wd76O6xLAOEH/GOlDe7XoQJLTLcVeZnccbsInL2YzhK5piMF.	MARADA SHANMUKHA SAI	9989888759	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N	\N	\N	\N	\N	\N
+cmv0jr1jo02o6mzmyh5thtczt	26UECSM0055	26uecsm0055@student.gvpihlr.edu.in	$2a$10$LbOpiYeVL/gxfFagdsplaeY0tVnqde98alvUYBGBKAjI/gc1.BtNq	NAKKANA SAI SURYA	9885311945	t	f	\N	0	\N	2026-10-09 05:50:36.948	2026-10-09 06:37:40.27	\N	\N	\N	\N	\N	\N
+cmv0jr1jp02ommzmyfxs0d44p	26UECSM0077	26uecsm0077@student.gvpihlr.edu.in	$2a$10$e7Ki1ziWT7kZcEFRcdSgkO5Tgp03a/mcsqg3Fn3jiB3.Ug78pHTBi	TENTU JOSHNA	8949338076	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N	\N	\N	\N	\N	\N
+cmv0jr1k302upmzmy4akx5gp2	26UECSM0088	26uecsm0088@student.gvpihlr.edu.in	$2a$10$hY.1jm/qqaEZPN1bjzwKTuqoSB8.t1Rw7WiKQT5ZavR80npbUggf6	PORAPU HARSHAVARDHAN	7801082685	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1k502v0mzmy1tayawg6	26UECSM0101	26uecsm0101@student.gvpihlr.edu.in	$2a$10$5In.LAKnIgrB4wwl5PQaFuqOYwrN4x6bXU9dnY4PrnS4esi0MrWPy	ABOTHULA KARTHIK KUMAR	9441390183	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1ki030xmzmyffvt20gq	26UECSM0108	26uecsm0108@student.gvpihlr.edu.in	$2a$10$nwzA0XUUYQxFAQm4oozwAudwZVx9UFKC96XpAEe4NHZF75NtmawwC	SHRAVANTH KRISHNA KUMAR BEESAPU	9177245571	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N	\N	\N	\N	\N	\N
+cmv0jr1kj0319mzmy797kewe5	26UECSM0127	26uecsm0127@student.gvpihlr.edu.in	$2a$10$PPYzlZpR7iLgmEG0kwqbNeJo7x.PEQ29zhQ1qqAScAF2TOPjRt2/S	SIGIREDDY TEJASRI	9346145666	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N	\N	\N	\N	\N	\N
+cmv0jr1d200eymzmyr05ubryk	26UECIV0006	26ueciv0006@student.gvpihlr.edu.in	$2a$10$eubEsbcr1W1SuTcBhfN4Bec1.EAEeE1R0m.YeTWlNkjNKaQXktmzC	KUTIKUPPALA SARAT	7506778096	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N	\N	\N	\N	\N	\N
+cmv0jr1d400fgmzmyrfo0y1op	26UECIV0027	26ueciv0027@student.gvpihlr.edu.in	$2a$10$Q/5QXBwr/p7NNVnGr/5bjuAD4n2FTH8yJFim32xmIC8mVvneQ9k9C	GONUGUNTALA BALA VENKATA KISHORE	9381980594	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N	\N	\N	\N	\N	\N
+cmv0jr1ds00lamzmysgjd45mo	26UECIV0033	26ueciv0033@student.gvpihlr.edu.in	$2a$10$YtuQlUuDY2EnL7bpMTs8r.MtIzybigzRJ.59w3d5hZp0hiiujXQpa	JAMMA GOWTHAM	9030337586	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.085	\N	\N	\N	\N	\N	\N
+cmv0jr1du00lsmzmyndttd323	26UECSE0015	26uecse0015@student.gvpihlr.edu.in	$2a$10$XNRGxLy0.3RqNaBKT8Gl0.IV29oH9N9M8wpEMFledTfVHZaOYmAZy	BONUGU KUNDAN	6301888904	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N	\N	\N	\N	\N	\N
+cmv0jr1eb00romzmyaqq8j7nh	26UECSE0030	26uecse0030@student.gvpihlr.edu.in	$2a$10$NUbPBgDOXXSUKcWjtRl5VeCxOXbF/QjIOU95zi610HSM1W655y4Yu	DURGA VENKATA SAI HANUMA SRAVAN KOTIPALLI	9866355747	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmv0jr1et00xqmzmy09qi1yc9	26UECSE0048	26uecse0048@student.gvpihlr.edu.in	$2a$10$szFb9mbKJyclsnkr1IBRMePqPsQVOJ/AIsdtxWEgLQ6QWhyFB2rfm	K TANOOJA	7981082204	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N	\N	\N	\N	\N	\N
+cmv0jr1eu00y3mzmyibiaoiso	26UECSE0061	26uecse0061@student.gvpihlr.edu.in	$2a$10$jxEo/I8X97GlN8Kbe5D9v.RepATQdJtzAHTslH7GppxXE0h4vCQQ.	KONDA DURGA HARSHITH	7981284595	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N	\N	\N	\N	\N	\N
+cmv0jr1fi0148mzmyqq7pz8wa	26UECSE0078	26uecse0078@student.gvpihlr.edu.in	$2a$10$CJ5aVFfQUJXcLwGKjCS8OOK3GJB9W4Df03Ledx8xbfBZ3HeGCInxm	MAJJI LAXMI VAIDEHI	8522840400	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.13	\N	\N	\N	\N	\N	\N
+cmv0jr1fj014emzmyg5qwbh41	26UECSE0081	26uecse0081@student.gvpihlr.edu.in	$2a$10$8gH005oma4GPP8f9WXeuLeM/D.OvtJHUgtbcGsgrb.pRS6GYTzAUW	MOHITH SATYA SANDEEP REDDY MEDAPATI	9963610304	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N	\N	\N	\N	\N	\N
+cmv0jr1fy01abmzmyu1yq1jzs	26UECSE0102	26uecse0102@student.gvpihlr.edu.in	$2a$10$Q04zxzuIy8KcEQiRafBia.uZ0xXYA2ha9io3jkxaFE8YlRLNYmU.q	PINNITLA ISHAAN REDDY	7842341737	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N	\N	\N	\N	\N	\N
+cmv0jr1fz01aomzmy9zga18xe	26UECSE0111	26uecse0111@student.gvpihlr.edu.in	$2a$10$fuqbp5Fvj8u1T4KD9m0F3OCTKPNpRqOExMAlBUyAHiZ6mO1ADG79u	RAGHUPATRUNI PRAKYATHI	7981187207	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N	\N	\N	\N	\N	\N
+cmv0jr1gg01grmzmyh4zegu5g	26UECSE0136	26uecse0136@student.gvpihlr.edu.in	$2a$10$BO0apiRFCHlJzbabxi09SOWK8H004GBjnLWagpYQrqU6a4/E0EeXq	VEMPALI ANJAN NIKHIL	9490640178	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N	\N	\N	\N	\N	\N
+cmv0jr1gf01gmmzmyqzhljst1	26UECSE0133	26uecse0133@student.gvpihlr.edu.in	$2a$10$TgYB310mzOEAqxoZ2exCpeI8.geWWvxpCCnRYsR5UNeCUpiM0V0BK	VADLAMANI NAVYA SRI	9949963004	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N	\N	\N	\N	\N	\N
+cmv0jr1gx01mwmzmy89nqml0p	26UECSE0156	26uecse0156@student.gvpihlr.edu.in	$2a$10$VTXSUtBLvcQllW82uACn4uOnLLWkTcWODC.HiyrEwlpix4C4Mu1ri	SARIKA YASWANTH KUMAR	9440977656	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1gy01n7mzmyszssi8v5	26UECSE0166	26uecse0166@student.gvpihlr.edu.in	$2a$10$95QYZgVBOz.18Aa0H8rg8umK3BOLYcQZ.LyDJ7QLd6mcHmoSACiCO	BAMMIDI AJAY	9441117544	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1hd01symzmy5bz9h3r5	26UECSE0180	26uecse0180@student.gvpihlr.edu.in	$2a$10$NbqONxWTwuKFDpvrr4X8m.tElmLMCeQG8/kyUIWHtC1lGrh.LTzba	DONTHIKURTHI SAI AASRITH	9885897228	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N	\N	\N	\N	\N	\N
+cmv0jr1he01tdmzmylyqu1i8j	26UECSE0191	26uecse0191@student.gvpihlr.edu.in	$2a$10$p9PeMwjvPot.fUZlfoTtLORD1W6HPXmELQ5kAoAcnbvBmMq7NyNZW	PAPADASU SHANMUKHA HARSHITH REDDY	8985678317	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N	\N	\N	\N	\N	\N
+cmv0jr1hv01zsmzmygw02bqpq	26UECSE0218	26uecse0218@student.gvpihlr.edu.in	$2a$10$kP9GygtsCpSOb1XV9VAPjegEYWUn9oT94nSJU1mIwDD2ExBBmzP9K	KUMILI CHAITHANYA SWAROOP	8247004586	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N	\N	\N	\N	\N	\N
+cmv0jr1ht01zfmzmyefkxeeyz	26UECSE0197	26uecse0197@student.gvpihlr.edu.in	$2a$10$M1z/gM.sLKcml5eieMVeuuuFthZQCoTuzibZl59wOxRKYzB8dJIei	TAMMINANA HASINI	9441097017	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N	\N	\N	\N	\N	\N
+cmv0jr1i9025fmzmyaclv4pmw	26UECSE0225	26uecse0225@student.gvpihlr.edu.in	$2a$10$EVkHrEDXSlnLyk48zzYTZukADmHvVaf/./QLRKnml.2Ic56.CwSBa	BONTHU OMKAR	7093316221	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N	\N	\N	\N	\N	\N
+cmv0jr1ia025vmzmyn2fmz58b	26UECSE0241	26uecse0241@student.gvpihlr.edu.in	$2a$10$mv7ek8AJhjIO9TxCPGMqduDO4Ul6El.E2.zE077iJlTfQSIognYra	JAMMU KARTHIK	\N	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N	\N	\N	\N	\N	\N
+cmv0jr1ir02bumzmygbsopqgo	26UECSM0016	26uecsm0016@student.gvpihlr.edu.in	$2a$10$sPm2UdU7n1soOv66EKUTp.WibralWvx1hI48RisOTNhDRdoZjAJxe	DEVARASETTI NEETHA SAI PRADEEPTHI	9441610624	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N	\N	\N	\N	\N	\N
+cmv0jr1is02c6mzmyvq33eqjw	26UECSM0025	26uecsm0025@student.gvpihlr.edu.in	$2a$10$7BIRiF33H6Hni7PSd0J/Luv6c.hqOZJ/GkWT/ATWt2pjxs1yOMqKm	GOVINDARAJU LAKSHMI VAISHVAVI	7981645539	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N	\N	\N	\N	\N	\N
+cmv0jr1j702hwmzmymoc8x6zw	26UECSM0034	26uecsm0034@student.gvpihlr.edu.in	$2a$10$pGNJQTn.xO1D1T.u1vXE0On81ktZkwz3T7G/4sOBe36eNZw.QMMne	KARRI NAGA SATYA KANAKA LAKSHMI	9290527207	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N	\N	\N	\N	\N	\N
+cmv0jr1j902idmzmy1tix6ktw	26UECSM0045	26uecsm0045@student.gvpihlr.edu.in	$2a$10$xjP.qxv3nMUR3gaF6koazeL8xLe03KKzhFGC85AfGTSDNWyt0BuJm	KURAKULA LIKHITHA	9392390560	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N	\N	\N	\N	\N	\N
+cmv0jr1jp02ohmzmy4wbt92z8	26UECSM0056	26uecsm0056@student.gvpihlr.edu.in	$2a$10$DfZRn5g5n7YbNafzaERqiOHkPktk9wc93.7MkrCSv7NRSB0TNs08q	NAMALA VEERA VENKATA GIRI CHARAN	8019794203	t	f	\N	0	\N	2026-10-09 05:50:36.948	2026-10-09 06:37:40.27	\N	\N	\N	\N	\N	\N
+cmv0jr1k402uqmzmyqs8mgisi	26UECSM0091	26uecsm0091@student.gvpihlr.edu.in	$2a$10$IK.3ox8sURgOx.Zs/G7YWOxN2SCyQr9MCyuW3fpnWZ2f68Bh.YsBq	MALLUBHATLA JAYA GANA SAI AKHILA	9885334269	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1ki030wmzmyv3m4sik2	26UECSM0104	26uecsm0104@student.gvpihlr.edu.in	$2a$10$.fPI8VTunIAqLcRxlIv/ou3c5lnzKc27VrCKQc7JOhWbJCRnJUH/K	KILLARI MANOHAR NAIDU	8331933241	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N	\N	\N	\N	\N	\N
+cmv0jr1d200ewmzmy8mc81dpk	26UECIV0005	26ueciv0005@student.gvpihlr.edu.in	$2a$10$dAyCHYmK4DWrq5SyWgmFiOHpAZM6y3cY36n7MGz.RHPlaDzqY.m8.	GORTHI RAJA SANTHOSH	9912535943	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N	\N	\N	\N	\N	\N
+cmv0jr1d400fcmzmyuayrz8mp	26UECIV0023	26ueciv0023@student.gvpihlr.edu.in	$2a$10$GmIhYiccUiI2Nw0ZJrpEyuHAr3Ose/6jwtTwr0Ynhem45BVw.B.Gi	ARANGI SUMANTH	9182624196	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N	\N	\N	\N	\N	\N
+cmv0jr1dt00lhmzmyqq7640n7	26UECIV0030	26ueciv0030@student.gvpihlr.edu.in	$2a$10$S9mYrKwwOHhE08cdi5CB4.yTG3ZIv6bsI2a0tTVXTPd50v7Nr0fcO	KILLADA NIKHIL	6304538159	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.085	\N	\N	\N	\N	\N	\N
+cmv0jr1ed00rumzmyuw6bx6ul	26UECSE0034	26uecse0034@student.gvpihlr.edu.in	$2a$10$mCWJlR4BzjPxHlIPMFL7b.PENbuFpQstL3ltVmyUBQUei5UUYIKkO	KOTHAPALLI GNAN SAMPATH	9866043273	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmv0jr1ec00rqmzmyxxjbruoz	26UECSE0032	26uecse0032@student.gvpihlr.edu.in	$2a$10$JZDGvAsL3Zl4UpcaTa24r.SnEmzc0IzWShxOXmpaZqz2bDxUFMXB2	GONNABHAKTULA ANURADHA PRANAVI	9290835183	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmv0jr1et00xwmzmyajtsjss8	26UECSE0050	26uecse0050@student.gvpihlr.edu.in	$2a$10$q.gCv2uaN6rQOQJm2K/9yeEk1H3o1yPr5I/Ne/Iek2UYXD7iIYOlS	KALLA JISHITHA HAASINI	7842667599	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N	\N	\N	\N	\N	\N
+cmv0jr1eu00y5mzmyttq9uvam	26UECSE0060	26uecse0060@student.gvpihlr.edu.in	$2a$10$fijhkljMRKv5gEOJHH5Jtu.h7qcD0sJku0mkTx7xtKCEnqgoH4kfi	K JYOSHNIKA	9912771404	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N	\N	\N	\N	\N	\N
+cmv0jr1fi0146mzmylszspfy5	26UECSE0080	26uecse0080@student.gvpihlr.edu.in	$2a$10$YYnKBfoHiXfHt432sR5uwej39IvZeRBUcCqBj9D0.KjWw5znDygo2	MOGILI MANIDEEP	9441805021	t	f	\N	0	\N	2026-10-09 05:50:36.798	2026-10-09 06:37:40.131	\N	\N	\N	\N	\N	\N
+cmv0jr1fy01a9mzmyydfof17x	26UECSE0097	26uecse0097@student.gvpihlr.edu.in	$2a$10$Re8hv8CQGm8CY/7R/bhtQu01v8K4J0pQc9OOP8YVVU7AGXEU.E1B2	PANGA BHARGAV SAI	7989650799	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N	\N	\N	\N	\N	\N
+cmv0jr1fz01armzmy05ss3tza	26UECSE0116	26uecse0116@student.gvpihlr.edu.in	$2a$10$zXn7xrcFC5PpD3PQWtQhyuBGJ5DDvRGcGMbcf3TxUVdG5EnGyGRDC	RAYIPUDI AKSHAY	9652690379	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N	\N	\N	\N	\N	\N
+cmv0jr1gg01gomzmyur2fp01a	26UECSE0122	26uecse0122@student.gvpihlr.edu.in	$2a$10$YdrXMVgmuFWj4iMObIRMfe4HkSZ1V0hS2BJsdoVxnLJ6VrZz72jhK	BAKI MAMATHA	9550418596	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N	\N	\N	\N	\N	\N
+cmv0jr1gh01h1mzmy16pit23x	26UECSE0143	26uecse0143@student.gvpihlr.edu.in	$2a$10$2nyzLyVb9VW5HNIPgSj65.Dp9eM3.f9WMfogMCaA.FfdqUFwVZTeq	NUNNA BHAVYA MANI MANVITHA	6303630658	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N	\N	\N	\N	\N	\N
+cmv0jr1gx01mxmzmyyp9oqd51	26UECSE0151	26uecse0151@student.gvpihlr.edu.in	$2a$10$i.cwH1E68IBbvWt6IdAhku918I6p1R.w6wev.d67dGkGo9.cR2MDO	GARE SAIRAM SURI	7288966778	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1gy01n2mzmy2466pss6	26UECSE0160	26uecse0160@student.gvpihlr.edu.in	$2a$10$ZdYIlzZy1f6hZ11EeI9aXezsoGlqgewyyiwK4OwFVET0v6u09CBOa	GANTA NISSI MARK	8919549727	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1hd01t3mzmy6nwe5bjy	26UECSE0171	26uecse0171@student.gvpihlr.edu.in	$2a$10$vOqmZd5lZ7pIDvOyAQAa7emvJZjPeJ5hGbYvMeEHx0ngXvGVWJeDK	ALLAM PRANAY SAI	9502359095	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.187	\N	\N	\N	\N	\N	\N
+cmv0jr1he01tgmzmyisyiq5k8	26UECSE0182	26uecse0182@student.gvpihlr.edu.in	$2a$10$KNcec/Tpho3UqrJAEOzabORvPoInx/Io9nrewpmNqZMEhPKj0azMC	GEDILA VIVEK REDDY	7337080907	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N	\N	\N	\N	\N	\N
+cmv0jr1hu01zjmzmyz7wz82nz	26UECSE0209	26uecse0209@student.gvpihlr.edu.in	$2a$10$TqyFBZ2lKV5HyRqTDd48Ye9zOpu86e4G.iaguqe.oPnphy1q/.kFq	KURIMINELLI TEJESWAR NAIDU	8074048360	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N	\N	\N	\N	\N	\N
+cmv0jr1ht01zcmzmyyj78yr23	26UECSE0206	26uecse0206@student.gvpihlr.edu.in	$2a$10$IAY9oOpXYXLymuqnIf3Uq.sGsw7Hvl8ANM4kFhTKBgCZZche.ZO9m	KALIDINDI AKSHARA	8328009392	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.203	\N	\N	\N	\N	\N	\N
+cmv0jr1i9025imzmy8wvi1flo	26UECSE0222	26uecse0222@student.gvpihlr.edu.in	$2a$10$WfkjugCBt8a.REyQ5XXs7ek1hdGMa4rIfABMLiLPb.MQ.B7BdJHT6	ATTADA CHARAN	8897067195	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N	\N	\N	\N	\N	\N
+cmv0jr1ia025wmzmyh6hrq3xg	26UECSE0238	26uecse0238@student.gvpihlr.edu.in	$2a$10$O3XqsCh7wBV0Ul5KY8XX5uGCK/FK72pgGqf1EI5v7fKZnelsEoaym	NIMMANA SAHITH	9885969632	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N	\N	\N	\N	\N	\N
+cmv0jr1is02bxmzmyxfbq3tqs	26UECSM0009	26uecsm0009@student.gvpihlr.edu.in	$2a$10$TeHVWAo4OQARzT5MHZiVfuTKzd0kT36ine4nFXd.6EyYFxSq/d04K	BOPPANA VARSHINI	9494941931	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N	\N	\N	\N	\N	\N
+cmv0jr1it02camzmy1nxx9kcj	26UECSM0028	26uecsm0028@student.gvpihlr.edu.in	$2a$10$xc3ihv3jzBpvVGJOoQoPe.gSOTV2fbECKt.0l3vb/62u3nanJstQq	JANA SOWMYA SRI	6302475223	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N	\N	\N	\N	\N	\N
+cmv0jr1j702hzmzmybjq4zkzv	26UECSM0036	26uecsm0036@student.gvpihlr.edu.in	$2a$10$GZkT5vZkXFyRoPI5/aRGE.id8T3LULQ4FpNY8ZHDnDyWXff711XzO	KATIKITALA SHINY	7989440722	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N	\N	\N	\N	\N	\N
+cmv0jr1j902iimzmyccol85m8	26UECSM0052	26uecsm0052@student.gvpihlr.edu.in	$2a$10$dBJZuRk5hyqkSVy8lGWL6O4V3x2tltG5bLxN0zu5qokwFT8bLG4Ey	MUDDADA USHA SRI	9866836221	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N	\N	\N	\N	\N	\N
+cmv0jr1jo02o8mzmyrictyox5	26UECSM0054	26uecsm0054@student.gvpihlr.edu.in	$2a$10$GgCXoQbgVAEC598aT4Sy/.UQRZQ8OS/lKEZPf7Olc4pbIOUih9t16	MUKALLA BALA ADITYA NAIDU	9392448071	t	f	\N	0	\N	2026-10-09 05:50:36.948	2026-10-09 06:37:40.27	\N	\N	\N	\N	\N	\N
+cmv0jr1jp02opmzmyqvggpqx2	26UECSM0074	26uecsm0074@student.gvpihlr.edu.in	$2a$10$SiLKwM4PJYzW5sX5Y/xs0OBpWRwuho0bmABVPDIuHagKYVtv79dmi	MIRIYALA RADHA KEERTHANA	9063381941	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N	\N	\N	\N	\N	\N
+cmv0jr1k302ujmzmyt8o9w9xa	26UECSM0084	26uecsm0084@student.gvpihlr.edu.in	$2a$10$l9yDDopP.rgTbltSUFdj8.d7X5f2L777gZ87L2pZrI6006XGxNFy.	YAGALLA PRANEETHA	8179423989	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1k402uvmzmy90mayxcg	26UECSM0098	26uecsm0098@student.gvpihlr.edu.in	$2a$10$5uy7ChohdTq79mUHHWubUu1lArpl44evGLHcPEhYLW5uKksWvjQou	ADDALA VENKATA SAIRAM AASHRITH	9966284598	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1ki030umzmywheuo288	26UECSM0113	26uecsm0113@student.gvpihlr.edu.in	$2a$10$7nstGy1sXd5lczzPmX1dRO0VG.0sFEo0R1/fNdWstTS4RUmOSzT5G	KARRI BHASHINI	6300171352	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N	\N	\N	\N	\N	\N
+cmv0jr1kj0314mzmy0akxkpbn	26UECSM0122	26uecsm0122@student.gvpihlr.edu.in	$2a$10$0pH5NHWnCvDSVBcLlLcKke1G63q1/jdsvNT4Ch244nU3AZYX8kV1e	KONDALA RESHMA	8332828299	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N	\N	\N	\N	\N	\N
+cmv0jr1d200f1mzmyxmk5srd1	26UECIV0008	26ueciv0008@student.gvpihlr.edu.in	$2a$10$OXr9iumCA19M4HVReiCyF.Sgc4SqUPxVPDdW1XcOD56ZHNoblmL3.	MOLLETI RAJU TEJESH NITESH MANIKANTA	6300168505	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N	\N	\N	\N	\N	\N
+cmv0jr1d400fhmzmyy60zkd5q	26UECIV0029	26ueciv0029@student.gvpihlr.edu.in	$2a$10$1I/Lqnw0pku71y/nOU0pRu.PF8eGkAaoWfwgrdFxcfUHg53pSU./u	KIKKURU SIVATHMIKA	9347056979	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N	\N	\N	\N	\N	\N
+cmv0jr1ds00l7mzmyjiw83jfk	26UECIV0032	26ueciv0032@student.gvpihlr.edu.in	$2a$10$aITTTfiatJkBG1oRsXEwe.zq10cLwAGwfiNBl1yGgzcS6eTtlqfou	TAMMINAINA DINESH	\N	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.085	\N	\N	\N	\N	\N	\N
+cmv0jr1dt00lmmzmyvmryg2n5	26UECSE0010	26uecse0010@student.gvpihlr.edu.in	$2a$10$VhCxegoro99yU0RoOQIQBejLjq9/VOuyXYZNhUVfzq94d6tavT0by	BATTULA EEKSHITHA	9848427370	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N	\N	\N	\N	\N	\N
+cmv0jr1ed00rzmzmynw1tyh0c	26UECSE0029	26uecse0029@student.gvpihlr.edu.in	$2a$10$WBwwv/3TJbkB.cMBsqsjIuK2Kv3s9ikBXV/0WAMdfZ/YmIxRqIE/m	DUNNA TANMAYI	7013566266	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmv0jr1eb00rjmzmy39ozqlhy	26UECSE0026	26uecse0026@student.gvpihlr.edu.in	$2a$10$cCuffsMPaXWp3oj.phmIruNiUrQSuNjMhgcFd89Digs8xwnkEaPbe	CHITRAPU YEKSHITHA	7386121356	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmv0jr1et00xrmzmyyopejoh1	26UECSE0051	26uecse0051@student.gvpihlr.edu.in	$2a$10$slS9v0BUz3BFMnVhHy89Z.QDXr3Vh.72O6UzotZC5ZKLDIIG8TtW.	KAMMARI SHASHANK	6302084904	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N	\N	\N	\N	\N	\N
+cmv0jr1eu00yamzmytosuiob7	26UECSE0067	26uecse0067@student.gvpihlr.edu.in	$2a$10$RIogO9bmQKx/y186CZH8ie1P/.BItinpV5lta4PQEM/3Uv.3SAsE6	KOTTALI BHAGYA ABHINAV	8985383448	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N	\N	\N	\N	\N	\N
+cmv0jr1fg013ymzmy6u9tgp8z	26UECSE0070	26uecse0070@student.gvpihlr.edu.in	$2a$10$zoDSCbKRr4fXh3MGrcd6EuC0OimlYA3RxmZHmdD6M74ZiTmYrxsnm	LAKKOJI JASWANTH SAI	9281191749	t	f	\N	0	\N	2026-10-09 05:50:36.797	2026-10-09 06:37:40.13	\N	\N	\N	\N	\N	\N
+cmv0jr1fj014dmzmyhjjs5z4w	26UECSE0087	26uecse0087@student.gvpihlr.edu.in	$2a$10$wHnrR3Hh7sz4cuEFRGaheu/Te0esX00D4cF.xLAb0SKfOfUAmNxQm	NALLA THANMAI	7671889391	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N	\N	\N	\N	\N	\N
+cmv0jr1fy01agmzmy813id4zr	26UECSE0104	26uecse0104@student.gvpihlr.edu.in	$2a$10$qchQrcEopojCjnkBkW4FheZl2CWEjGHJIqqqvxNCGqkita4eTJtva	POTHALA MOKSHITA	7675885142	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.144	\N	\N	\N	\N	\N	\N
+cmv0jr1fz01almzmylods01m6	26UECSE0110	26uecse0110@student.gvpihlr.edu.in	$2a$10$ggLpgFne.B/nAlxiDEpGz.rea1amBoiK9YGqCUeKc1qb.9sD8FOzO	PYLA BALA SUBRAMANYAM	9291671260	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N	\N	\N	\N	\N	\N
+cmv0jr1gf01gkmzmy7pg6yb4v	26UECSE0132	26uecse0132@student.gvpihlr.edu.in	$2a$10$wfXIPoaCxFvcQcIYlNEvUuOTCn8pfQ6qD1v91VjeZMp.e1OctztiK	MADABATHULA NIRAJ KUMAR	9550319123	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N	\N	\N	\N	\N	\N
+cmv0jr1gg01gxmzmyerape048	26UECSE0140	26uecse0140@student.gvpihlr.edu.in	$2a$10$5SLI.QNSZvW81adzSrAxm.T081krmSQ4prAMbfG0iRMEuGsL7u1ey	YENNI SUMA	9014776580	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N	\N	\N	\N	\N	\N
+cmv0jr1gx01momzmy6brzgvyr	26UECSE0145	26uecse0145@student.gvpihlr.edu.in	$2a$10$lUvMByYkyjY.lPJgULe0NeLxhc3pLcrJ3fmw2shLc4rfGJiRofPRK	MEESALA MADHURI	8317613835	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1gz01nbmzmyisshhcrq	26UECSE0164	26uecse0164@student.gvpihlr.edu.in	$2a$10$GFYlLZdKU1JZmxNOK/sfpe5gH2Ly2u6.htJUkvdSHl9TUmDqCR8mS	KALLA SAIMIHIRA	9494332995	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1hd01sxmzmyfp2f98sd	26UECSE0170	26uecse0170@student.gvpihlr.edu.in	$2a$10$mIuFTLhtvGb3jK2atiM5d.lBdNZg9J2Z28VircfTpt9flx9PrixxC	GUJJU VAMSI	9908034218	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N	\N	\N	\N	\N	\N
+cmv0jr1he01tbmzmy8wolsv0n	26UECSE0188	26uecse0188@student.gvpihlr.edu.in	$2a$10$4Gpzyqag8Ey/8ZVRO9U5AuNK75NLa/eNPb8tW/tzqOdVLRCV4SM6S	KOTYADA NAMITH NANDAN	9390139772	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N	\N	\N	\N	\N	\N
+cmv0jr1ht01z9mzmyos63f3l9	26UECSE0200	26uecse0200@student.gvpihlr.edu.in	$2a$10$8n3.k3akPF/yGxUll2gLa.mq5.bH3EC9i0bgnE0JDWA5ZyKJNjOba	YELLA MADHULIKA	8008201280	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N	\N	\N	\N	\N	\N
+cmv0jr1hu01zimzmyrr8ycf8o	26UECSE0210	26uecse0210@student.gvpihlr.edu.in	$2a$10$h0REvEJ4nE.9NdUtuk6GVePyOHTFB55RfI6kYdsS.f7QIjWxlLo2S	MANTRIPRAGADA NAGA SAI CHARAN	9948154888	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N	\N	\N	\N	\N	\N
+cmv0jr1i9025kmzmy80tru2x6	26UECSE0229	26uecse0229@student.gvpihlr.edu.in	$2a$10$hrYzjlJUwLil76IruylA2eR09PXH8.KD3qmbzYeKI6tUh79NmZn0e	BHAMIDI KRISSHNNA NAVINA	9666081718	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N	\N	\N	\N	\N	\N
+cmv0jr1ia025rmzmyxnf8i9ql	26UECSE0236	26uecse0236@student.gvpihlr.edu.in	$2a$10$1fpym9YaEAkeqRp8QY/6oeQJAPcfOwkd9os4.m88ABA2k8rhbIaAe	BODIREDDY CHANDHANA DEEKSHITHA REDDY	8885282645	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N	\N	\N	\N	\N	\N
+cmv0jr1it02c9mzmycbqjz2ay	26UECSM0005	26uecsm0005@student.gvpihlr.edu.in	$2a$10$vqGqMIjNbwVVcYtRtkSC2.4HvF0V/2oHWSxpIwit5/bqis/CRONuS	BALAGA NITHIN PRANAVA SAI	9348060225	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N	\N	\N	\N	\N	\N
+cmv0jr1j702i6mzmygqfdb0hc	26UECSM0041	26uecsm0041@student.gvpihlr.edu.in	$2a$10$aIV0pe.mFeZED2pA2tJHK.aNetQzftjgS7TBTuE7WWJEbnU33MMxG	KUDIPUDI VIKAS SURYA SAI	6301639744	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N	\N	\N	\N	\N	\N
+cmv0jr1j902ifmzmyt1szkv4h	26UECSM0050	26uecsm0050@student.gvpihlr.edu.in	$2a$10$1Vxhhl8a97sKifVPgiJ2n.6LfW2n7xKIJLrqMtPVMUr4gJUa22ENS	MOHAMMED TAWFEEQ	9347045200	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N	\N	\N	\N	\N	\N
+cmv0jr1jo02ocmzmy59zd0vwo	26UECSM0063	26uecsm0063@student.gvpihlr.edu.in	$2a$10$Cf0ehhNZbyQ3VbdwgD2OH.dBj5U7L1kgLad58KFbrrOQwaQN3usW2	PONNADA GOWRI DHAMOJ	9966356005	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.27	\N	\N	\N	\N	\N	\N
+cmv0jr1jp02ojmzmy7nwa2yth	26UECSM0070	26uecsm0070@student.gvpihlr.edu.in	$2a$10$lFHtU0N7XmtBqW0yBMkwjeDQXkrvbBssYbH2/oThXbwHmCT27SFBy	SALADI SAI HEMANTH KUMAR	7396214164	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N	\N	\N	\N	\N	\N
+cmv0jr1k502v1mzmyg648qt9g	26UECSM0103	26uecsm0103@student.gvpihlr.edu.in	$2a$10$QO.RX.5CE3RgON7x0uS/JOoVmb1NunKwzscq55Wh9.FviF6uJHrPW	KURIMINENI ROHITH	8008332792	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1k302uomzmymyiyaehd	26UECSM0089	26uecsm0089@student.gvpihlr.edu.in	$2a$10$l4RMY/Mt/3QiOe95IeK6Ru31dUhcRbd3A4MgQxE/jVBeyW3J9H0UK	KOTHURI CHARAN	7288810535	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.285	\N	\N	\N	\N	\N	\N
+cmv0jr1ki030tmzmy25zyy562	26UECSM0111	26uecsm0111@student.gvpihlr.edu.in	$2a$10$CLw0wm60UbR/n6kGRnPkoeSn5Pu5/HTaZpsDQsVyZELiQipT4WBqK	KATUPALLI SRIJA GAYATHRI	8977335143	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N	\N	\N	\N	\N	\N
+cmv0jr1kk031amzmypxlllilq	26UECSM0125	26uecsm0125@student.gvpihlr.edu.in	$2a$10$yo8QWS0LGuQPT7bOBAzI2uRUu6aCnznyWISz7TrFNbHigQ6SlEfg6	EARLE LOHITA	8247258339	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N	\N	\N	\N	\N	\N
+cmv0jr1b50040mzmyuxku5gga	26UECHE0007	26ueche0007@student.gvpihlr.edu.in	$2a$10$8SvuqBpwA95HY7p3hTuE3O06Ej8uTpY6fbA8blcXJAo4FJ33wih5e	ANGA VENKATA RAJESH ABHISHEK	9059588526	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N	\N	\N	\N	\N	\N
+cmv0jr1as002umzmyhjom7z9h	26UECHE0011	26ueche0011@student.gvpihlr.edu.in	$2a$10$ahj7wkTg6KQ.8i7wXEc68e4ItTNOoH.dmoFN088FSfB5pf8wNQmeq	MENDA YASWANTH NAIDU	9701709562	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N	\N	\N	\N	\N	\N
+cmv0jr1cd0096mzmyb55v8tx4	26UECHE0046	26ueche0046@student.gvpihlr.edu.in	$2a$10$AwhGqUy9mRvzworbkjXcTuG0Mn0DA3.76W/mNt1ciLANA6e9Mwxna	ROBBI SURYA TEJASWINI	8096112022	t	f	\N	0	\N	2026-10-09 05:50:36.685	2026-10-09 06:37:40.052	\N	\N	\N	\N	\N	\N
+cmv0jr1cd0090mzmyjn4kvk8r	26UECHE0040	26ueche0040@student.gvpihlr.edu.in	$2a$10$16heGKXZyObKHfHHQQz7Eee7cd/yLSwaiCa3y.N73C0XzwlqCWQ0O	PASUMARTHI VENKATESH	8555924350	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.052	\N	\N	\N	\N	\N	\N
+cmv0jr1ds00lemzmyczyk668m	26UECSE0002	26uecse0002@student.gvpihlr.edu.in	$2a$10$vP7mfd/X6ZnnbaO/FQQiauX.TB6qNDyhPbgHXb7c9PDUMVpLDbsGO	ALLAM LAKSHMI SAI KRISHNA PRANATHI	9490005043	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.086	\N	\N	\N	\N	\N	\N
+cmv0jr1du00ltmzmy5djb3kog	26UECSE0017	26uecse0017@student.gvpihlr.edu.in	$2a$10$QBqbx5YrE7pietSV1dyYvuwPqeDLqD3DnXNCfzrKe294eIaNWLA2G	BULUSU VENKATA KRISHNA GAUTHAM	9440466199	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N	\N	\N	\N	\N	\N
+cmv0jr1eb00rhmzmy2p0eauwx	26UECSE0022	26uecse0022@student.gvpihlr.edu.in	$2a$10$234rcdCI4fUOb4UvM6ejW.gFz2H41B.uRc2NpgMuLwmxAgCRcPUvW	THOKALA CHARAN	7981686532	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmv0jr1ed00rymzmylaibxxct	26UECSE0038	26uecse0038@student.gvpihlr.edu.in	$2a$10$9iPDjlVhPnpCR4GUN9xHS.zwHI3LSW92T/WR7WLdOHLYByeuD369C	KOLLI VENKATA SATYA KARTHIK	9502593594	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.103	\N	\N	\N	\N	\N	\N
+cmv0jr1et00xzmzmyp9o5f0m3	26UECSE0057	26uecse0057@student.gvpihlr.edu.in	$2a$10$GgnjYdvkW5JzBvSEqMk9qOP52Zv7hP2Gw53FNBEIiitf.MHK27aH6	KANTIMAHANTI GURUDATT ANISH	9440767759	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N	\N	\N	\N	\N	\N
+cmv0jr1fg013wmzmyca73c420	26UECSE0069	26uecse0069@student.gvpihlr.edu.in	$2a$10$EsfpqOd84c7fvaluKUfX0uk/7oNBfxcVUjjsSo2EPYAfg6eNOv7nS	KUPPILI TANMAYI	8374541543	t	f	\N	0	\N	2026-10-09 05:50:36.797	2026-10-09 06:37:40.13	\N	\N	\N	\N	\N	\N
+cmv0jr1fj014amzmy8bft6qkr	26UECSE0085	26uecse0085@student.gvpihlr.edu.in	$2a$10$r.WiX2QgghtxoEnk.3f4R.cHA5SVy9gBM0fcIjaAD0g.E9QdW0qmm	NAGIREDDYPALLI HEMANTHI REDDY	8008888759	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N	\N	\N	\N	\N	\N
+cmv0jr1fy01admzmy6lej7z4b	26UECSE0103	26uecse0103@student.gvpihlr.edu.in	$2a$10$hNDAZJH3A9oXI2lDCKDaUO6pYEil0WNlm/hAEhEf0u5gYvdjWeKGW	POLISETTI VENKATA MANIKANTA LOKESH	7416719297	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N	\N	\N	\N	\N	\N
+cmv0jr1fz01ammzmylcq7lsgv	26UECSE0112	26uecse0112@student.gvpihlr.edu.in	$2a$10$rL6Yu6bwvvYAeim/M65OG.WDRlVeySwVoLfak6eNN5p42JM/7.04.	RAGOLU HEMALATHA	8790974831	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N	\N	\N	\N	\N	\N
+cmv0jr1gf01gfmzmy5me5lngg	26UECSE0120	26uecse0120@student.gvpihlr.edu.in	$2a$10$dQFdcxlNuQScayx.0HiDbuduHC1kJD7E6So4GK2110prJPLw.fkhO	SARIKI LEKHANA SAMHITHA	8374802367	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N	\N	\N	\N	\N	\N
+cmv0jr1gh01gymzmy1bga12va	26UECSE0141	26uecse0141@student.gvpihlr.edu.in	$2a$10$rIhLaUSjLQEEJXnxX9R0COKajFsp0r32KXd3JD1Ffit58AoLRTvO2	PATOJU YUVATEJA	9573026467	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N	\N	\N	\N	\N	\N
+cmv0jr1gx01mymzmym1qhb0y5	26UECSE0153	26uecse0153@student.gvpihlr.edu.in	$2a$10$PP/XwkzhXquIehwDwSL9yeLhYicLTuSv5XvnWnBIeS5cMmGvQHH6e	DADI DANUSH	9505530555	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1hf01tjmzmyw1fr8v1i	26UECSE0184	26uecse0184@student.gvpihlr.edu.in	$2a$10$moy98FrGtlBa9.13D8SWsOy2aavfa2fywNlpZz0Er/DJDqrZs7X7S	RAMPILLA SAI YASHWANTH	9885881464	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N	\N	\N	\N	\N	\N
+cmv0jr1he01t7mzmyb1f4346k	26UECSE0186	26uecse0186@student.gvpihlr.edu.in	$2a$10$AHe2zv7VIu/IjzvrtytE/O70iLv61DiIIkquQ0KFfYOMF6Lj58UbC	KARRI SUDEEPTI	9440501072	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N	\N	\N	\N	\N	\N
+cmv0jr1ht01zemzmyqct148m8	26UECSE0204	26uecse0204@student.gvpihlr.edu.in	$2a$10$Lwz/2oVTSxHgfHdQkaGHwuMtGp6.Gu.KQcOySFK45tvzHwGQVBi2C	ADIMULAM VEDA VARSHINI	9948412127	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N	\N	\N	\N	\N	\N
+cmv0jr1hu01zomzmy8uhnzvzm	26UECSE0216	26uecse0216@student.gvpihlr.edu.in	$2a$10$HQNMbakm/rHvQ7vP1Hsa0uuuu6yij8skLlRRAnuQ0yXKlKXFHVZvS	KAMUNI SATWIK	8341704380	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N	\N	\N	\N	\N	\N
+cmv0jr1i9025emzmyb8s43kti	26UECSE0223	26uecse0223@student.gvpihlr.edu.in	$2a$10$LcsvKGPmtVN8CJW20oWzUObI6sDeXl8zfXThgphtg.ZWWOdOL/6Ze	KAGITHA PARTHIV	8150901252	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N	\N	\N	\N	\N	\N
+cmv0jr1ir02bomzmyz4894xlg	26UECSM0013	26uecsm0013@student.gvpihlr.edu.in	$2a$10$XbtqjSb1h3WvoYbyWNTf.upKcGuu6QLNeWbWPo.QsmrFRrGDCQkK.	CHINTHALA PUDI CHAKRADHAR	9849246000	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N	\N	\N	\N	\N	\N
+cmv0jr1is02c8mzmyhxry29d5	26UECSM0026	26uecsm0026@student.gvpihlr.edu.in	$2a$10$gUWfcBatxLnjYJqg/0pa5.dawOID/1VIJPAp6WhZAEX2PPAzcF286	GUTHI SRIVALLIKA SWETHA	9849219125	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N	\N	\N	\N	\N	\N
+cmv0jr1j702i5mzmy9vpsjozi	26UECSM0042	26uecsm0042@student.gvpihlr.edu.in	$2a$10$Zzp70zbhaB1VJ08w6G2oo.LCCfLzQhUeGVPjDTMC138wdEgOOZpdW	KUJJA AKHIL	8978710342	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N	\N	\N	\N	\N	\N
+cmv0jr1j902iemzmy30bqjleg	26UECSM0048	26uecsm0048@student.gvpihlr.edu.in	$2a$10$2nZujwR/.XZYI6dDcWxRJezhC5xBPKhHPGDlSsgEXXeiXY1vUTOnS	MARPU JOSHITHA MANOGNYA	8464885193	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N	\N	\N	\N	\N	\N
+cmv0jr1jo02odmzmypmh031uq	26UECSM0062	26uecsm0062@student.gvpihlr.edu.in	$2a$10$5LPXKmGVapF1NpyeuXOrMupzcd/bci5lza3iJn2ZN9bImd1RDL6ii	PALLIKONDA KALYANI	9441209246	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.27	\N	\N	\N	\N	\N	\N
+cmv0jr1jp02oomzmyryxo0f7l	26UECSM0071	26uecsm0071@student.gvpihlr.edu.in	$2a$10$Ysfd/R28T5./9ryoGGWLreSwAfIAM3rTHK6b3.FZmrWKnHpGMWTSq	SANCHANA SHYAM VARDHAN	9391307538	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N	\N	\N	\N	\N	\N
+cmv0jr1k302ukmzmyzi3emgqx	26UECSM0086	26uecsm0086@student.gvpihlr.edu.in	$2a$10$MidsI5yFQY7Bo5kqcQMsieHxd2RPH7pZy.H6Qm1n3I/CbCoN/Dlha	YENAMANDRA SRINIDHI	6300661800	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1k402uymzmyr8ro109e	26UECSM0099	26uecsm0099@student.gvpihlr.edu.in	$2a$10$C/QdMyfegfhMxbvkk9b7a.pQQlQofAciWxUG78mvaUBGlN7bnVmi6	GARI SAI RAKSHITHA	8179774735	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1ki030rmzmyhalxamc0	26UECSM0107	26uecsm0107@student.gvpihlr.edu.in	$2a$10$jv3NzJkCxwD8fw/Gj2XN5ugUi./rDgVvys39wIIbLt.CDjWdbMirm	Rakshita Ravi	9491572913	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N	\N	\N	\N	\N	\N
+cmv0jr1kj0315mzmy0cn4n942	26UECSM0123	26uecsm0123@student.gvpihlr.edu.in	$2a$10$C8pznT6HNTqjjJx39OjK5.KXdO0ynd1n8PiW3GpiFDxzrJNyjOnK.	PEESAPATI SRI VENKATA SATYA SAI VAISHNAVI	8341643603	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N	\N	\N	\N	\N	\N
+cmv0lfk3002i010e0zhen3tpw	26UECSM0131	26uecsm0131@student.gvpihlr.edu.in	$2a$10$jvs4SCzc0XOBK.f9SaZE3uQEsKrEV0NvJ1U5mLWeeyFmbIvkLRoOq	SIMHADRI SUHITHA	8328160980	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3002i610e0e276jj9p	26UECSM0139	26uecsm0139@student.gvpihlr.edu.in	$2a$10$6/wjikX2ELbh5y0Y/UeHHeZIgRPE/6MXxeaNaYSuu/GP1/QvBtZzi	GUNTREDDI SWATHI	7569488823	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0jr1d200f0mzmy59hrnmny	26UECIV0012	26ueciv0012@student.gvpihlr.edu.in	$2a$10$ZJH6S3Ly1XB74yKj2coglOCpolZMS8oalbc1wnZr0M1qmHbWXeMJC	PILLA KUMAR RAJA	9154568777	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N	\N	\N	\N	\N	\N
+cmv0jr1d400femzmye39duzwn	26UECIV0028	26ueciv0028@student.gvpihlr.edu.in	$2a$10$kBRwIIWl/BKMV/JtQ4min.P5SkyDXynpuo4OkrlSzj9AAv5z7FeAG	BOTTA GANESH NAIDU	9959524555	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N	\N	\N	\N	\N	\N
+cmv0jr1ds00l9mzmyejplw9nk	26UECIV0034	26ueciv0034@student.gvpihlr.edu.in	$2a$10$FX.gAkad0BQbTqtMlerYQutVGOnKaDRbq7EnpvJ1NtSii2E0ZMP8e	JAGANA HARSHITA	7075006643	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.085	\N	\N	\N	\N	\N	\N
+cmv0jr1dt00lomzmy577e5cwt	26UECSE0014	26uecse0014@student.gvpihlr.edu.in	$2a$10$5FiO2OlZTWcmwlJLyxlOy.R/jMf/SkCExGy20UZbRYZUFH02x5Tci	BONAM VEERA NARENDRA KOWSHIK	7013810129	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N	\N	\N	\N	\N	\N
+cmv0jr1eb00rgmzmypicza96q	26UECSE0023	26uecse0023@student.gvpihlr.edu.in	$2a$10$xQyPPcCI5K.ks8n/EMdwr.FlPGW72pPEYL9418FvEnzokIxsdefNu	CHEGIREDDY JAYAVANTH ESWAR REDDY	8179249162	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmv0jr1ed00rrmzmyopjyplen	26UECSE0033	26uecse0033@student.gvpihlr.edu.in	$2a$10$7MfxRq/BlSXB50G6Qk6ZsOhyOfbTymstnvR8UxJPMDjGe/DvWtOwW	GANAPATHI RAMA ADITYA	7013290932	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmv0jr1et00xsmzmywwiam5ou	26UECSE0046	26uecse0046@student.gvpihlr.edu.in	$2a$10$scVZMZzuIL.XLThFHKvWf.idzKxH5jebV6Uo3Wp2oELsViF/q6tKG	JALADI SIRI HARSHITHA	9703796333	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N	\N	\N	\N	\N	\N
+cmv0jr1eu00y0mzmyo6c7iivi	26UECSE0058	26uecse0058@student.gvpihlr.edu.in	$2a$10$lLTwKE4ULlR7zpWCfgjKjOWziMvIAddT/oXEI/R5CzmdEtIEZWWVC	KANUKOLLU SAI CHARAN	8555805417	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N	\N	\N	\N	\N	\N
+cmv0jr1fi0147mzmyftxm50h2	26UECSE0082	26uecse0082@student.gvpihlr.edu.in	$2a$10$XqfpQgK/QY./KceL1HhiQ.NPtQeeqDXJTnnNrEcZ45Lrl4ZrBFv12	PAKKURTHI MONISHA SREE	9849069421	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N	\N	\N	\N	\N	\N
+cmv0jr1fj014kmzmyk37tt39v	26UECSE0092	26uecse0092@student.gvpihlr.edu.in	$2a$10$YkRinkCPWj3xUTRW7j6iqe/gbaMA28XGbTkET1Nu9j3t3ITKiNGDm	PACHAMALLA SAI BUNNY	9000077077	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N	\N	\N	\N	\N	\N
+cmv0jr1fy01afmzmyci4ap9oh	26UECSE0106	26uecse0106@student.gvpihlr.edu.in	$2a$10$zqUfwcWC2B6Yd7ccJC4iJeqIcFRLatPw5MbW369/kYs7NfQf0CjJy	POTNURU HEM CHAITANYA	9867725165	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.144	\N	\N	\N	\N	\N	\N
+cmv0jr1g001atmzmy8trf7w8t	26UECSE0118	26uecse0118@student.gvpihlr.edu.in	$2a$10$wrCyWe/PZW9PKksU31/n9OSwjWSJqIydXBxIXnOROkaS6y22TUJ8m	SANABOINA EBENEZER	9160270408	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N	\N	\N	\N	\N	\N
+cmv0jr1gg01gtmzmyfitdr10y	26UECSE0137	26uecse0137@student.gvpihlr.edu.in	$2a$10$/NvNu1NEUdVOnmMkvQQxf.R0iGkPYAaUhYJGlwxe/s3ZGPKr66.dG	VIREPALLI SAI BABU	9618023422	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N	\N	\N	\N	\N	\N
+cmv0jr1gf01gnmzmyhp4o8kv8	26UECSE0131	26uecse0131@student.gvpihlr.edu.in	$2a$10$mCqkimTfgp2ebMXMSa6KoOuwQcBV2gLw4N98PScl//hpgwmwYnt6G	THAMMINEEDI SRI SARAN	9849457975	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N	\N	\N	\N	\N	\N
+cmv0jr1gx01mqmzmymaifcuom	26UECSE0148	26uecse0148@student.gvpihlr.edu.in	$2a$10$D7WugKVjs1nrkYw2KcKBne46zjEfu6Y/cena0Bu.Kv3zNUyBaUw0m	MALASANI SRI GANESH SAI AKHIL	8519861973	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1gy01n0mzmy2wjm3lbo	26UECSE0157	26uecse0157@student.gvpihlr.edu.in	$2a$10$NLygpc9dwH6vx/QO68u4/unqsw5/ESuymqBm0cvfTltg1wdxCMV8W	MANAPURAM CHAITRA SRI	8919719966	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1hd01t2mzmysxsp5j88	26UECSE0185	26uecse0185@student.gvpihlr.edu.in	$2a$10$r1rqaidiMARuCQKh6JYP9OjQ3XTqAOTKwYy1xiVOEbYhpzhKIy9zy	KALIGATLA NISHITHA	9618363699	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.188	\N	\N	\N	\N	\N	\N
+cmv0jr1he01tcmzmyb318dm0g	26UECSE0190	26uecse0190@student.gvpihlr.edu.in	$2a$10$9D3drEg8V6lK/47g6avcAuFZC8sigxaH8B0b/bDXTc/WObOIYD.Lq	METTA TEJA SWAROOP	9246782727	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N	\N	\N	\N	\N	\N
+cmv0jr1hu01zmmzmyigaen9y3	26UECSE0212	26uecse0212@student.gvpihlr.edu.in	$2a$10$WPnWfZ1Pkp3J2QTZ4RDnxuYvpYLs8F6mjWI8H92pmn7yFh071A5ym	PONNADA HARIKA	8790605070	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N	\N	\N	\N	\N	\N
+cmv0jr1ht01zbmzmy45nw11ey	26UECSE0205	26uecse0205@student.gvpihlr.edu.in	$2a$10$lCe56EzujiCWcviUEjW0kOq1nobiaeb5gKO1hF8S3wd9AewhfuVIm	DARISETTI PRADEEP	6305614928	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N	\N	\N	\N	\N	\N
+cmv0jr1i9025lmzmyyj8nwdb2	26UECSE0233	26uecse0233@student.gvpihlr.edu.in	$2a$10$3IAjF.uQYfr2IyuW2WYej.EPo4c7Y4wCsqUO5np821aGJkT.S6C6.	KOSURU NIKHILESH	8977419984	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.226	\N	\N	\N	\N	\N	\N
+cmv0jr1ia025smzmydqfztg48	26UECSE0240	26uecse0240@student.gvpihlr.edu.in	$2a$10$qCUzEMinPtn7HiK5YvgNeuxVIYApTojIUMT5nhZVnq.9VGrHHcoey	SHAIK WAJID NAWAZ	9502110789	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N	\N	\N	\N	\N	\N
+cmv0jr1ir02brmzmywec908g3	26UECSM0011	26uecsm0011@student.gvpihlr.edu.in	$2a$10$c5eASkFJmHHeyMEmjV8ubeQey5tyWkCTWMFqJQ6EVbLAueVBwu/H6	CHENNAMSETTI SURYA TEJA	9391841973	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N	\N	\N	\N	\N	\N
+cmv0jr1is02bymzmy5xogiplh	26UECSM0014	26uecsm0014@student.gvpihlr.edu.in	$2a$10$UX0/4PWlkpu6NXtmkblgyuGmNcvKSpbOBdSOCHBKEoB90OorbBdcW	CHODIPILLI GUNA SEKHAR	8074298164	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N	\N	\N	\N	\N	\N
+cmv0jr1it02cbmzmyjiigxpdv	26UECSM0027	26uecsm0027@student.gvpihlr.edu.in	$2a$10$Iz.zcn4VyAhrN/DV07bKUe8KiV5M61/4nIYAjFKrxvWmF74XZjAAy	JERRIPOTHULA ROHIT KUMAR	9912207906	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N	\N	\N	\N	\N	\N
+cmv0jr1j702hymzmyrzh21wgs	26UECSM0030	26uecsm0030@student.gvpihlr.edu.in	$2a$10$F9ogGJ1oV9CGE3nyoXcDcO8np3SvBnm66QlngUS9N/4nKDRYb89rW	KALLURI KUMARI PADMAVATHI	9492258866	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N	\N	\N	\N	\N	\N
+cmv0jr1j802i9mzmysprz7cmy	26UECSM0043	26uecsm0043@student.gvpihlr.edu.in	$2a$10$7zQaPCCBh6EAahAF6rGrjeE22aktLDnXrcK6VF830KleFv1O4sLOu	KUKKALA VENKATA SAI SIVA TEJ PRATAP REDDY	9949984708	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N	\N	\N	\N	\N	\N
+cmv0jr1jo02obmzmy7q6sj9sm	26UECSM0061	26uecsm0061@student.gvpihlr.edu.in	$2a$10$RYazxF/mb5CF6e7YaEuKRuKBdB2WSaHjNn3Ml6GvYEuVLe35nA5mm	PALLI VEDA PRIYA RAMA ANUDEEPA	8008696766	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.27	\N	\N	\N	\N	\N	\N
+cmv0jr1jq02osmzmyu80xoxq6	26UECSM0076	26uecsm0076@student.gvpihlr.edu.in	$2a$10$r67HBrUrL1A9fp4eNpgUrOjTHwUHTb0BKUboVvrfrS.67WPFfRNrq	SALAPU SAI TANMAYEE	9866095364	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N	\N	\N	\N	\N	\N
+cmv0jr1k302uhmzmydyxoc8wo	26UECSM0080	26uecsm0080@student.gvpihlr.edu.in	$2a$10$4GZ8MSqDuFWLLqi7e0iY9uJaZLibx6xd2yGQXdO1HHuyDzpllsC3u	AKIRI BHAGYA SREE	9701706579	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1k402uxmzmyio8b6jzo	26UECSM0097	26uecsm0097@student.gvpihlr.edu.in	$2a$10$J8fxBTg.i9o4jFgOUzL7ueNuNf2LxXyBLaijHIe.bEKmEFK/.TvmS	KUNDI SAHITHI	8639075661	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1kj0313mzmy0kvqi5nm	26UECSM0119	26uecsm0119@student.gvpihlr.edu.in	$2a$10$CFH88MMxJ70BzLVL1AzmFeDFlUACsujMo2z7FLPX0CnZNjRqyr2xe	SAMANA CHARANJEET VEERABHADRA MITHRAKSHAY	9393110799	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N	\N	\N	\N	\N	\N
+cmv0jr1ki030smzmy4p3dmetp	26UECSM0114	26uecsm0114@student.gvpihlr.edu.in	$2a$10$sh9oDc3ZYDUfXkA0gKmz3eWY7JlAwHsqIjnKX8qUrgwfAfeWZkNxu	TAMARALA KEERTHI PRASAD	9000727611	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.304	\N	\N	\N	\N	\N	\N
+cmv0jr1bp005xmzmy4wd5hi4l	26UECHE0009	26ueche0009@student.gvpihlr.edu.in	$2a$10$g8xwobJQcwSnj/KnLatnL.wcWhYucH78TX/fzM3eQiuw9A1D08S7G	KORADA SRI SWAROOP	9052820526	t	f	\N	0	\N	2026-10-09 05:50:36.599	2026-10-09 06:37:39.898	\N	\N	\N	\N	\N	\N
+cmv0jr1cc008tmzmy6ja23ls6	26UECHE0032	26ueche0032@student.gvpihlr.edu.in	$2a$10$z6O//UwqGT2NfHqGnAVkReBBRRKfRq.hKIjxJ7/hW2X1fnln5jdTC	JAGARAPU GOUTHAM ARJUN	9985096502	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N	\N	\N	\N	\N	\N
+cmv0jr1cc008wmzmyh6ik7xb6	26UECHE0039	26ueche0039@student.gvpihlr.edu.in	$2a$10$yTe97mdVfBwmJeMuEjQ6gON1zouXO8RzEZ6aTsZkhX1ODKxYjpksy	KORUPROLU YOGITHA	9063384597	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.052	\N	\N	\N	\N	\N	\N
+cmv0jr1cd0093mzmydbgg32go	26UECHE0042	26ueche0042@student.gvpihlr.edu.in	$2a$10$w.FFi/oD6AFLYOwRgiaMdOgd3yR0eaDpkredyirsOU.e2CGIzHwlW	BURLA BOBBY	8106799320	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.052	\N	\N	\N	\N	\N	\N
+cmv0lfk3002i210e0lia4ijn4	26UECSM0137	26uecsm0137@student.gvpihlr.edu.in	$2a$10$Zb92qM7HToZ65Ou/fBRc7OJ67a.Kb2mW1bknekT88sSsevquI8Pfm	BANGARU JAGANNADHA SRI SAMPATH	9849592472	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3002hx10e0l25epgqg	26UECSM0129	26uecsm0129@student.gvpihlr.edu.in	$2a$10$eBccprn0LQLWfD6wJ9fZzOoGYHa0RRKv67c2zxLwaq6Hb2qP6Fw7e	KATTALA GOWTHAM	6305367267	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3202id10e0wm4hzh20	26UECSM0153	26uecsm0153@student.gvpihlr.edu.in	$2a$10$SZyr9cCxPQw0.vCa4PDYH.DqJsLjL4JPODDtwonPEl72m3VpIqdRG	VIJAPURAPU ABHISHIKTHA	7981476218	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3202ik10e0n84ifrtp	26UECSM0145	26uecsm0145@student.gvpihlr.edu.in	$2a$10$z/c/Ej4djFsbXSizmSI57.TQExCpgL8o9JJbn3kWmPimDYDWk.CiO	NAIDU PAVAN NIHAL	9346615046	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3m02oa10e0rcp8nnmt	26UECSM0165	26uecsm0165@student.gvpihlr.edu.in	$2a$10$ulEmV1Ej57Y3hpyKTmt2qOXdl4euqKwFmT7.Mo9eHtZ4VsVvhL8JK	BONU DILESWARA RAO	9603029217	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N	\N	\N	\N	\N	\N
+cmv0lfk3m02o510e0hubtir1t	26UECSM0154	26uecsm0154@student.gvpihlr.edu.in	$2a$10$keCLMWtR.9UOmQu4RcYKnuPmYWWWJVLu5poMP9ZpeRJaUcTNqQDlS	YELAKA VENKATA SAI PRIYANKA	9848184556	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N	\N	\N	\N	\N	\N
+cmv0lfk3n02ok10e05cbkjz1i	26UECSM0172	26uecsm0172@student.gvpihlr.edu.in	$2a$10$kZv0.a5MMnbNZwEccTfJROPpbRjZqcLnXWH8ay3ZTA6Q7D1gE95Fu	UPPADA TEJ DEEP	9966619783	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N	\N	\N	\N	\N	\N
+cmv0lfk3n02or10e0k3mn66cg	26UECSM0178	26uecsm0178@student.gvpihlr.edu.in	$2a$10$qW0C.eu1eWs4wcFBhUwFWuK.iOkl3MfMaD7nc9nLediW4eJToCSsu	BALAKA SANJANA JOSHITHA	9492422132	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N	\N	\N	\N	\N	\N
+cmv0lfk4302un10e0gfs9bqpe	26UECSM0184	26uecsm0184@student.gvpihlr.edu.in	$2a$10$XoE8cOj11uZrHk6PTYlwk.IslMN0aaPsI6hYfLZDRw6PXkbfYKH0i	BANDARU YESHU	\N	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N	\N	\N	\N	\N	\N
+cmv0lfk4402uu10e0znveyz6k	26UECSC0004	26uecsc0004@student.gvpihlr.edu.in	$2a$10$LFPwl.kt7T3S14Op6Zx6AO9S.Z6q5Pq0b7EA5NyhdsbyCzMRISFSm	BATTU DURGA BALA GOPALA VIGNESH SWAMI	9553160860	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N	\N	\N	\N	\N	\N
+cmv0lfk4402uw10e08dl6tnzp	26UECSC0005	26uecsc0005@student.gvpihlr.edu.in	$2a$10$oxXnjeCWdbxWPpNThcu/feelcL9TIZIQgLDMSnNjJii73SD5E3.lK	BELLAMKONDA YAKSHA SRI	9100355289	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N	\N	\N	\N	\N	\N
+cmv0lfk4k030s10e0lj40maea	26UECSC0017	26uecsc0017@student.gvpihlr.edu.in	$2a$10$aW9dkSTFmfO0qTP8UJzDCuzgBUIPs9y68mwHQ6eIInGxud7FJw7.m	KAMISETTY ANUSREE	7995994545	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk4k030r10e00s5dgv2v	26UECSC0018	26uecsc0018@student.gvpihlr.edu.in	$2a$10$YVEjNHOL9w1o8wHgzMv1..tocMkAp9X7.Oz8o5vve9Q8Btm3WV8CS	KONISI SAHITHI	9908566361	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk4l031010e0380fq8s9	26UECSC0028	26uecsc0028@student.gvpihlr.edu.in	$2a$10$42.PqEMVsXyhCcw6vk/0GeM28YAXsmO/jvgAnM4WUgEZI/jKQYq6C	REGANI SRAVANI	9703718811	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk4l031410e07ds5ujv0	26UECSC0029	26uecsc0029@student.gvpihlr.edu.in	$2a$10$OW9..ao4WgmS7JF57Kf8fukbL92ZgHQzooKOSf9jQfCiez9OIfxfa	LANKA SINDHU SRI	8283999499	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk50036y10e09lzabj3j	26UECSC0038	26uecsc0038@student.gvpihlr.edu.in	$2a$10$oBIcgewgmWOZKwe3SNmw5u3rOCt3TxfBzDJd/dIzrRZ3r4jH9.cZC	SUNKARI DEEKSHITHA	9989299159	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N	\N	\N	\N	\N	\N
+cmv0lfk50036w10e0qhiou276	26UECSC0037	26uecsc0037@student.gvpihlr.edu.in	$2a$10$aZgxMlNIAjZ1EFEVeX1G1efPJjeEQAShOUGg5WmjLg.k8lMudzUW6	RAJI HYMAVATHI	7989781396	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N	\N	\N	\N	\N	\N
+cmv0lfk51037910e0ka01oa9u	26UECSC0052	26uecsc0052@student.gvpihlr.edu.in	$2a$10$HYQiWbEEh88mmypgVPdqbOkj7KnhhvjzoRBLmSfmCvy7hmlbRG0De	NARLA HAMPY PUSHPA HASINI	9182292146	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N	\N	\N	\N	\N	\N
+cmv0lfk5h03de10e0gq1dz0h7	26UECSC0070	26uecsc0070@student.gvpihlr.edu.in	$2a$10$Et24YV/qUgVusyuXIubgpOd927ook/EE02v/7YN9CkrOsrkimBxw.	DUBA NAGENDRA CHARAN	7893453063	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N	\N	\N	\N	\N	\N
+cmv0lfk5h03dh10e0o6nz65g2	26UECSC0074	26uecsc0074@student.gvpihlr.edu.in	$2a$10$O6iMV.o7ddkFkVVxJ31ghuBF3jF7msv8XPGYnBodBOlH/Q4WSOOw.	BELLAMKONDA SHIVAMANI GOUD	9701442626	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N	\N	\N	\N	\N	\N
+cmv0lfk5i03do10e0lnp5ka5a	26UECSC0083	26uecsc0083@student.gvpihlr.edu.in	$2a$10$IOvVOte28K6sg.kWy/4biOXUJUWgLSfbKda2Y1AEXhmuTRY1umkxm	GADDE LEO RAJ	9441894409	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N	\N	\N	\N	\N	\N
+cmv0lfk5i03dt10e0r9cghilz	26UECSD0002	26uecsd0002@student.gvpihlr.edu.in	$2a$10$WwW8b9gmMYUOlvSpu7QFkOAvtzIZp6KNDYq.ixywnMqFFxPMGynti	DEGALA JAGRUTHI	7981591545	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N	\N	\N	\N	\N	\N
+cmv0lfk5x03jl10e04inmrhat	26UECSD0012	26uecsd0012@student.gvpihlr.edu.in	$2a$10$Rn/.9FfVCcVjIID7ezvRw.7cbws4e1WTxm1GPUW508otADY6s.NB.	SHAILESH SRIKAKULAPU	9986712229	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N	\N	\N	\N	\N	\N
+cmv0lfk5x03jh10e0lsp84pwn	26UECSD0003	26uecsd0003@student.gvpihlr.edu.in	$2a$10$qLYldD6wKkADzB37cf2LPuHxbSXIhBE3bPBPAr0tfLkDAcynyJc0m	DWARAPUREDDI CHANDANA JYOTHIRMAYI	9490749019	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N	\N	\N	\N	\N	\N
+cmv0lfk5y03ju10e0a45pl9da	26UECSD0021	26uecsd0021@student.gvpihlr.edu.in	$2a$10$HOOitIxgORpEfdgq15LWS.E65mWqmgnCKzBXogqkfA3CyDQJiWZOq	THORLAPATI RAJEEVAN PRASAD	7659936724	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N	\N	\N	\N	\N	\N
+cmv0lfk5y03jv10e08gfywgqz	26UECSD0022	26uecsd0022@student.gvpihlr.edu.in	$2a$10$zMVZdAL5Jo8G7QATe/eu6ee9uNKNH2R41hl1B/BTi8G4Q.Cf0wu2G	SAHUKAR LAVANYA CHOUDHARY	7855816754	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N	\N	\N	\N	\N	\N
+cmv0lfk6c03pp10e0ctyz242a	26UEEEE0007	26ueeee0007@student.gvpihlr.edu.in	$2a$10$ew0ajvY9Ung5gpao9BZMCO0Cy9gUEYCLGayYBiZnkcBNEfAZ0vUIW	MANADALA PAVAN KUMAR	9121729939	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6d03pz10e0yxzjd4ic	26UEEEE0017	26ueeee0017@student.gvpihlr.edu.in	$2a$10$.hdhiqLEKvr/ytdu13tS1ex//CPqgDYQSCgwzaoxwd4h1O43JJA/a	RAPETI REVANTH	7569609054	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6d03q210e07k7c2a9w	26UEEEE0022	26ueeee0022@student.gvpihlr.edu.in	$2a$10$4P1fqxb40/wW/pXnzuZM7OqUwOBY1oid0441ETXqGc0zsEVNar5zq	TAMIRI SRI VAMSI	7093962905	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0jr1d200f5mzmyk1d0u9a5	26UECIV0011	26ueciv0011@student.gvpihlr.edu.in	$2a$10$zAzG6qkR/LqtRJ2c4IEZ8OezVXkugtwKVtPxwB8nlchRCRxUHPKRS	PENTAKOTA PRAMOD BHASKAR	9949202227	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N	\N	\N	\N	\N	\N
+cmv0jr1d400fbmzmy2us0afc6	26UECIV0022	26ueciv0022@student.gvpihlr.edu.in	$2a$10$7ETV0Q2o5B6TGUyLVH4myeIOrY7Y.BNFWnKaeiU26aliBKLm2/rP2	YEDDU NAVADEEP	7013801411	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N	\N	\N	\N	\N	\N
+cmv0jr1ds00l8mzmypjaxsiun	26UECIV0035	26ueciv0035@student.gvpihlr.edu.in	$2a$10$Ga1/rFSt7y8psZZqR0vvIuC0BoBgskiGwJTVECMF3fU2l4kEdRox6	YADLA SARAVAN CHANDRA	9515143125	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.085	\N	\N	\N	\N	\N	\N
+cmv0jr1dt00lkmzmyxgsjxdz7	26UECSE0009	26uecse0009@student.gvpihlr.edu.in	$2a$10$LIXsp5CXkx8IdE.fnmWfG.yDkyrSJmAfk.pKXvMZWw12t8GgicUEe	BARATAM AMRUTHA	7569722112	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N	\N	\N	\N	\N	\N
+cmv0jr1eb00remzmy5qz6ngq9	26UECSE0020	26uecse0020@student.gvpihlr.edu.in	$2a$10$KMDSUhxNFQcCehIshm6aKOk6hjsUi8K01Y0R9ARNuEP2WcLXI6gjK	MANNE CHAITRIKA	9177076835	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmv0jr1ed00s2mzmyy6jahf09	26UECSE0043	26uecse0043@student.gvpihlr.edu.in	$2a$10$pSr8ULq23MBmyjyacRGLbea29SA58nhVwElf4Brjf1ZXOnAAf8..e	HIMANSHU SHARMA	7416302732	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.103	\N	\N	\N	\N	\N	\N
+cmv0jr1et00xtmzmyieh3fv4v	26UECSE0047	26uecse0047@student.gvpihlr.edu.in	$2a$10$vfgIpQoDGL9XssAm0QHb9uBNjp2uplZTpJgLv8s9jlbcqIKyLK98y	JANIPIREDDY SUNANDAN SAI	7288945666	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N	\N	\N	\N	\N	\N
+cmv0jr1eu00y6mzmyof4dv1xv	26UECSE0063	26uecse0063@student.gvpihlr.edu.in	$2a$10$RcaaKRDV/ZvQOc4Rj897PuvNMikSHIa9lku1Oyn1yPffw/8Rbcx2i	KONDRA JASWANTH SAI	9966632644	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N	\N	\N	\N	\N	\N
+cmv0jr1fh0142mzmy2ryhdjp1	26UECSE0077	26uecse0077@student.gvpihlr.edu.in	$2a$10$aBnBK9jIzqzsH9oiAIkUvOQ2hUalw.0y6HNMWQPgSxvaAnPmhD9Wq	SUSARLA MAHENDRA SAI NANDAN	9248080841	t	f	\N	0	\N	2026-10-09 05:50:36.798	2026-10-09 06:37:40.13	\N	\N	\N	\N	\N	\N
+cmv0jr1fj014hmzmyhlwzgbda	26UECSE0093	26uecse0093@student.gvpihlr.edu.in	$2a$10$SxQ7y.x6c.3IoZiUOe4CguhYTrw5WYmNrF6kvwu48Q9tfapRWH2Xe	PADMA MANASVI TENNETI	9911557911	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N	\N	\N	\N	\N	\N
+cmv0jr1fy01a5mzmyt625d9rf	26UECSE0098	26uecse0098@student.gvpihlr.edu.in	$2a$10$v7qNKuiehFP/uO..3pJWlOC8OByHWHnTdpX1QfHLU/05RvMg9JCvi	PARIDALA DEEPAK	6302530727	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N	\N	\N	\N	\N	\N
+cmv0jr1fz01aimzmyhtdp6qh4	26UECSE0108	26uecse0108@student.gvpihlr.edu.in	$2a$10$VQBEjY56Pt.PmcUf9.A3iudbpSH9sZDVvwiFqMQnXImb5rdgNGJWm	PULAPA THANMAIE	8332839069	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N	\N	\N	\N	\N	\N
+cmv0jr1gf01ghmzmyoyiron4m	26UECSE0124	26uecse0124@student.gvpihlr.edu.in	$2a$10$elPBxYu/3M3OBM13vxCCbeg.QRddwJ8X1HLt6ppClnayv37XLhzKK	SORI PRAVALLIKA	7842903926	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N	\N	\N	\N	\N	\N
+cmv0jr1gg01gqmzmyb6g4jr5a	26UECSE0129	26uecse0129@student.gvpihlr.edu.in	$2a$10$Ex5NSvCDzi/TBpfBITQn0ub2miSvIgHemqDY8HGok5UXnWTMI.cVu	MAJJI TEJA PRAKASH	8341107694	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N	\N	\N	\N	\N	\N
+cmv0jr1gx01mpmzmybpjnvina	26UECSE0152	26uecse0152@student.gvpihlr.edu.in	$2a$10$.wlz4fhJDrISytYYqBI4AObKv3YuEtW.F7Ac2C.iytVLLWz7d4IXG	BHEEMARASETTI VENKAT SHYAMANTH KUMAR	9701057604	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1gy01n4mzmynljzwrkv	26UECSE0162	26uecse0162@student.gvpihlr.edu.in	$2a$10$giEYEwo/CtaV.hVQJ22c6ewOilLeeOSe318KVyE6sSv/1caEpWTYK	LENKA PRAGNA	6304760426	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1hd01t4mzmyobxoivmy	26UECSE0177	26uecse0177@student.gvpihlr.edu.in	$2a$10$Jo7O1BfEcbM0SoKsG1YsZOX7E8naZd8QCo9TNOru6fj1Q5seYnF.u	BARLA JAHNAVI PRASANNA SRI	9885052856	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N	\N	\N	\N	\N	\N
+cmv0jr1he01thmzmym8vpox56	26UECSE0193	26uecse0193@student.gvpihlr.edu.in	$2a$10$ERV5gF3rmosgPerleriPa.U//pXDLoz1OJiFlPHJCoiAlLFOul6WG	PILLA SAI NAG AKHIL	9676133355	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N	\N	\N	\N	\N	\N
+cmv0jr1ht01z6mzmyk7ssrl90	26UECSE0198	26uecse0198@student.gvpihlr.edu.in	$2a$10$vGZUIagKeIcCBC2iryL3POhhIF4vftN71KsjMF5bPYcSgGkx./FwC	TEKKALA LASHYA	9394239226	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N	\N	\N	\N	\N	\N
+cmv0jr1hu01zkmzmyx1a6n9l8	26UECSE0211	26uecse0211@student.gvpihlr.edu.in	$2a$10$GhrMXsmXqdZB4bxeCqDKeej/uA58NCsTXQdOfRqzW5fS8OQd8liXG	PERICHARLA SRI SAI SIDHVIK VARMA	9440255929	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N	\N	\N	\N	\N	\N
+cmv0jr1i9025nmzmyduwehhah	26UECSE0235	26uecse0235@student.gvpihlr.edu.in	$2a$10$tDfS3TsCypa5MmdFovE7seYOsRgNmUmLttFJIBRaIGBpnx2LwmMfe	PENTA RACHANA	9949493940	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.226	\N	\N	\N	\N	\N	\N
+cmv0jr1ia0260mzmyj914lma5	26UECSM0003	26uecsm0003@student.gvpihlr.edu.in	$2a$10$wi8kTFhBpLXKR1.U8/PLvueQUa.9Lj1Xqdo820Lg1migX2j5MEsMC	BALIBOINA HARSHA VARDHAN	9640720583	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N	\N	\N	\N	\N	\N
+cmv0jr1ir02bqmzmyguv16wps	26UECSM0010	26uecsm0010@student.gvpihlr.edu.in	$2a$10$CB7Vu4Ie2Z6cEfvkIeGvn.OpFsLHSzRcYxJcxdHMDCcshFfw4Pwlu	CHALAMALASETTI DEVI DIVYA	9014049332	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N	\N	\N	\N	\N	\N
+cmv0jr1is02c4mzmy432hogq7	26UECSM0021	26uecsm0021@student.gvpihlr.edu.in	$2a$10$eCXzvPKkU5zBuMjoInPcmOcKk6GILEJ51hgHPvNGFe.rt4jIcIEwS	EMANDI SRI SIRI	7382188288	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N	\N	\N	\N	\N	\N
+cmv0jr1j702i3mzmybe1q3okv	26UECSM0039	26uecsm0039@student.gvpihlr.edu.in	$2a$10$bi0cOOY0u8/pzXxFvpHlYupVSN0S34EGXPkE2vPRLU9a9eoQXU/GK	KOLA PAVANI PRIYA	6309428361	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N	\N	\N	\N	\N	\N
+cmv0jr1j902ihmzmyn6lorjrh	26UECSM0049	26uecsm0049@student.gvpihlr.edu.in	$2a$10$O7WxuzKBs2/Pz6j8cIfM3.FXgpBRWRfeqD9gC9PxnIQUd8mlbkEty	MEDIBOINA DILLESH DEEPAK	9963533685	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N	\N	\N	\N	\N	\N
+cmv0jr1jo02o7mzmy1csvb7t7	26UECSM0059	26uecsm0059@student.gvpihlr.edu.in	$2a$10$HO4RmGnlEveS7bcTpUieTez2nShuvq0YGBkL/e0wt3mH0L/4IGU2K	MAMIDI NIHALI	9701177333	t	f	\N	0	\N	2026-10-09 05:50:36.948	2026-10-09 06:37:40.27	\N	\N	\N	\N	\N	\N
+cmv0jr1jp02ormzmyavylpb59	26UECSM0068	26uecsm0068@student.gvpihlr.edu.in	$2a$10$.fxc5ICfx2OuaUCnzHMqWeJZhbGepzTS4KGuiXtE16CgMcvRDaTVi	RAYAVARAPU JAGADEEP	9550426949	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N	\N	\N	\N	\N	\N
+cmv0jr1k302uimzmyhkdejc9o	26UECSM0082	26uecsm0082@student.gvpihlr.edu.in	$2a$10$rtx5S2T4CMpXsJojDbR2t.hfKE1.m6z9AbLJkwx0MO/x4Ak2X/gVu	BANDARU VENKAT	9000577642	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1k402urmzmy5g8qy3cu	26UECSM0095	26uecsm0095@student.gvpihlr.edu.in	$2a$10$acc7Ro49dyl9vhxHCtL7feHm2s3JNKnSeM8pbU76H9DOFUSsVPwVC	KIRLA NIHARIKA	8523096999	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1ki030pmzmycmfhex0e	26UECSM0106	26uecsm0106@student.gvpihlr.edu.in	$2a$10$npvyPLvPYsMFk7RoRHZKsemKhgKZvwvJhgzXDopVlafnR.hOV1jOW	POLAKI JANEELIYA	9390957739	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N	\N	\N	\N	\N	\N
+cmv0jr1kj0310mzmynm6gto1x	26UECSM0117	26uecsm0117@student.gvpihlr.edu.in	$2a$10$f1cU8eGJT5EJhxvUARDjOe0d3L9gbfwdLi6gtwu5ySKJzKnppsRri	MAMIDIPAKA YASWANTH	9441305935	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N	\N	\N	\N	\N	\N
+cmv0jr1cc008rmzmygffrfp48	26UECHE0034	26ueche0034@student.gvpihlr.edu.in	$2a$10$/rZ1I76KGORtWVgUjtTRL.abGWxwFrdMyszf94bT5Ki2ayhORp8N6	EAGALA RUPA SRI	7672003714	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N	\N	\N	\N	\N	\N
+cmv0jr1cd0092mzmydnb3730i	26UECHE0041	26ueche0041@student.gvpihlr.edu.in	$2a$10$f3PDyPW0kKthvTgKXE2F0e6sfwbDcMCt2zvpFdCAsmVv4OJ6Eyvg.	YAKA UDAY CHANDU	9573953995	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.052	\N	\N	\N	\N	\N	\N
+cmv0lfk3002i310e0z6umbc86	26UECSM0138	26uecsm0138@student.gvpihlr.edu.in	$2a$10$21K74Ir/NsbCAZDVcOivEeNqOmFBlBaXu53eu.t.nCobi3FDvR9lW	ELLA VARSHITHA	8074668644	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3202ie10e0n829bl2k	26UECSM0148	26uecsm0148@student.gvpihlr.edu.in	$2a$10$iu73enVWPNGwBCTplCueX.UOWGM4pZMa7RIY0nbzSNmTVSr9fibHS	POLUPARTHI SRI SAI TARUNIKA	7702274648	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3202if10e06yaijacg	26UECSM0140	26uecsm0140@student.gvpihlr.edu.in	$2a$10$VOfyZjYdasEme.7xGibCLeqOvcZ4OfZ98/kADr532tw4GSe0WLQuC	GUNTU SAI TARUN	9032845983	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3m02oe10e0814jy0lv	26UECSM0161	26uecsm0161@student.gvpihlr.edu.in	$2a$10$R5eyzvf1cvKztkANgwpfLOo1srr6Bfm33TuhUH1XoXFC4QSCmEN0i	REDDY SAMUEL	6302738878	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N	\N	\N	\N	\N	\N
+cmv0lfk3m02od10e08h10j0ty	26UECSM0166	26uecsm0166@student.gvpihlr.edu.in	$2a$10$P2B3nUJoJkA/k71hLA6tYeJnYDCrksm32bh2AC8EKYBUCUlpShPSa	BODDEDA YASHWANT	9010572922	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N	\N	\N	\N	\N	\N
+cmv0lfk3n02om10e0ot0tz3cz	26UECSM0171	26uecsm0171@student.gvpihlr.edu.in	$2a$10$H.BKh4Vrbb0usXHOlIgZE.rX27FAmQHN1UwROZTbOagMjMxuoRl82	KARANAM YASHASWI SHRI	9955373638	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N	\N	\N	\N	\N	\N
+cmv0lfk3n02os10e05zjxq3jl	26UECSM0163	26uecsm0163@student.gvpihlr.edu.in	$2a$10$fR9Z7f0RCRc05rm1ZDqLX.RgkKmxaGf1nTPH8egxUgzbfRYsV9gYS	Tummalapalli sri Vishnu sai	8877338088	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N	\N	\N	\N	\N	\N
+cmv0lfk4202uj10e06ylbf3fh	26UECSM0182	26uecsm0182@student.gvpihlr.edu.in	$2a$10$aQhE1N2KNaXUqFxm340JWuWqhYD.RWJHguLP1.yB6YuN2Y6VJXt3K	VANTAKULA THARUN	7386296014	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N	\N	\N	\N	\N	\N
+cmv0lfk4202ul10e029wdu992	26UECSM0186	26uecsm0186@student.gvpihlr.edu.in	$2a$10$s9DvjvfT.gj3YbuT7pyChOywdsXUDSLK/.idj5GR4/bV3ryg0ojvy	MANDHA ABHISHEK RAJ	\N	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N	\N	\N	\N	\N	\N
+cmv0lfk4302ur10e08gtk3rh1	26UECSC0001	26uecsc0001@student.gvpihlr.edu.in	$2a$10$zPz5rjbWspKQf4T98bcCPecICyFQ8VYnZXmvrMujs2SpvaBaIL/Je	ALLADA KEPTEN	7842053296	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N	\N	\N	\N	\N	\N
+cmv0lfk4402uv10e01mf7s1jn	26UECSC0003	26uecsc0003@student.gvpihlr.edu.in	$2a$10$96YgK9kBkj0lj0bQ.EQ2su9zODjgAs.ehcsDzhO2rDMRYUCaFhvR.	BANDARU VAIDHIK ESWAR PRASAD	6303359461	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N	\N	\N	\N	\N	\N
+cmv0lfk4l030y10e08goke9df	26UECSC0024	26uecsc0024@student.gvpihlr.edu.in	$2a$10$HhFl51KoxknyE0cAMtFjNOA8CAQ6iYop6N.iud8JwggnZicpsrg8i	MEDISETTI JAHNAVI SRIJA	9849774451	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk4l030z10e0wj58hc65	26UECSC0025	26uecsc0025@student.gvpihlr.edu.in	$2a$10$M8GqmxTK5RnqgYPJ95dNU.Y/M4RzN9fRhJ./rS0Z6NEsP/h.Dqo76	REDDI MANIKATESWARI	\N	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk4m031b10e0kp85wp92	26UECSC0033	26uecsc0033@student.gvpihlr.edu.in	$2a$10$8.GvooRU/NnhUR8ff8boduoSvEsSruwtb9rfqSm/1DSqrPlzdWQ4W	PEDAPUDI REJOY AARON	4842547990	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk51037010e0isy3pu8s	26UECSC0041	26uecsc0041@student.gvpihlr.edu.in	$2a$10$KnFVPWN9HvAC50Ivouxyy.wvvXfD4AwC5A1RHhukEzem5O2i8eiGy	VADIGINENI SIVA SHANKAR RAO	8885899056	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N	\N	\N	\N	\N	\N
+cmv0lfk51037610e01amdkzon	26UECSC0047	26uecsc0047@student.gvpihlr.edu.in	$2a$10$ixcPz3GDFGDBhn2V0Ku1.Oi7q0zBFP3qkwv7YbT5pE6BI8RnLCAY2	BODDETI HEMA VARSHA	8121381234	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N	\N	\N	\N	\N	\N
+cmv0lfk52037e10e0ijxxudgm	26UECSC0056	26uecsc0056@student.gvpihlr.edu.in	$2a$10$m5hBnJMHKgp75BQg1sDINuIwb8sMaHuQ1My0ZQH.ylIoGnUJwiA8m	KRISHNARDHULA LAKSHMI MANOGNYA	8712831950	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N	\N	\N	\N	\N	\N
+cmv0lfk52037h10e03sbyvwh7	26UECSC0061	26uecsc0061@student.gvpihlr.edu.in	$2a$10$.Q1/yXDjXPuIgjiMPpGA5.ZJwRZyZzvWpuZEYKh6nRzrWO.zLbhKu	MADIPALLI NAVEEN	9000071921	t	f	\N	0	\N	2026-10-09 06:37:40.406	2026-10-09 06:37:40.406	\N	\N	\N	\N	\N	\N
+cmv0lfk5h03d710e0dsqt504v	26UECSC0067	26uecsc0067@student.gvpihlr.edu.in	$2a$10$h/dK96lH5aqhHjIfIXjOFuPj9SEOKdKC.ltq2gwokUob3LH7S12me	EDADASARI YESWANTH YADAV	8125670308	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N	\N	\N	\N	\N	\N
+cmv0lfk5h03d910e0q2h3004a	26UECSC0064	26uecsc0064@student.gvpihlr.edu.in	$2a$10$x9pq0b8aPIRZ6CQ1OfbLCuGmgJXgzcGfzeQxqD8UUlE5ogDNcSFMG	NAGABHATLA NAGA SAHITHI CHANDANA	9246614207	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N	\N	\N	\N	\N	\N
+cmv0lfk5h03di10e0gbtlbbfn	26UECSC0076	26uecsc0076@student.gvpihlr.edu.in	$2a$10$Hcft4sIP14yhrT9JzyKQUOri6ob44KFVSAkXg2Xflv9Oe.20pEEee	KAPPALA DHANUNJAY	7331112521	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N	\N	\N	\N	\N	\N
+cmv0lfk5i03dr10e0w7c949mf	26UECSC0084	26uecsc0084@student.gvpihlr.edu.in	$2a$10$BeshrBX1PWJKWp7FH01ArOw0NPRPTLPRoOyDQSBuZqcBmX5gBY5uO	PANDIRI ADITYA SRI SWAROOP	7396683496	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N	\N	\N	\N	\N	\N
+cmv0lfk5x03jf10e0kwcmjw75	26UECSD0007	26uecsd0007@student.gvpihlr.edu.in	$2a$10$V3KdjDFkL.lV28.cVkqAuue7X7fO3kZKhuQ/X2Xc2aSmjmrVQQd3W	K VIJAYA SRUTHI	9000907250	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N	\N	\N	\N	\N	\N
+cmv0lfk5x03jp10e0kvu3byda	26UECSD0015	26uecsd0015@student.gvpihlr.edu.in	$2a$10$ROBLdQ2QKopSCkVs2w1VQOLT.t1.fnoDkVpZ3Kvs4BMC0y5SEIqeS	RUPPA MICHAEL	6302506690	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N	\N	\N	\N	\N	\N
+cmv0lfk5y03k010e0fqif9nrr	26UECSD0017	26uecsd0017@student.gvpihlr.edu.in	$2a$10$hyAOmQkLVgF.Q.SPdrffCuJlocy0kDmQREFBR1K.d6hSdCpEo7Suu	CHINTA YOGANAND	7702899357	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N	\N	\N	\N	\N	\N
+cmv0lfk5y03k110e06nveupb3	26UEEEE0001	26ueeee0001@student.gvpihlr.edu.in	$2a$10$ekL1FeSC6oDduuSfoNatV.4bzyMsJMg21cEiByO1jEQONEjxY4UDS	ADDURU KANAKA SAI NIKHILA	7981462959	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N	\N	\N	\N	\N	\N
+cmv0lfk6c03ps10e0cv40wm84	26UEEEE0010	26ueeee0010@student.gvpihlr.edu.in	$2a$10$ha5AEfPqQTb3pQ2YB5m7Ou9N2lDqnVNhzTAlq5HB8RuhmgNk.KoHC	KOLLURU SREYA AMRUTHA HARSHINI	6281002754	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6c03px10e0agp00arg	26UEEEE0016	26ueeee0016@student.gvpihlr.edu.in	$2a$10$zHHGhLOkNdZj0BZZJeShLe83u5dSycCOrePtpxFG9UEeKa4oDnTjC	PANDURU CHANDRA SEKHAR	9000224454	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6d03q110e0o348t9z2	26UEEEE0020	26ueeee0020@student.gvpihlr.edu.in	$2a$10$wcQ78zicJpgftE1wO60eGeP1s1zt9SDacGCkW7O1JfsUFtUX.A26e	SINGURU MURALIKRISHNA	9300679672	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6r03vy10e0p4ddeawf	26UEEEE0031	26ueeee0031@student.gvpihlr.edu.in	$2a$10$q7Pyoh.TKklWbJ5mJGbPru6b6CFKB8e541h1noFqmZMnKawL3m6Di	MUNAGAPAKA VEERA VENKATA TANISHQ	9705339809	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk6s03w710e0oae6hfmt	26UEEEE0041	26ueeee0041@student.gvpihlr.edu.in	$2a$10$RagAev4OzcjG.vtOMMCjeuoUcgPs8zBSVqLlSzqLargdUkknTxTcG	MOHAMMED HAJI ALI	9441245878	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk6t03wi10e0341o3ubq	26UEEEE0051	26ueeee0051@student.gvpihlr.edu.in	$2a$10$1DHcucTzGViY2Lny/glhXOy.xj0WN/GsZn/e4FiNB/Czknc.42yaS	MAJJI SRAVANI	7396445541	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk6t03wk10e0m2z1s6fo	26UEEEE0043	26ueeee0043@student.gvpihlr.edu.in	$2a$10$ADt4TIJKzVTXNQvXiVjSRuaZtEPPy3AaXrGGDzbQ1t/xcC6Vjt2vS	MYLAPALLI GIRI	6302887297	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk77042c10e0nj4xa6ur	26UEEEE0059	26ueeee0059@student.gvpihlr.edu.in	$2a$10$If.PT6fP.shOsDoTcw/WYeH1LyXZT87ukD/KW/3tOPMt2qiwJL/Qy	ELURU PREMA SAI SRINIVAS	6303751996	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0jr1cc008nmzmymy8ee9r6	26UECHE0026	26ueche0026@student.gvpihlr.edu.in	$2a$10$g/cbn65XeWzVYvxZ0Lm1DOW7a/6NSP9Gp2NTGjIKtcOsK1bOKfMRe	MOLLI SRI HARINI	8106832326	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N	\N	\N	\N	\N	\N
+cmv0lfk3002hz10e0c8vomcea	26UECSM0133	26uecsm0133@student.gvpihlr.edu.in	$2a$10$2/stpRTEYDlWh1ZzzugAEeJNjm5theXTPGWECvMFWVIhZjyXclrYO	YERIPILLI BHARAT	7901557706	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3202i910e08hcmftmp	26UECSM0142	26uecsm0142@student.gvpihlr.edu.in	$2a$10$1tBl0hqZgHPD9jk1aYXbs.TGuCJ4DO.4zcNCeClXIY0sw9lDmdPPC	KASARAGADDA THEAKSHANA THARINI CHOWDARY	7702284666	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3202ia10e0wicqrpe2	26UECSM0146	26uecsm0146@student.gvpihlr.edu.in	$2a$10$61EfaL3XIAwKnFu0Nq8aVu6iaP3kq1paqjF7fHFH.81I13wd6U5/6	PENNAM DINESH	9985295885	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3m02oc10e0htgsw0ur	26UECSM0159	26uecsm0159@student.gvpihlr.edu.in	$2a$10$W/9OUj3EkHXwQiLlph89sef40xyCdJld4BPB7Zxss3MrERCJoNdrK	JOGA PAVANA SHUBA KEERTHI	9866315570	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N	\N	\N	\N	\N	\N
+cmv0lfk3m02og10e0cdja2e9z	26UECSM0162	26uecsm0162@student.gvpihlr.edu.in	$2a$10$8FbvRzai8gQkepyNnZBLSe.19IBCnoR73HWD122fb/YszESzETsE6	THUTTAGUNTA SIRI CHANDANA	9701838242	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N	\N	\N	\N	\N	\N
+cmv0lfk3n02op10e0pof9uk3p	26UECSM0173	26uecsm0173@student.gvpihlr.edu.in	$2a$10$FoynQZ9J7BjWfkWWYyYZD.RUY4ZSABD8YOjMciYjh2utdCuyKh/B.	VEMPARLA RAJA NARASHIMHA SRISASANKH	9505652889	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N	\N	\N	\N	\N	\N
+cmv0lfk3n02ot10e094p1oo7y	26UECSM0174	26uecsm0174@student.gvpihlr.edu.in	$2a$10$utT17P7eQLV865VDq.G3Eu9R2Jbh2LUOBDOyAsd8c1cQgaAdynecq	BUDHARAJU MANAS VARMA	9490261899	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N	\N	\N	\N	\N	\N
+cmv0lfk4202uk10e0so6tvkbz	26UECSM0188	26uecsm0188@student.gvpihlr.edu.in	$2a$10$pxLdWDBL3SUN/A57CBcZ9.hogVBCb/mflbga79w5vlGBdHv4P4LUa	GOSALA ANUSHA	7337255182	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N	\N	\N	\N	\N	\N
+cmv0lfk4302up10e0jbunsf3h	26UECSM0190	26uecsm0190@student.gvpihlr.edu.in	$2a$10$sRjoufs.a8XizWpfyao6MeGXYdpey47reXgwxBtwlFsaQO.Dbn.kO	DEEPESH PRADHAN	8121551957	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N	\N	\N	\N	\N	\N
+cmv0lfk4402ut10e056r6jjw4	26UECSC0002	26uecsc0002@student.gvpihlr.edu.in	$2a$10$W6eq71JbV5qMVTh9jaMNPek.udBDmyUWj/cFQw7e6fan5QSJO7GK.	VEMALI CHARAN TEJA	7659850969	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N	\N	\N	\N	\N	\N
+cmv0lfk4402v110e07oxzo4yn	26UECSC0011	26uecsc0011@student.gvpihlr.edu.in	$2a$10$/3DMqi2IQssTmv2tJ4bFyOd2Z8hAC888GUAusGPIfo.xuNX9vzs66	OM AKSHARA GUTTIKONDA	7702744219	t	f	\N	0	\N	2026-10-09 06:37:40.372	2026-10-09 06:37:40.372	\N	\N	\N	\N	\N	\N
+cmv0lfk4k030n10e03d1a2edf	26UECSC0015	26uecsc0015@student.gvpihlr.edu.in	$2a$10$7eWIEh0B/Oik92G9YmaKG.7rkay.dkSURpqraM2MYvpvWn37raJvW	KADAGALA BHANU YOGIESWAR	8897297197	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk4k030p10e07dc2e8ul	26UECSC0012	26uecsc0012@student.gvpihlr.edu.in	$2a$10$hIbFGg8VOtjjaJaWXf1ZGeXbGhlIB3uQ8l5tXZbt7CU3JiVA3TEnK	GOMPA TEJASWINI	8520021292	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk4l031310e0hzfgjg5v	26UECSC0031	26uecsc0031@student.gvpihlr.edu.in	$2a$10$2H4bf.XwoiZSGJv9uyajaOF3JIWsciuBkaiFC6RzIhzWlQPJCDHZy	PEDDINTI PRIYA HARSHINI	9948784272	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk4l031810e0vbwcs7ze	26UECSC0034	26uecsc0034@student.gvpihlr.edu.in	$2a$10$MlRX4TjZutFaYMRFmtFqIuNfyB3Q0WoMUta0uvCTWwTJZSTKRvNfC	POTNURU MOHITH	7093516834	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk50036x10e0dvjm74k7	26UECSC0042	26uecsc0042@student.gvpihlr.edu.in	$2a$10$l2ky96rSFC9DTn/1bLAzDu6ViqwJT2Vry5Mq1zpLTG22f3ICqdO0a	VOMMI GAGAN SAI KRISHNA YADAV	\N	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N	\N	\N	\N	\N	\N
+cmv0lfk51037410e0ydawblrq	26UECSC0045	26uecsc0045@student.gvpihlr.edu.in	$2a$10$CSEV2VSIdYElDrRoagPJHOc2oH860Y/JqSlLNCxZOy2Z.a1DloBwO	P. SHRESHTA	9573778986	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N	\N	\N	\N	\N	\N
+cmv0lfk52037c10e0pozha28i	26UECSC0059	26uecsc0059@student.gvpihlr.edu.in	$2a$10$2wn2nYWY4pSnsUfnuBp73Om/3VYO6m30WIM.erYAM6rkEcu4CXraS	GANTA DOLANATH VENKATA GOWRI ANJAN BABU	9297352298	t	f	\N	0	\N	2026-10-09 06:37:40.406	2026-10-09 06:37:40.406	\N	\N	\N	\N	\N	\N
+cmv0lfk52037k10e0fchh8qfd	26UECSC0049	26uecsc0049@student.gvpihlr.edu.in	$2a$10$kpcuvuO4Q9z0LxHOthg3a.GdhK9iSRf61UoYvnesVip6trGXIgqXW	RONGALI YESWARDHAN SAI	8179129190	t	f	\N	0	\N	2026-10-09 06:37:40.406	2026-10-09 06:37:40.406	\N	\N	\N	\N	\N	\N
+cmv0lfk5h03d610e0lhc1okl6	26UECSC0066	26uecsc0066@student.gvpihlr.edu.in	$2a$10$PIEpTZRYB2D2he4kubAc2uP.s2gl6n8A8gbqwkjM2y9N4eO/V/iTq	YADAGIRI KAVYA SRI	\N	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N	\N	\N	\N	\N	\N
+cmv0lfk5h03d510e06okif5lb	26UECSC0065	26uecsc0065@student.gvpihlr.edu.in	$2a$10$CF6jVzSdnBc4kqkUpQ3Xi.0BCmYY4IyLKhVCDa5S7qNbvOAaZrk.O	PEMMIREDDY MARUTHI LAKSHMAN	9618127999	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N	\N	\N	\N	\N	\N
+cmv0lfk5h03dj10e0s5w7alu2	26UECSC0075	26uecsc0075@student.gvpihlr.edu.in	$2a$10$nBJkGLETeaunAC891vyUhufHRDeyY4AGdk2t9ccSrMaRVaO.79WqW	SEERA DEEPAK CHAND	9440001056	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N	\N	\N	\N	\N	\N
+cmv0lfk5i03dn10e05bm0s29t	26UECSC0080	26uecsc0080@student.gvpihlr.edu.in	$2a$10$235C4VrWZzR0uegDK5ULMOR9bojnwAmvulYbaFzWKKRvun.PWVkEa	Lalith kiran Bhogi	9030857999	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N	\N	\N	\N	\N	\N
+cmv0lfk5x03je10e0n2qsuu27	26UECSD0009	26uecsd0009@student.gvpihlr.edu.in	$2a$10$IWhsDd32qsVy6Hk8NQGgZ..LjOOAYtaRFiL6Jm.1YjoNeFI9VwB86	MD ARSALAN KHAN	7093927606	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N	\N	\N	\N	\N	\N
+cmv0lfk5x03jo10e0fhmdzi0s	26UECSD0010	26uecsd0010@student.gvpihlr.edu.in	$2a$10$WuNnMUTqneTPSme5t4QFL.4aGKEE.PEmGkxKeR6geEDa.MOVSBjUK	NERALLA PRANAY KUMAR	9849222040	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N	\N	\N	\N	\N	\N
+cmv0lfk5y03jr10e0a9ndtr0t	26UECSD0018	26uecsd0018@student.gvpihlr.edu.in	$2a$10$ypV969.gH9L0G13LmXuHYuOy.ldfOVGJekvi6XlzUv2IrTJvOZPQi	BURUBU SRI CHARAN	8008803868	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N	\N	\N	\N	\N	\N
+cmv0lfk5y03jx10e0xlmlrv5y	26UECSD0023	26uecsd0023@student.gvpihlr.edu.in	$2a$10$0j0IP7DyAdJRS88h0Da/X.aNo6XX5qEHpYEBvqaaien.amP31aEgW	KILAPARTHI SRAVAN KUMAR	9602395629	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N	\N	\N	\N	\N	\N
+cmv0lfk6c03po10e05r7f31xp	26UEEEE0009	26ueeee0009@student.gvpihlr.edu.in	$2a$10$nTetlWQImjHnHMR.TQ9ETu4awMHr9BKHdEtd9e4u6BHgTLczDD.5q	KADIYALA VIVEK	6300920880	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6c03pq10e08rgw5x23	26UEEEE0011	26ueeee0011@student.gvpihlr.edu.in	$2a$10$ciBJ.g93CAoNHtvRoPTivOpa18BhRS8ctBR3H8DRe0LPh99UCLt92	KOMMOJU SAI AMITHA	9849992923	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6d03q010e01vgf1r52	26UEEEE0018	26ueeee0018@student.gvpihlr.edu.in	$2a$10$3fggCqEj5YaUAWg2TRzRXuCQK8nloZ1jau36avQAVlfQIVWRFUEUi	POTNURI CHAITANYA KUMAR	9912878589	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6d03q410e0bw66x31b	26UEEEE0021	26ueeee0021@student.gvpihlr.edu.in	$2a$10$H9Ao1Jb3NVdZlwxL0vMMK.6WR9a4JeyWl9KfSl4YUe/iAgsQVXD26	SURABHI GOSWAMI	9398829631	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6e03qb10e0bgj7sgvh	26UEEEE0028	26ueeee0028@student.gvpihlr.edu.in	$2a$10$U55YnZWdXa6MO1Rd0baU6eRNuj9d5NkMlLf4gafGx.bHUk92fOiF6	YEMINENI LAHARI	9398066389	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6r03w210e0ijk9mymy	26UEEEE0033	26ueeee0033@student.gvpihlr.edu.in	$2a$10$.OnOOXSBWYrYd/t8pDezQeS6cfW.ISUmMbc0M42OO.LxaJJamhxgO	GONDESI GOWTHAM KUMAR REDDY	7659060431	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk6r03w510e035cho8na	26UEEEE0036	26ueeee0036@student.gvpihlr.edu.in	$2a$10$c571CnY5gOfhEL8DMveNNeGsZdpj6cxJSZ70HheA0pJrCc2vltPnK	GANGAVAMSAM VARSHINI	9490302765	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk6t03we10e0z4n0mzca	26UEEEE0048	26ueeee0048@student.gvpihlr.edu.in	$2a$10$qKeKU7oHB3oSMT5O8xO7R.BsB6nvlzpRfZG2I6zq3hRsIyMvpRf0y	K. PUJITHA SRI	9949816336	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0jr1d200ezmzmy7kqzrztv	26UECIV0004	26ueciv0004@student.gvpihlr.edu.in	$2a$10$2U6JbEXzXtS5mrhFXNOtl.ziTvJdaso62NWT8x3Anz//XOsl1fD7i	GEDDA NEELIMA	70939979811	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N	\N	\N	\N	\N	\N
+cmv0jr1d400fkmzmyn190hca5	26UECIV0026	26ueciv0026@student.gvpihlr.edu.in	$2a$10$dA54n8GefFvKSYI/MZvlEeVx9q3nQ0.NoBAV6/uVThJQF.z1ZNPn6	POTHIREDDY BHARATH	7601057200	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N	\N	\N	\N	\N	\N
+cmv0jr1ds00l6mzmyvbnejuxj	26UECSE0001	26uecse0001@student.gvpihlr.edu.in	$2a$10$iyKvu7MRBenVZpZdHrH4puxxEu5Ex3KNEughzla9OMkpaoOzoeZKS	SATTUPILLI GRESHAMA	9682144196	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.086	\N	\N	\N	\N	\N	\N
+cmv0jr1du00lrmzmydsbc34o6	26UECSE0018	26uecse0018@student.gvpihlr.edu.in	$2a$10$RHGJGc6C5.mwyX9SNLYYKeJ9N8hkKJS1DeuS8//SzZ4okMb7ja0nu	CHICHULA ASWITHA	9989051565	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N	\N	\N	\N	\N	\N
+cmv0jr1eb00rlmzmywb4eo10g	26UECSE0025	26uecse0025@student.gvpihlr.edu.in	$2a$10$xblJZhZeWa52Y99HrzFanOAEBPh5Ai02WVl3.HraJNgV/Spgsb9Su	CHIKKALA TEJESH	9849893297	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmv0jr1ed00rsmzmyo5b6lpe6	26UECSE0036	26uecse0036@student.gvpihlr.edu.in	$2a$10$gY/ONiEW2fhV2CjK/fFj0uIhItAfwC2e6Te7W74gJtSnBCmquCMTq	GOGADA RISHIKA	8074054887	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmv0jr1et00xnmzmywr8ap711	26UECSE0049	26uecse0049@student.gvpihlr.edu.in	$2a$10$EefqDOTxZhHeLW4vu483xuFHM0ZwBgOPqXAWx9S5PNyP34VhkuMCK	KAREDLA JAYANTH SRINIVAS	8019064230	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N	\N	\N	\N	\N	\N
+cmv0jr1eu00y7mzmyzu4nbqho	26UECSE0062	26uecse0062@student.gvpihlr.edu.in	$2a$10$JrtBafwXrxFZmAaLwdRcjOHAzmJMysepN9nnPj7bY040iMxH9kbGu	KONDA SRUJAN TEJASWI GANAPATHI	6300052856	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N	\N	\N	\N	\N	\N
+cmv0jr1fg013xmzmyotjzcf7q	26UECSE0071	26uecse0071@student.gvpihlr.edu.in	$2a$10$kLQwtfUuxje6O4LHrFZkB.ROQKOfoPalV7ZmuMXFzLpfofDt7FqSe	VUTLA LIKHITHA SAHASRA	8978406250	t	f	\N	0	\N	2026-10-09 05:50:36.797	2026-10-09 06:37:40.131	\N	\N	\N	\N	\N	\N
+cmv0jr1fj014imzmy7fn5zq6q	26UECSE0090	26uecse0090@student.gvpihlr.edu.in	$2a$10$fDZc3kZ82Gzy2oAvvMOWZO4oO/d05rE2F1Wso09pP1OJjnxcpuqjG	NANDURI SRI HASINI GAYATHRI	9912756396	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N	\N	\N	\N	\N	\N
+cmv0jr1fy01acmzmy6dn8c5j0	26UECSE0094	26uecse0094@student.gvpihlr.edu.in	$2a$10$Yj63p2Fd8SL7mapqox5IjuSJoZc8klKoyGRz7DwKs9zXoZbeAdW6K	PALAGIRI VIGNESH	8919146051	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N	\N	\N	\N	\N	\N
+cmv0jr1fz01aqmzmyjvrlj1n7	26UECSE0115	26uecse0115@student.gvpihlr.edu.in	$2a$10$XzZ7Q7gleFNckyCftqPriObd0iUf8hDTUopoNCT8nMqn.Vcq/xjcy	RAVIPATI MOHAL SARVAN	8499055559	t	f	\N	0	\N	2026-10-09 05:50:36.815	2026-10-09 06:37:40.145	\N	\N	\N	\N	\N	\N
+cmv0jr1gf01glmzmykebnj6jd	26UECSE0127	26uecse0127@student.gvpihlr.edu.in	$2a$10$ozKkOMMFy1lTtt.ZGr4d4eaBogGienhJWtM0Z.HbZCYN5htg5jV1y	SURU SATHVIKA	9032061070	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N	\N	\N	\N	\N	\N
+cmv0jr1gg01gwmzmyluou5tar	26UECSE0139	26uecse0139@student.gvpihlr.edu.in	$2a$10$DzlNb.zDagmhGXBUHhIHgutnk3ooFjaBhJ.mJPddCOTEKNeEd3Qze	CHAGANTI TANMAI MANISRI SARANYA	9347012301	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N	\N	\N	\N	\N	\N
+cmv0jr1gy01mzmzmy87q1jyns	26UECSE0146	26uecse0146@student.gvpihlr.edu.in	$2a$10$SRt4P.UtdcHEZgFaGxe9rO.eYpR1yQM7EMfGiyYBzhquZr8j4ZkTa	ALAJANGI ASWIN KUMAR	9701282504	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1gz01namzmybpn0igdj	26UECSE0165	26uecse0165@student.gvpihlr.edu.in	$2a$10$wsaKnKw9Ays5QT1Y7R5VIO1IvEdSSUYpUH8e2CgJyrWMZK0bJoOY.	MARPU MEGHANA	9440755929	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1hd01szmzmy53uk8cch	26UECSE0174	26uecse0174@student.gvpihlr.edu.in	$2a$10$YUkWHV26MF6NKSsx34QRaO.Ga4shGJw0uxEI7Gy6mDnbvpJ6H8GCK	NITTALA LAXMI NRUSIMHA ANANTHA	9618877666	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N	\N	\N	\N	\N	\N
+cmv0jr1ht01zdmzmya9z5c75p	26UECSE0203	26uecse0203@student.gvpihlr.edu.in	$2a$10$kBD3OAs1IHA3hZNNlLaLbOvTaVSn2NVRSiwVFNRS8LKmwzHtZ1YYm	PALADUGU SAI TANVI	9966146577	t	f	\N	0	\N	2026-10-09 05:50:36.881	2026-10-09 06:37:40.202	\N	\N	\N	\N	\N	\N
+cmv0jr1hu01zlmzmy53y7gd5o	26UECSE0208	26uecse0208@student.gvpihlr.edu.in	$2a$10$m9HYLgLV7Nz.DNM.TuHVaOG92OUtArDsIdx.YDxRnITCESfJnXDu6	KAMBALA SURYA VISHAL	9381714207	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.206	\N	\N	\N	\N	\N	\N
+cmv0jr1ia025qmzmy5hyyvhju	26UECSE0224	26uecse0224@student.gvpihlr.edu.in	$2a$10$0NEbK7ELcyJqxlNR1w/cR.XhrNKLOm/OCNaFlTzNwF3udHPlJ0R7O	YALLA DINESH	9676861033	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N	\N	\N	\N	\N	\N
+cmv0jr1ia0261mzmy89d2fyzf	26UECSE0234	26uecse0234@student.gvpihlr.edu.in	$2a$10$g26s/Uy3buqiIpK2TvI1DeC1AzZpIw/wkywcCX8vSHB8Q/tavEjiG	TOTTADI SRUJANA	8332087129	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N	\N	\N	\N	\N	\N
+cmv0jr1ir02bvmzmyzzyxp4ah	26UECSM0020	26uecsm0020@student.gvpihlr.edu.in	$2a$10$XSrHgqgrM7jIhcEguXmVM.lpCD5hQXUefdgW7swsQM3go1w3ltwCG	ELLAPU ROHITH SAI TEJA	9492270685	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N	\N	\N	\N	\N	\N
+cmv0jr1is02c2mzmyqhp0x74l	26UECSM0024	26uecsm0024@student.gvpihlr.edu.in	$2a$10$Ta6IswnmIJR.lv9uZcssBeDmILs/UAMkvTDtb1VwAXsv6qSHLbXp2	GORLA LOHITH	9391901323	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.244	\N	\N	\N	\N	\N	\N
+cmv0jr1j702i2mzmy3os9up3k	26UECSM0029	26uecsm0029@student.gvpihlr.edu.in	$2a$10$nRcBn3MlUfxV3vAMpF1av.l5NloYvJyc6SFh/nAXJd1VvMDJn3w9a	DAMMA NAGA JASWITHA	7799771668	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.257	\N	\N	\N	\N	\N	\N
+cmv0jr1j902ijmzmycp8d6l0v	26UECSM0051	26uecsm0051@student.gvpihlr.edu.in	$2a$10$YWs.UT/arqoIe0fyggmSVuL2ZkH2rfzkysbR.Q8xfZ/yS/IVhq.36	MOLLI SAMSRITHA	9290504844	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N	\N	\N	\N	\N	\N
+cmv0jr1jo02o5mzmy2bqpek9n	26UECSM0058	26uecsm0058@student.gvpihlr.edu.in	$2a$10$UtOxofM1ppNXoCCUz6iwzOMa62ftXejXNmtnb/1EZGgpTyQoeIa1G	NEELATHI HEMANTH KUMAR	7093872799	t	f	\N	0	\N	2026-10-09 05:50:36.948	2026-10-09 06:37:40.27	\N	\N	\N	\N	\N	\N
+cmv0jr1jp02onmzmycckw5m7o	26UECSM0073	26uecsm0073@student.gvpihlr.edu.in	$2a$10$TbeXk5JDOe1OiInFRBH9ieMU7AY.bjRhWtWYbOhIP1kSM/11arYte	SIRIKI BHAVANA NAIDU	8121033455	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N	\N	\N	\N	\N	\N
+cmv0jr1k302ufmzmyb0w6qr5x	26UECSM0081	26uecsm0081@student.gvpihlr.edu.in	$2a$10$dMtRn96iAoOYqx15sZF88.KVaeLCUspC3SYryzu4L2Bcy7yVxY0.G	VEMPADA CHARVITHA	9110372606	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1k402utmzmykr85s12j	26UECSM0092	26uecsm0092@student.gvpihlr.edu.in	$2a$10$fhi6nEIn80eohmLUw8XU9OiuoTh5D3JZjwKFnynAkTTV9jRBAlMie	MALLUBHATLA JAYA GANA SAI AKSHAYA	9885334269	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.285	\N	\N	\N	\N	\N	\N
+cmv0jr1ki030vmzmyw74hgl09	26UECSM0115	26uecsm0115@student.gvpihlr.edu.in	$2a$10$w5aGETs/HKPTGFHsmYKnUO4HEbt6RVkpc7XJMDECSmSiZBhKOFQge	PADALA CHETHANA LAVANYA	8341380629	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N	\N	\N	\N	\N	\N
+cmv0jr1kj0318mzmy6yexmxhi	26UECSM0126	26uecsm0126@student.gvpihlr.edu.in	$2a$10$1pNCUg.LojEqyuSQZhVjM.PYwuHmYKStDBghBdM6I6WIizYtBkLmq	GOTTUMUKKALA RISHIKA	9010233357	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N	\N	\N	\N	\N	\N
+cmv0jr1cc008pmzmyddh8dw06	26UECHE0031	26ueche0031@student.gvpihlr.edu.in	$2a$10$wJ7t.73f0W2nCdEgiM3RZuTsW0OXcZuEkuXxUtdIUG38eR0tQXJ32	CHATTI BHUVAN TRISHANKH	9666163318	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N	\N	\N	\N	\N	\N
+cmv0jr1d400fjmzmyfnzw2l2c	26UECIV0016	26ueciv0016@student.gvpihlr.edu.in	$2a$10$PVTTkiZ2vb.4oWPZG79SoOM57ocqgCXLPvPsa6Id6TSL.i6KtberO	VEERALAPATI JAI VARDHAN	9030608659	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N	\N	\N	\N	\N	\N
+cmv0lfk3102i710e03s6f1px4	26UECSM0141	26uecsm0141@student.gvpihlr.edu.in	$2a$10$6AQ6tH4T0Mp8vBwQ/jD/t.65kQ2fx6nGFJNsBv97YTH0qjFYy7bMS	KAREDLA ADITYA	9908714312	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3202ib10e07u74l950	26UECSM0149	26uecsm0149@student.gvpihlr.edu.in	$2a$10$vlZJTwTDqqEhL1j8csQjx.nrwnRBcSJtLCtTn5IFoWPEevfFm.Vm2	RAAVI VENKATA SATYA SURYA YASWANTH	9912023977	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3m02oh10e0xui52t6s	26UECSM0164	26uecsm0164@student.gvpihlr.edu.in	$2a$10$nhhTWOEnw1KEp1HFeSfyNOZhCdUZ6AVLLQAtuF3o1xqtVCLPLlW5.	TALADA JASHVITHA	8179424575	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N	\N	\N	\N	\N	\N
+cmv0lfk4202uh10e0ymkv4epp	26UECSM0179	26uecsm0179@student.gvpihlr.edu.in	$2a$10$O07II5dSfFraIuBENjMUruaSwS4qyUSRQZjjndI3qDC3AzhAQJ.WO	MARAMREDDY VEDADRI NARAYANA REDDY	6300965137	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N	\N	\N	\N	\N	\N
+cmv0lfk4302us10e0526u75o5	26UECSM0192	26uecsm0192@student.gvpihlr.edu.in	$2a$10$bh7oowHe/IlpzAmCu.4V1O.uz91.mNOZwQT0H81iGWKltICEHep4G	MARUPILLI POOJITHA LAKSHMI	9052333399	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N	\N	\N	\N	\N	\N
+cmv0lfk4k030o10e0c82hw3w4	26UECSC0013	26uecsc0013@student.gvpihlr.edu.in	$2a$10$41UvAQePVrz6YFqwaZbKUu7lFbDWHo1PAHHb0d1Rhlx4CuXzaoKE.	HARIPRIYA CHINTA	9908898253	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk4l031510e0io3cag82	26UECSC0030	26uecsc0030@student.gvpihlr.edu.in	$2a$10$iw8Kcm.CQDEr7Qvjwu3ySenNN7ptdNuth03Ib6dJusNR6zwz9Ww..	NOUDURI NITYA SANTHOSHINI VAISHNAVI	9502225642	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk51037810e0eh04jbo6	26UECSC0050	26uecsc0050@student.gvpihlr.edu.in	$2a$10$wzmEDstwJryePLt.H8p2jOlyTLXYfHMOqJw3Hye38R6cltXnvEnYu	MANTRABUDDI SATHVIK	9652435725	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N	\N	\N	\N	\N	\N
+cmv0lfk5h03df10e09o9q1ky7	26UECSC0071	26uecsc0071@student.gvpihlr.edu.in	$2a$10$745oB1G19FAVBJJ3TwrdF.c2xXAijN825KvMDW0rggazwKBlUxu9O	MULAGALA ASWANTH RAM CHARAN	6305997593	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N	\N	\N	\N	\N	\N
+cmv0lfk5i03dm10e09200i1a1	26UECSC0079	26uecsc0079@student.gvpihlr.edu.in	$2a$10$JvDS85hKX/M8bSsi6Obd9eNo2jFO4WQRuowp6Oa.O9pzGsGBgm3wu	KALLEMPUDI SWATHI	7674092146	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N	\N	\N	\N	\N	\N
+cmv0lfk5x03jm10e0od04lwjz	26UECSD0011	26uecsd0011@student.gvpihlr.edu.in	$2a$10$pdrrM9IS2vM89HYPe9Yw7OXHQnlXb3NkaZTpCsK0MuTycOKsrNjCq	POTTI JAYADEV VENKATA NAGA VISHNU	9100593101	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N	\N	\N	\N	\N	\N
+cmv0lfk5y03jt10e0kwbxlhye	26UECSD0020	26uecsd0020@student.gvpihlr.edu.in	$2a$10$MK/vvIYw6Jc0AtDYVDgaK.9E28ipCbQIu5px1Q/yreEtC3oUveYoe	MEESALA JASMITA	9177373738	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N	\N	\N	\N	\N	\N
+cmv0lfk6d03py10e0pdybh4ca	26UEEEE0006	26ueeee0006@student.gvpihlr.edu.in	$2a$10$oxvD0Yfl0rykmGckYoUA5unVdmxoYZ.wL249xArFgs8gCxUXqZM2.	GADIRAJU YOGYA SRI	8309071940	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6e03q610e0zc0nk515	26UEEEE0024	26ueeee0024@student.gvpihlr.edu.in	$2a$10$ttOzpdyxBnUwDrFOv3d5/ec3MYvEBJJn.a51n2dUEQ1mEr6srs89q	VIJAY SANDEEP VATHADA	9885169919	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6r03vw10e01bskh1m5	26UEEEE0039	26ueeee0039@student.gvpihlr.edu.in	$2a$10$bh/ON.GsYLNtpJRZD4VxUeVRV4Lzf5qxu8Ob.NJmQFFCFVdjh/eGC	YARABALA DHARANI	9949601001	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk6s03w810e094w5c9qg	26UEEEE0042	26ueeee0042@student.gvpihlr.edu.in	$2a$10$.RcZzulP0OCOFupl87/y0utWXxTSTtZUaGSTwZliImJieXE8K3dRK	MUVVALA POORNA PRAVEEN	9440597244	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk6t03wg10e0tq3yedc5	26UEEEE0050	26ueeee0050@student.gvpihlr.edu.in	$2a$10$D1xIDemEK7rRQspuhYQC9O.wVvvQKAQxmV1N96VJuJLEzJ0sliP0S	MAJJI VENKATESH	9014721299	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk77042510e0cw6p178f	26UEEEE0058	26ueeee0058@student.gvpihlr.edu.in	$2a$10$9TLgEIH7.aXjy5GDcv33qOAEjBe8/VTk.IuftGGwTjgyjZjnf4WJ6	PERUGU VARUN SAI GANESH	7993958255	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk77042d10e0tw8egrwq	26UEECE0005	26ueece0005@student.gvpihlr.edu.in	$2a$10$PElKtk/VrJnJrz/7nkMSmuhb6qcQqvFrgwf2nwP96A89jHGxmLNJ2	ALLU JAGRUTHI	8555958560	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk78042i10e0dinsfd9x	26UEECE0013	26ueece0013@student.gvpihlr.edu.in	$2a$10$kDaOvRCTGLTHFm68aq0AVeeVdrLJEfIZOeWIvpyQXiegoCKIH2eNO	BHYRI BHANU MITHRA	6309366586	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk78042q10e06udz5j4w	26UEECE0001	26ueece0001@student.gvpihlr.edu.in	$2a$10$Pj45xQQKucjzjK/uX.zOyOHIvUH64oVvAFKwESeBd10qsXfKNRIxC	ALTHI BHARATH KUMAR	9849705972	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk7o048j10e0pwk10a9o	26UEECE0027	26ueece0027@student.gvpihlr.edu.in	$2a$10$8U2yL20nqYd0ilTbA7WK6ukZBBgB1.cNqrIBDQZdYr0lj3smvLt3W	CHIRLA SHANMUKHA SAI SARAN REDDY	7799113319	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N	\N	\N	\N	\N	\N
+cmv0lfk7o048o10e0vf7id51w	26UEECE0036	26ueece0036@student.gvpihlr.edu.in	$2a$10$HK0EcI1XxtOPkjkBmsu.xuBBlt7mPhcr48RFG4GIdtOZqSKsEuKhi	DUBBAKA SAI VIKASH	8332881583	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N	\N	\N	\N	\N	\N
+cmv0lfk7p048y10e0vqrq4m6z	26UEECE0043	26ueece0043@student.gvpihlr.edu.in	$2a$10$dodK8R/Ww4X8WxgiBUZVe.tt7iiHLV62DS5vbaobVqkr7BAFjGqwe	GALLA ROSHAN	7780407092	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N	\N	\N	\N	\N	\N
+cmv0lfk8504es10e0tbiy192h	26UEECE0048	26ueece0048@student.gvpihlr.edu.in	$2a$10$3effedpHM6QpgBBOeCf3WOCh4R7pDq2QYojKBcbxRDDmToXRpbtZC	GAYATHRI SAI SATHWIKA PUPPALA	7670814737	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N	\N	\N	\N	\N	\N
+cmv0lfk8504ep10e0jslv7hlp	26UEECE0049	26ueece0049@student.gvpihlr.edu.in	$2a$10$O6HrllaN4/VVpTeFfm.X0u/NgLYkmGBiPtEs5vCFbEBernoKrPJXe	GOLAGANI MADHAN KUMAR	8309094578	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N	\N	\N	\N	\N	\N
+cmv0lfk8604f010e0470qp15g	26UEECE0061	26ueece0061@student.gvpihlr.edu.in	$2a$10$rRF8kX2n4U1vJaSAbuVmAuSvQqCegFIfr/74GO3TImlpJZIf2H4DG	MYLAPALLI HASINI	9390462140	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N	\N	\N	\N	\N	\N
+cmv0lfk8604f410e048wyycf5	26UEECE0067	26ueece0067@student.gvpihlr.edu.in	$2a$10$ZPSRgiq/bkzaA4r1FvAAyeiUVHAIaT3.4OtD9dENiM6yUkdNm.ssK	PATHIVADA HARSHA VARDHAN	7013238099	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N	\N	\N	\N	\N	\N
+cmv0lfk8s04l210e05wvqc30y	26UEECE0075	26ueece0075@student.gvpihlr.edu.in	$2a$10$1icQ2XExRLCPmfXy2DgRluU88j.2S3/cj1s3da9nAQVuV6voOwXtS	KANDUBOTHU PAVANI	7893505764	t	f	\N	0	\N	2026-10-09 06:37:40.54	2026-10-09 06:37:40.54	\N	\N	\N	\N	\N	\N
+cmv0lfk8t04l710e0kitbbvfu	26UEECE0085	26ueece0085@student.gvpihlr.edu.in	$2a$10$ytGBS37Zxrelkmk7aRNoWOLy1bCGXyBdOfJrAf47EbAJFBIUhAhUO	KONA RAMA SURYA CHARAN	9394791423	t	f	\N	0	\N	2026-10-09 06:37:40.541	2026-10-09 06:37:40.541	\N	\N	\N	\N	\N	\N
+cmv0lfk8u04lf10e0aebadnqx	26UEECE0091	26ueece0091@student.gvpihlr.edu.in	$2a$10$LaBjHESqUinb0S9gXJ91Y.QB2jSDrImOpRHITaFpaTy0p9wFBwvwu	MUKKALA VASANTH BABU	8978081138	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N	\N	\N	\N	\N	\N
+cmv0lfk8v04lj10e0g8tia14z	26UEECE0093	26ueece0093@student.gvpihlr.edu.in	$2a$10$5hCYYLEs853cE0VgBat0Qe8X5wwotqJ6EcDWBIKTnHlwCEV6UonVi	MADEM BAVYA SREE	9866352972	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N	\N	\N	\N	\N	\N
+cmv0lfk8v04lk10e0jcogw9wc	26UEECE0095	26ueece0095@student.gvpihlr.edu.in	$2a$10$FLKi0dSHfJtQuzKOJGhfxeTaq7x6DItbGf9FQq5h4yq82XV/Ct7xC	POLAKU VENKATA ADITYA	8008561324	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N	\N	\N	\N	\N	\N
+cmv0jr1cc008smzmyyr9nnq7i	26UECHE0028	26ueche0028@student.gvpihlr.edu.in	$2a$10$AaH3lU2nJSRPHgLTx4p.OeX7YYhbLh2EbBRXkocrNeBsmsXNw3uJq	KOPPAVARAPU SRIHARI	6301459903	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N	\N	\N	\N	\N	\N
+cmv0lfk3002i510e0g5p5p7ws	26UECSM0135	26uecsm0135@student.gvpihlr.edu.in	$2a$10$I9sb.A04i7aOZULjKGw73.0RnVgvjPyWTML0ayylztcxGbrUNuBgy	BOMMIREDDY JAIDEEP SAI	7893959739	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3202ig10e0rm036tio	26UECSM0150	26uecsm0150@student.gvpihlr.edu.in	$2a$10$TCJWLV3l2JEAEt/NAjCx2Owk/jcgaYYen.qqv/AWG0mfrekqbY/wG	SIRIPURAM AKHIL	8247090532	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3m02o610e07e6sn6xk	26UECSM0156	26uecsm0156@student.gvpihlr.edu.in	$2a$10$mr/g3BEmS7kGMlIeYkrpL.1avD7mIGy9/nm8kv.iXbpW54qalgSW2	MARNENI JASWANTH	9502468902	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N	\N	\N	\N	\N	\N
+cmv0lfk3n02oq10e0iw4w9erp	26UECSM0177	26uecsm0177@student.gvpihlr.edu.in	$2a$10$MuQXw96hldLLK9U5pUpgYO5LDEBB4DWBhhIUq9sXIpqlNz6arkme.	VADAVALASA DALIYA	8498897393	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N	\N	\N	\N	\N	\N
+cmv0lfk4302uq10e0msobz147	26UECSM0191	26uecsm0191@student.gvpihlr.edu.in	$2a$10$g.iDYLz2d46PWdsxeYuyhuwarDKTUSjxLqeuWn/9CoZ6kWuQaMacK	KARIMI BHARGAVI	8639920609	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N	\N	\N	\N	\N	\N
+cmv0lfk4402uy10e08hovjr8b	26UECSC0007	26uecsc0007@student.gvpihlr.edu.in	$2a$10$7vQbN25kFDZIAVL0xZHzZ.tE2BuqQ1GTtI3Onz718Y8FAIq3T4o5W	CHINTHALA BHARGAVA KUMAR	9885914078	t	f	\N	0	\N	2026-10-09 06:37:40.372	2026-10-09 06:37:40.372	\N	\N	\N	\N	\N	\N
+cmv0lfk4k030x10e0sk5oo3l6	26UECSC0022	26uecsc0022@student.gvpihlr.edu.in	$2a$10$Neeshkz/6UkxLqfN./P7G.EXBU387ZcLEPfzkyuNYDzrDxOu89eFq	MADETI DITEJ	8076248153	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk4l031110e0121kmxpo	26UECSC0026	26uecsc0026@student.gvpihlr.edu.in	$2a$10$.vuawcvykvz1JMHDdSMmC.eHieXnHBazz0Av8wh6lC2qHggjRLf1O	MOLLI SAI GEETAM	9390078712	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk51037210e0t9wr15ij	26UECSC0046	26uecsc0046@student.gvpihlr.edu.in	$2a$10$LRfzZcxinIAuQ3PjpSnEw.eq7cSfCrqmn3zY4Vxq1wgnC.U0mVSbu	KANDI SRAVAN KUMAR	9866838318	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N	\N	\N	\N	\N	\N
+cmv0lfk52037f10e0dpuktf0s	26UECSC0057	26uecsc0057@student.gvpihlr.edu.in	$2a$10$2f71fswhHKfGt9QD09Be9u2j389BSxQ7R7LwglNMgTHQ0lAWhhX3.	TAMMINEEDI SUHAS	7799772776	t	f	\N	0	\N	2026-10-09 06:37:40.406	2026-10-09 06:37:40.406	\N	\N	\N	\N	\N	\N
+cmv0lfk5h03da10e0ru8r12b9	26UECSC0062	26uecsc0062@student.gvpihlr.edu.in	$2a$10$pYsj9TAtWdq59aMzyfAmm.nN0Pv5XhTdTzUo.SQhDM2QiOfxLfrQa	MEDAPATI CHAITANYA VEERRAGHAVA REDDY	9949049999	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N	\N	\N	\N	\N	\N
+cmv0lfk5i03dk10e0yphgyz3t	26UECSC0077	26uecsc0077@student.gvpihlr.edu.in	$2a$10$PcKTgim5mTZuFsXiF6Zc8.vrtyo7anMERCX4FvM2A7jsir7Y59UpC	MARIKANTI LATHISH	7036173718	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N	\N	\N	\N	\N	\N
+cmv0lfk5x03jj10e0xp918d3g	26UECSD0005	26uecsd0005@student.gvpihlr.edu.in	$2a$10$gPxd5URUvnn15CEMUQU7S.VIzYvXnjBixgyYVeTrT.MMw3hGwuqS6	GUTLA KARTHIK	8309954330	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N	\N	\N	\N	\N	\N
+cmv0lfk5y03jy10e00yyjhdsp	26UEEEE0003	26ueeee0003@student.gvpihlr.edu.in	$2a$10$LC77xhxfbCCFghcmehkz2uBxfoKOBnXamKRw9x/tn/sZT1ted27t2	ARIPAKA HAREENDRA	9063873849	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N	\N	\N	\N	\N	\N
+cmv0lfk6c03pu10e04nar01i4	26UEEEE0015	26ueeee0015@student.gvpihlr.edu.in	$2a$10$NdJv2dkopAd1ul5Q32Z5KuPV8PPdP/50HxBHJ0WN96fk28J8iVmbm	PALAVALASA SIVA PUJITHA	7416521289	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6e03q510e0dfxyqk0f	26UEEEE0025	26ueeee0025@student.gvpihlr.edu.in	$2a$10$BUqYhLdKEb2yGyn113vVUu/G2MoTIzL.t8KffUfu1UExNkEi2kJ4u	YAJJALA SNEHASREE	9000653567	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6r03w410e0cyxgbjq8	26UEEEE0038	26ueeee0038@student.gvpihlr.edu.in	$2a$10$ppD5etwejaIBIXJ0FpZzOOnkyg3Yu4vOBbAUtOU.fopLcUTgq7.3W	MOKA RAGA SRI DURGA VARSHINI	9441564028	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk6s03wa10e0jh4ldbv0	26UEEEE0045	26ueeee0045@student.gvpihlr.edu.in	$2a$10$a8C8hu2qzkIJYWExCQ5BlOlhxMaB1.W3ADWF7WpKnXbszgfWMklk6	VASUPALLI DHEERAJ NARAYANA SWAMY	9440583886	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk6t03wb10e05d6qoeyy	26UEEEE0047	26ueeee0047@student.gvpihlr.edu.in	$2a$10$4OAkGTdXHqLMUugPk6xL/e2EW/LnwhSnQZhRXpedSJAw4ibGpEXPu	VEGI GOWTHAM SAI	9618128987	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk77042e10e0b2yk9mgd	26UEECE0007	26ueece0007@student.gvpihlr.edu.in	$2a$10$qO.yIQsEpgC1GDrc5.B9MeKVuw3ZZd/4F8ujydih18kxDoa2RaRCi	ANKITA VARMA	8309814318	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk77042a10e04zpblrac	26UEECE0009	26ueece0009@student.gvpihlr.edu.in	$2a$10$jGtbtrIddH6FCcwU2tmXiezIwytcDpB0M..5RvuGnFJVCGud1ESoa	ASISH BABU SRIPATHI	9704576603	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk78042j10e0uxx8i1zn	26UEECE0015	26ueece0015@student.gvpihlr.edu.in	$2a$10$rg7kwqwGUhyD47.YG6n30O4Qw5pRPXukgJGc88gRIC1WXtxKDNtGK	BODI RAVEENDRANATH	7396579595	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk78042n10e0z8u3fpwl	26UEECE0020	26ueece0020@student.gvpihlr.edu.in	$2a$10$6Hpy8es9m8shoWzCo0PoWu36AjuHvhD6.uQ/eJbb0pEPYUaYDn..q	KARRI MOHAN KRISHNA SIDDARDHA	9491763509	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk7o048h10e02eqc1yt4	26UEECE0022	26ueece0022@student.gvpihlr.edu.in	$2a$10$JqBJxcJVXX5ekGmqp1DCVO/TRuajgIiHyUQSyM37EY2fPfE4vISAe	BONU CHANDANA SRUTHI	8341675661	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N	\N	\N	\N	\N	\N
+cmv0lfk7o048q10e04magixym	26UEECE0033	26ueece0033@student.gvpihlr.edu.in	$2a$10$GRN9PUsFcBIu/dUg4U9ncuo6bxqaePTNMHsuEUALuhYboYNjBKx8a	DARAHASINI NATHALA	9491812958	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N	\N	\N	\N	\N	\N
+cmv0lfk7p048z10e04xyumij9	26UEECE0045	26ueece0045@student.gvpihlr.edu.in	$2a$10$6U6K0nunTzKoIjHgbUhqA.xdIa0cHb/YAmmFrF40FOsfh7J19/8cu	BATTULA KRISHNA MANOHAR	9848710014	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N	\N	\N	\N	\N	\N
+cmv0lfk7p049110e0752w0c50	26UEECE0032	26ueece0032@student.gvpihlr.edu.in	$2a$10$f0KPH2pF18pY8IeBFgXsduCO/XIUA5y9s7wtdJfZYybg5.8PJGnO6	DAMMU UDAY KUMAR	7396986698	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N	\N	\N	\N	\N	\N
+cmv0lfk8504en10e0kdggnvhp	26UEECE0054	26ueece0054@student.gvpihlr.edu.in	$2a$10$sXXXBiR9TgDs5PEskZEneOTKb8wN7QpKKT/0cki7966oInCuTiNR2	GUJJU JAHNAVI REDDY	9246628201	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N	\N	\N	\N	\N	\N
+cmv0lfk8604f710e09zw8t1s1	26UEECE0064	26ueece0064@student.gvpihlr.edu.in	$2a$10$gVD0MkdKkQPbIcgTMVfyieS83.usa22En.Z7tqOOTqDQi9Am3Bnt2	ABOTHU YASWANTH	9885684875	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N	\N	\N	\N	\N	\N
+cmv0lfk8504ez10e0scuncyzy	26UEECE0052	26ueece0052@student.gvpihlr.edu.in	$2a$10$e7fGLgDu..bcWmfvliOvWOs7M3pRSQ3.1xpiVS7Qc74hab7MqFNNm	GORLE GANESH	9110300780	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N	\N	\N	\N	\N	\N
+cmv0lfk8s04ky10e0eopyd13c	26UEECE0071	26ueece0071@student.gvpihlr.edu.in	$2a$10$rS5pvYODZhMPNGbiMzUpAuNpCJCV4Ik9UuhbJD6GaW0ksB5.JYjP2	KALLURI GEETAPRANAYA	9985311424	t	f	\N	0	\N	2026-10-09 06:37:40.54	2026-10-09 06:37:40.54	\N	\N	\N	\N	\N	\N
+cmv0lfk8t04l510e0fnpe0fdr	26UEECE0082	26ueece0082@student.gvpihlr.edu.in	$2a$10$CbC1gEDvzZw/43/GwOOUAe6KII3r2L9Hb7BPWdRR59qrXhvXLEkJG	KILARU VENKATESWARLU	8949306676	t	f	\N	0	\N	2026-10-09 06:37:40.541	2026-10-09 06:37:40.541	\N	\N	\N	\N	\N	\N
+cmv0lfk8u04ld10e0cr1rqvv7	26UEECE0089	26ueece0089@student.gvpihlr.edu.in	$2a$10$NQXdkR5O/THuMzZeUB.qtOG.O6LIcfmA/WNj3W260iIb8mgcHB6sK	PADALA LAKSHMAN KUMAR	9381548787	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N	\N	\N	\N	\N	\N
+cmv0lfk8v04li10e08kwnkclx	26UEECE0094	26ueece0094@student.gvpihlr.edu.in	$2a$10$VaV3e3wm9h4BJunrrusUOuIDOodXyBEV9JaiExI19BEXx3DgrIKB6	MAILIPALLI KETAN SAI KAUSHIK	9441025147	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N	\N	\N	\N	\N	\N
+cmv0jr1cc008umzmydb27t4nl	26UECHE0035	26ueche0035@student.gvpihlr.edu.in	$2a$10$jVsoGij3SsXLUiVXvksZEOdVHAPDCn/DUextiKqzcs2KABFB/v1Cq	SARAGADAM JOSHMI	8096688832	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.05	\N	\N	\N	\N	\N	\N
+cmv0jr1d300f8mzmy5qcicwup	26UECIV0020	26ueciv0020@student.gvpihlr.edu.in	$2a$10$GDHL0qigW.ohNpzLlJ6lPO0O6CnZHjg7bwX/Kh10jKqgfZ2sCedlm	VANDRASI HARSHA VARDHAN	8367351200	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.071	\N	\N	\N	\N	\N	\N
+cmv0lfk3102i810e0oahlclrt	26UECSM0144	26uecsm0144@student.gvpihlr.edu.in	$2a$10$F7yLimdew7pUnzub1EZIvOtErpBMHmSEWgJJbLrxXabsbyZz8sipm	KOOSU SAI CHARISHMA	9010720695	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3202ic10e01h7lk5g2	26UECSM0147	26uecsm0147@student.gvpihlr.edu.in	$2a$10$RU1qHzZhlYylAkVVl7c3yep.r18yq2yBzbzHjsFsL5uxTe1onskDO	PATHIVADA RAHUL RAJ	9951921987	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3m02o710e0s0loqtsz	26UECSM0155	26uecsm0155@student.gvpihlr.edu.in	$2a$10$vD7hvLFmT6eFMC1VjSyCBe.06vOE9tBPNttZEdrZHj9/HV6EkPeBa	YENUGULA DHANUSH SATVA TEJA	7893334430	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N	\N	\N	\N	\N	\N
+cmv0lfk3n02oo10e0jv58jndd	26UECSM0176	26uecsm0176@student.gvpihlr.edu.in	$2a$10$B2jukpNuSBKH6mUqPArJRO5idYd2efgQVI9R3A8JCcWNAWErzjhf2	CHITTEM HASINI	9885235952	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N	\N	\N	\N	\N	\N
+cmv0lfk4202um10e0v9f0t8pp	26UECSM0187	26uecsm0187@student.gvpihlr.edu.in	$2a$10$qWByTEi35AR2Yq5WJjQlGOg6dqSHYX.53EojRzKomyCYyMdzQ3mTK	RANDHI SRI SUSHMA	9441058869	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N	\N	\N	\N	\N	\N
+cmv0lfk4402ux10e0prvzmx5w	26UECSC0006	26uecsc0006@student.gvpihlr.edu.in	$2a$10$EkP4kvlhTIhbXKQAqd3b/elR4PNz39L2ddbBQWS2tUWocfCyLfEbm	BENDI CHAITRA SHIVANI	7075443086	t	f	\N	0	\N	2026-10-09 06:37:40.372	2026-10-09 06:37:40.372	\N	\N	\N	\N	\N	\N
+cmv0lfk4k030w10e04yyt2rkp	26UECSC0019	26uecsc0019@student.gvpihlr.edu.in	$2a$10$6unJdwdW8lqTPFwc1WW26ecoYLx.AVYKU2ZkxIr2IwC0U02XMvrSe	KORRAYI SWATHI KANAKA RISHITHA	9440053732	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk4l031610e004ettext	26UECSC0035	26uecsc0035@student.gvpihlr.edu.in	$2a$10$8/YXbZEF883dOidmRAzwr.YNjNilSPeRcw2e0P0HRnrlhJ.G8FpZC	RADA SAI SAATHWIK	8074289497	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk51037110e03vag5oak	26UECSC0044	26uecsc0044@student.gvpihlr.edu.in	$2a$10$5a2/HddDObZmCLy.gS4/8OJtJzS06AoJJNSRxHw3DHWkwYgQtPuDa	YASHITHA RONGALI	7286039706	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N	\N	\N	\N	\N	\N
+cmv0lfk52037i10e0y4de4alx	26UECSC0058	26uecsc0058@student.gvpihlr.edu.in	$2a$10$rInTT/dT4ZAUsmijO1PdxutFIKbAVvoT2VG3qiJQpRs7Gc35OmUj.	BHEESETTY TEJASWIN	9392604600	t	f	\N	0	\N	2026-10-09 06:37:40.406	2026-10-09 06:37:40.406	\N	\N	\N	\N	\N	\N
+cmv0lfk5h03dd10e0vkoryi18	26UECSC0069	26uecsc0069@student.gvpihlr.edu.in	$2a$10$RY1oIZ7s7f1TwI5WsoVHM.Ip17ybk4Bq2WtCRLFCteCy7Vql3AKd2	BODDEPALLI TARUN	9515398084	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N	\N	\N	\N	\N	\N
+cmv0lfk5i03dq10e07tpghyqg	26UECSD0001	26uecsd0001@student.gvpihlr.edu.in	$2a$10$4dY9si2/TTVuY903UrlaRO0cU8DqoEIkdAZkAh/1d8jWhjB0AguTa	BUDI BHAVYA	6202935844	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N	\N	\N	\N	\N	\N
+cmv0lfk5x03jn10e04ydhy3wt	26UECSD0008	26uecsd0008@student.gvpihlr.edu.in	$2a$10$EfjTcanJiY24sAVXCgD5BOSgS9ZHFifnywo1nlQwrfc0WMy4u2uMS	MALYAVANTAM N V V L GOWTHAMI	9603638574	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N	\N	\N	\N	\N	\N
+cmv0lfk5y03jw10e0yz9yqo1h	26UECSD0024	26uecsd0024@student.gvpihlr.edu.in	$2a$10$QGqri6qpdXrBYcU5c53NN.uuflF/V/HRRJZ2hHy4sznSgGoLIRLbG	MUVVALA VARSHINI	9848548511	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N	\N	\N	\N	\N	\N
+cmv0lfk6c03pn10e0ogwm8ld2	26UEEEE0008	26ueeee0008@student.gvpihlr.edu.in	$2a$10$xIE83uX2R/WMD85UBNgaK.dXcSr3BTsIPzgXoAUzmY4BSL9p5/ZGe	INUPAKURTI NAVYA	8397403182	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6e03qa10e029o5aoic	26UEEEE0019	26ueeee0019@student.gvpihlr.edu.in	$2a$10$ZML2DDzXC4YDAyhSqd4VJeWT6fZEL5wHgn3UC0hUKQKmh4gqZEslW	AMBATI HARSHA VARDHAN	9381315338	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6r03w110e0q9xhyqx5	26UEEEE0035	26ueeee0035@student.gvpihlr.edu.in	$2a$10$tgPI/mD1VCtvfU.RwELQk.TEwwBVhaasNefx9Qk61FvDEdJI.eSWi	BALAGA RAKESH	9505901446	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk6s03w910e066q43t3n	26UEEEE0044	26ueeee0044@student.gvpihlr.edu.in	$2a$10$axDd5U5o6VrGG6eKHPvp4OiFfkRgiH1oiStApSHfFlcUttCn2nypy	THOTTADI SURYAKUMARI	9704194944	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk6t03wc10e0b6s56wza	26UEEEE0046	26ueeee0046@student.gvpihlr.edu.in	$2a$10$F455XwIYTTrJwXYzS7VtzeHP39GbJH.Im6JPcA3POu/9.oFDeiw/K	BHUPATHI MAHITHA PRAGNA	9963265788	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk77042810e0waafvt3h	26UEEEE0057	26ueeee0057@student.gvpihlr.edu.in	$2a$10$yN/ZA4CKRBciPgIUzClB0u6VEQpM8dDtauusfGKqLROt8AzPC7sGa	NALAM SHANMUKH SRI RAM	7989679717	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk78042h10e0kfwv4n2m	26UEECE0016	26ueece0016@student.gvpihlr.edu.in	$2a$10$N.IhnnWqAi3wi9W4dTSZ.eL77RBpcKh0Dyc9MEiRbAGHBNHvMj9v2	BONI TEJA SAI	8761955740	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk78042o10e0y93bbf6m	26UEECE0004	26ueece0004@student.gvpihlr.edu.in	$2a$10$3aNmL.J4o4qxjS1LA3kv5etslYY7urxc1jLmp4Pta8Gfg7zT/uUfe	KANDULA POORNESH	7569900600	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk79042s10e0br5kl9ar	26UEECE0010	26ueece0010@student.gvpihlr.edu.in	$2a$10$dnJXJV43T/F.eth0g2iFb.Q81yhFKwAyEFuGQg1DUdsww9cklrgqq	AYISETTI PRADEEP VENKATA NARAYANA SESHA SAI	7801019888	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk7o048e10e05gyr61x2	26UEECE0023	26ueece0023@student.gvpihlr.edu.in	$2a$10$LSUkvxoXo2rVzDW9oYElH.qTxltdx1Tly2vbe5c8yyrXFfJAP./by	CHEMBOLU SAILESH SARMA	7569493084	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N	\N	\N	\N	\N	\N
+cmv0lfk7o048n10e0os6g95ht	26UEECE0029	26ueece0029@student.gvpihlr.edu.in	$2a$10$dbOs0slG2TbmtLbRr0PHoetJIoMcUNN/KC0KR0wGnNgFDPp2t5OQK	CHUKKA KRISHNA KOUSHIK	9967923452	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N	\N	\N	\N	\N	\N
+cmv0lfk7p048s10e0o034cfmx	26UEECE0035	26ueece0035@student.gvpihlr.edu.in	$2a$10$2bIhpRCY0dVztVCTFHPJnenwUlKaLuX29ktZGUmAxcYtIec.Ld9Sq	BONI DHEEKSHITHA	8328699873	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N	\N	\N	\N	\N	\N
+cmv0lfk7p048v10e0z6aafx7i	26UEECE0039	26ueece0039@student.gvpihlr.edu.in	$2a$10$kTNA8pOTB4fsSWCH9ql8SuYkQ5YDLMgIrCNOPKImsc4JfombzSVHW	GORRELA SRI SAI CHARAN	8008222183	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N	\N	\N	\N	\N	\N
+cmv0lfk8504eo10e0xsowtgou	26UEECE0047	26ueece0047@student.gvpihlr.edu.in	$2a$10$7C1C0ELV3inQS/ACppFaEe1Ds0utk/Fye60lGBM5FTQVRWb570U8W	GAURAV SANKHALA	8121374922	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N	\N	\N	\N	\N	\N
+cmv0lfk8504ex10e0rjluxutd	26UEECE0059	26ueece0059@student.gvpihlr.edu.in	$2a$10$hqHcnQYSfkc47RbTFXSnIeu5Oit2bxkqbSANf4s649UFa6LcutzbO	MALLA UDAY BASKAR	7331187450	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N	\N	\N	\N	\N	\N
+cmv0lfk8604f110e0ae9ak5wx	26UEECE0063	26ueece0063@student.gvpihlr.edu.in	$2a$10$bQLd1a4Owt6ZUkpxyfwkjO7pheQo7wZT1ka4NZ0OlKS1oE.mPBnBe	MAKIREDDY SADHVIKA	9160384766	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N	\N	\N	\N	\N	\N
+cmv0lfk8604fa10e0rvbci9qy	26UEECE0057	26ueece0057@student.gvpihlr.edu.in	$2a$10$Qw1hNUApPJMwGQhHi/4MEurCu6nUfIwFxYbn9oOd4ewhOedGeN1lS	KUNDRAPU SIRI SADHVIKA	8688271862	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N	\N	\N	\N	\N	\N
+cmv0lfk8s04l310e0u23ebqf5	26UEECE0080	26ueece0080@student.gvpihlr.edu.in	$2a$10$nkZM1BWfBS9xyVezKfOOSO3oMza5p5NUUNhmcRx8lJ9zrzOWeEAfG	KATTA MEGHANA NAGA SRI	7382128803	t	f	\N	0	\N	2026-10-09 06:37:40.541	2026-10-09 06:37:40.541	\N	\N	\N	\N	\N	\N
+cmv0lfk8t04l810e0jg66gnmm	26UEECE0079	26ueece0079@student.gvpihlr.edu.in	$2a$10$zCQdl8/raNEL.h3FFLqVPuycGZloRGpOAtxuoFAf4mxMCmZDFKbg2	KASAPU KARTHIK VENKATA SATYANARAYANA	9642269598	t	f	\N	0	\N	2026-10-09 06:37:40.541	2026-10-09 06:37:40.541	\N	\N	\N	\N	\N	\N
+cmv0lfk9c04r610e0kg4ma60n	26UEECE0098	26ueece0098@student.gvpihlr.edu.in	$2a$10$Kd0hKOyAlHu6IEdZ.AMrZu.ZGbbrqHwYGHGoZ0vSvXZ3RVUuUNRQ.	PULARI CHARAN	7569626672	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N	\N	\N	\N	\N	\N
+cmv0jr1d200f6mzmyc59vtwz3	26UECIV0013	26ueciv0013@student.gvpihlr.edu.in	$2a$10$li6jWr9gNBo5v81gQBz/yOoo3VsToGiLxK0InALLWky3PggoQ4Ai.	POTHINA AJAY	9392877999	t	f	\N	0	\N	2026-10-09 05:50:36.711	2026-10-09 06:37:40.07	\N	\N	\N	\N	\N	\N
+cmv0jr1ds00lfmzmybwmq9i50	26UECSE0004	26uecse0004@student.gvpihlr.edu.in	$2a$10$OgiCntjlhikUjiFdHXS/LOqNAI07VipWp7K8bVc5to.2SO8KxuNIu	BARRI SIDDHU HARSHA	8106269795	t	f	\N	0	\N	2026-10-09 05:50:36.736	2026-10-09 06:37:40.086	\N	\N	\N	\N	\N	\N
+cmv0jr1dt00lqmzmy8uth1yji	26UECSE0016	26uecse0016@student.gvpihlr.edu.in	$2a$10$faZpkKVGvwRgOgkW2Ip0quwpzm5GVBohf4TUpm5yllROv92batWU.	BOYIDI VENKATA SAI GIREESH	9381293312	t	f	\N	0	\N	2026-10-09 05:50:36.737	2026-10-09 06:37:40.086	\N	\N	\N	\N	\N	\N
+cmv0jr1eb00rfmzmy8vln9sfg	26UECSE0024	26uecse0024@student.gvpihlr.edu.in	$2a$10$ShRPTlCv2jPAGhcnqTeYHOtsfXotmeBqN7X0G5LrmyFFZFTL45SnG	CHIKKALA D NAGA SATYA VENKATA PAVAN KUMAR	9346445365	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.102	\N	\N	\N	\N	\N	\N
+cmv0jr1ed00s1mzmykc8qfybg	26UECSE0039	26uecse0039@student.gvpihlr.edu.in	$2a$10$X.9zqes2KXqiMR8ug02TKeQHBYI2nhQpQe1x8JvLMD.a7TSh6POQi	GOLLU SAI MEDHA VAGDEVI	9908511217	t	f	\N	0	\N	2026-10-09 05:50:36.756	2026-10-09 06:37:40.103	\N	\N	\N	\N	\N	\N
+cmv0jr1et00xpmzmytb6j3t9h	26UECSE0044	26uecse0044@student.gvpihlr.edu.in	$2a$10$VDbJmYn6SWiOPYAfP0riDeT46Jy.MRvPYr5S1O6aQqK76KcOLGdt6	INDANA J V V MADHUSUDANA AYYAPPA	6303435229	t	f	\N	0	\N	2026-10-09 05:50:36.773	2026-10-09 06:37:40.116	\N	\N	\N	\N	\N	\N
+cmv0jr1eu00y9mzmyh2s1d9b8	26UECSE0065	26uecse0065@student.gvpihlr.edu.in	$2a$10$SX1c/JLoVt0X7zGkWUEl1.loHZLn78MlrPQovTNADpiTxD6Xu2lLe	NANDYALA LASYA	8639618233	t	f	\N	0	\N	2026-10-09 05:50:36.774	2026-10-09 06:37:40.117	\N	\N	\N	\N	\N	\N
+cmv0jr1fi0145mzmy0asi2b4s	26UECSE0079	26uecse0079@student.gvpihlr.edu.in	$2a$10$jXdVJHwnPMyIoj9A1C0wMuxaE6skgeQs4ETh1qQYaBieRomcFGnhi	MARUVADA SRI KEERTHANA	9395566277	t	f	\N	0	\N	2026-10-09 05:50:36.798	2026-10-09 06:37:40.13	\N	\N	\N	\N	\N	\N
+cmv0jr1fj014cmzmyea75q1er	26UECSE0083	26uecse0083@student.gvpihlr.edu.in	$2a$10$vTnPlkFVrDDGex9uII3TA.IMoMOsbRipM89J3zmSw3WQhS.sQCO6O	MOTHUKURI SURYA NARAYANA	9948325872	t	f	\N	0	\N	2026-10-09 05:50:36.799	2026-10-09 06:37:40.131	\N	\N	\N	\N	\N	\N
+cmv0jr1fz01ahmzmyccpsl9c5	26UECSE0100	26uecse0100@student.gvpihlr.edu.in	$2a$10$JWby9Nt9MO6bqmkELGmaKO1MfU9xH5tLk1f0QS6wsljoglVJboktm	PILLA DEESHMITHA	8309345509	t	f	\N	0	\N	2026-10-09 05:50:36.814	2026-10-09 06:37:40.144	\N	\N	\N	\N	\N	\N
+cmv0jr1gf01gimzmy15d01b68	26UECSE0126	26uecse0126@student.gvpihlr.edu.in	$2a$10$YqW7SGWYEeNhnO8npXvzpOiIn3Jz1MeKcS3pK/3qHJk.dJCDS9BU2	SRIYANI MANGU	9441178558	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.158	\N	\N	\N	\N	\N	\N
+cmv0jr1gg01gumzmy0se5fvta	26UECSE0135	26uecse0135@student.gvpihlr.edu.in	$2a$10$ZZAGqXmgPkmm.OgJJKC.pulvkI1It9EEyophHkbaWzW02eFYXws82	VASIREDDY LOHITHA	9347703949	t	f	\N	0	\N	2026-10-09 05:50:36.832	2026-10-09 06:37:40.159	\N	\N	\N	\N	\N	\N
+cmv0jr1gy01n6mzmymqea60j5	26UECSE0163	26uecse0163@student.gvpihlr.edu.in	$2a$10$nj317nYt2bRMYVCSIdY/Su8cuuH.EsPJhZcIGZ6YmLdbIrTEnqgna	PRAYAGA GAYATRI AKSHAYA	9640584922	t	f	\N	0	\N	2026-10-09 05:50:36.85	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1gx01msmzmy0hhr7hzc	26UECSE0155	26uecse0155@student.gvpihlr.edu.in	$2a$10$yzOtPtVfzyb7KzRDK0VgRe6dkyb/uETB/8y5z1nDpGHwcB2HLPKEy	CHALLA SAI SHASHANK REDDY	9849952449	t	f	\N	0	\N	2026-10-09 05:50:36.849	2026-10-09 06:37:40.173	\N	\N	\N	\N	\N	\N
+cmv0jr1hd01t0mzmy6r10kes9	26UECSE0181	26uecse0181@student.gvpihlr.edu.in	$2a$10$KiZhtFZK.S4TPD80fQm.0eB9I1teGHsvV/hcGoUIyGut3RPB7jsF6	GANISETTI SRINIVAS SAMPATH HEMANTH	9381137461	t	f	\N	0	\N	2026-10-09 05:50:36.865	2026-10-09 06:37:40.187	\N	\N	\N	\N	\N	\N
+cmv0jr1he01temzmybuo5939c	26UECSE0192	26uecse0192@student.gvpihlr.edu.in	$2a$10$ryjgjC5lZrXMqCkWDIPJ7uS/Ll54p1V4ILeVyu0hKmY/38TmZZmA.	PASUPUREDDI VENNELA	7989349573	t	f	\N	0	\N	2026-10-09 05:50:36.866	2026-10-09 06:37:40.188	\N	\N	\N	\N	\N	\N
+cmv0jr1ht01zgmzmycphz4b7l	26UECSE0207	26uecse0207@student.gvpihlr.edu.in	$2a$10$mfhtXVO4gTv/jtuBe2p/I.B/fS2m0iJ3nbjjCjHOPHY3Yj2v4Whra	KALIGOTLA KANAKA KODANDA SAI HRUTIK	9849959567	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.202	\N	\N	\N	\N	\N	\N
+cmv0jr1hv01ztmzmyfxh9prmh	26UECSE0219	26uecse0219@student.gvpihlr.edu.in	$2a$10$6vUmF0FeZi2gEUB9D0lIdeCoWSD63m7x83ZtcnQm/AfOyb.3XEWD6	YELAMANCHILI SRIVARSHINI	9490893468	t	f	\N	0	\N	2026-10-09 05:50:36.882	2026-10-09 06:37:40.203	\N	\N	\N	\N	\N	\N
+cmv0jr1i9025gmzmy209dxon6	26UECSE0221	26uecse0221@student.gvpihlr.edu.in	$2a$10$PhHdkZza0zFfFsma9wrJVOKMMZc6H8QtLrEid7aH8nkIqGP3gIqX2	KANDRAKOTA KIRAN KARTHIKAY	8185884971	t	f	\N	0	\N	2026-10-09 05:50:36.897	2026-10-09 06:37:40.225	\N	\N	\N	\N	\N	\N
+cmv0jr1ia025umzmy697eu9rv	26UECSE0239	26uecse0239@student.gvpihlr.edu.in	$2a$10$wcSv8FrCApjFn3XMKmJPi.D/3M/j55qbL.dE5QRWVA2OXyHaLPnRC	DASI ANUDEEP	7981026691	t	f	\N	0	\N	2026-10-09 05:50:36.898	2026-10-09 06:37:40.226	\N	\N	\N	\N	\N	\N
+cmv0jr1is02bzmzmy6hmmp6al	26UECSM0007	26uecsm0007@student.gvpihlr.edu.in	$2a$10$EdqKXwaeXMnKloaOvMwP/unz8iu7dBKcltCjmIFpLd0K7s0xTQbz6	BHEESETTI VINAYA	7780108622	t	f	\N	0	\N	2026-10-09 05:50:36.916	2026-10-09 06:37:40.243	\N	\N	\N	\N	\N	\N
+cmv0jr1j702i4mzmy7wbcn7zl	26UECSM0040	26uecsm0040@student.gvpihlr.edu.in	$2a$10$fUV9jYkREanTzFiyFZIxseemo3EihmW02hDGfb2wJ.98xRsOokzq.	K LALITH VENKAT SAI KUMAR	9177760523	t	f	\N	0	\N	2026-10-09 05:50:36.932	2026-10-09 06:37:40.258	\N	\N	\N	\N	\N	\N
+cmv0jr1jo02ofmzmyamdf9oc7	26UECSM0064	26uecsm0064@student.gvpihlr.edu.in	$2a$10$IjKqsWChZKoGijjfgQJStuWMtlooy2KRJKzc.FOufkRt85dJJfwP6	POTHINA CHANDINI	7989070177	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.27	\N	\N	\N	\N	\N	\N
+cmv0jr1jp02okmzmy2z938c7f	26UECSM0069	26uecsm0069@student.gvpihlr.edu.in	$2a$10$Z41S7ht/MojT/exhLVmS2eE0kRxsXlv4RmMwMgf.zhWzWw9iFFdWG	SALAPU MUKESH NAIDU	7993742397	t	f	\N	0	\N	2026-10-09 05:50:36.949	2026-10-09 06:37:40.271	\N	\N	\N	\N	\N	\N
+cmv0jr1k302ugmzmy75yr5ibl	26UECSM0079	26uecsm0079@student.gvpihlr.edu.in	$2a$10$UrrTxrzS8YjtKXf0banxsuhT8ML44.YxDKFxHpjn4/CCWAjkvV6iG	TYAHADI YOGESWAR NARASIMHA	9347912145	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1k402uzmzmyxob0lpuy	26UECSM0102	26uecsm0102@student.gvpihlr.edu.in	$2a$10$Gk2YygDwHES.j4.FVGXwFuIdxqmIuw.WqRvyPj6ZzuQxaQTxEaLHa	NADIKOTI JAGAN NAYAK	7013394692	t	f	\N	0	\N	2026-10-09 05:50:36.964	2026-10-09 06:37:40.284	\N	\N	\N	\N	\N	\N
+cmv0jr1ki030qmzmyz9aknnou	26UECSM0112	26uecsm0112@student.gvpihlr.edu.in	$2a$10$R.JFacjC687S71rcEh535.c9HVlXTzZ82IRuRWFOuXeNAmVcGkmvK	PATNANA DHEERAJ KUMAR	7661919339	t	f	\N	0	\N	2026-10-09 05:50:36.978	2026-10-09 06:37:40.303	\N	\N	\N	\N	\N	\N
+cmv0jr1kj0316mzmyj9atw39l	26UECSM0118	26uecsm0118@student.gvpihlr.edu.in	$2a$10$gO/zRXXvT2cRt/RpFRCXbO.ZK4wNnFJpOQyYW8huiLcxQC.gMLo8C	SHEIK THASNEEM	9000217818	t	f	\N	0	\N	2026-10-09 05:50:36.979	2026-10-09 06:37:40.304	\N	\N	\N	\N	\N	\N
+cmv0jr1cd0091mzmyzatq3ouo	26UECHE0043	26ueche0043@student.gvpihlr.edu.in	$2a$10$5gFXmCkoTXWt1HTOmDbf2OzbTjs9Xw42Sp9atkl.TjonsiITZPeae	KANDREGULA MOHAN NARASIMHA	6281622969	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.052	\N	\N	\N	\N	\N	\N
+cmv0lfk3002i410e0nnwc7fjt	26UECSM0136	26uecsm0136@student.gvpihlr.edu.in	$2a$10$MjQmeEgmiCucFOq823MXB.TOCUU8StBHmo0u1HeXbiSE9wgPsGLa2	BADIGANTI HEMANTH	8332084842	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3202ij10e0jgle2usm	26UECSM0151	26uecsm0151@student.gvpihlr.edu.in	$2a$10$SAlr907GbuK63BW7S9KTie62p8zAx6R6Mqrw7G0kDcrSVPK9FilI6	THUMMAGUNTA PRADEEP KUMAR	9666821320	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3m02ob10e0pqoyscda	26UECSM0158	26uecsm0158@student.gvpihlr.edu.in	$2a$10$/ku2N9ZEzVnwK8c.E1IT3ukKI99RQF4r3OcGMSyHk9dj85xO8.VHu	GIDUTURI VASISHTA VARDHAN	8008367474	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N	\N	\N	\N	\N	\N
+cmv0lfk3n02ol10e094qjvfm0	26UECSM0170	26uecsm0170@student.gvpihlr.edu.in	$2a$10$exCJFYf0fTqLaNAGPN5d/e3bPHECDoFbJmQMZ5G/BDf5P0SyEnK0G	RAYAPUREDDY DUMDI SIVA PADMA SAI	9618391672	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N	\N	\N	\N	\N	\N
+cmv0lfk4302uo10e03dksxq1r	26UECSM0183	26uecsm0183@student.gvpihlr.edu.in	$2a$10$iDhLKd7MgBJrfv7qF8MCCeUOvb0rJzGph7DVqOJ8LAGde0ZWWituC	KOMMI VEDA GURU SATHWIK	9849104088	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N	\N	\N	\N	\N	\N
+cmv0lfk4402v210e0l6s4tvhx	26UECSC0009	26uecsc0009@student.gvpihlr.edu.in	$2a$10$IrSXAPCPmJNBTvkkz.qB7uHy7I8VTPc4l/qtnG0Xg9zQscuEWTRmm	DESAMSETTI GEETH SATYA SATISH CHANDRA	9000636519	t	f	\N	0	\N	2026-10-09 06:37:40.372	2026-10-09 06:37:40.372	\N	\N	\N	\N	\N	\N
+cmv0lfk4k030u10e0tljudqpp	26UECSC0021	26uecsc0021@student.gvpihlr.edu.in	$2a$10$0Sq5vNloJUJwxYpV.fbJcOmDT2VFMTHgLL/fnPsQxI8ps4WlFyVoa	BUGATHA TEJASWAN	9493417440	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk4l031710e0qswez2do	26UECSC0032	26uecsc0032@student.gvpihlr.edu.in	$2a$10$vbsYp0m5CE3O0bxT5aFBYusGl12iGBLLROsltkX03vFxd8/jjjeP.	PADALA BALA YASWANTH	8522043344	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk51037310e0qsnpfiin	26UECSC0040	26uecsc0040@student.gvpihlr.edu.in	$2a$10$82vo912PV5XJ1VtxGQJwDu.uqPbSpwKCGiy3S2OhySJhAmdlGCXWC	VUNDRALA MANOHAR	7801071155	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N	\N	\N	\N	\N	\N
+cmv0lfk51037a10e06kdu3199	26UECSC0053	26uecsc0053@student.gvpihlr.edu.in	$2a$10$Fg2sc9ILuCTamz13j0gkCOWbFSx1QJ0D.nSK.gPgbSQ1OG1mV7qTS	VEGI HARIKA	9346469739	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N	\N	\N	\N	\N	\N
+cmv0lfk5h03dc10e06fexuw4f	26UECSC0072	26uecsc0072@student.gvpihlr.edu.in	$2a$10$OQ4Ar.DAkCUNyqtjIxhMWO.Gl8rXKh7KsqgF6qAAzi7LShzRbD/HW	VEMULA VENKATESH	8897708759	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N	\N	\N	\N	\N	\N
+cmv0lfk5i03ds10e0886wb6fb	26UECSC0082	26uecsc0082@student.gvpihlr.edu.in	$2a$10$XxVof7aig7.Fj4HjsOnhqeve0aR.YHqw6T/OulIh2jT5udUf29ziG	MOLLI NITYA KRISHNA HAAS	8886545673	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N	\N	\N	\N	\N	\N
+cmv0lfk5x03jk10e06k89z97j	26UECSD0013	26uecsd0013@student.gvpihlr.edu.in	$2a$10$4a6w3lBs0gw6KBY6eyKx7uTZ5SzAuCQjD0pWj3.y943Ja.v8Ii/ie	TAMARALA SAI AAKANKSHA	9491106220	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N	\N	\N	\N	\N	\N
+cmv0lfk5y03k210e0xmpinjo6	26UEEEE0004	26ueeee0004@student.gvpihlr.edu.in	$2a$10$3KvR2qKZ93768P2XnTOIK.aZrKAad8OqrlMIuvnbzrZaxGkX0Xtey	DONKA BHARGAVA SANTOSH	8247676569	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N	\N	\N	\N	\N	\N
+cmv0lfk6c03pr10e07yz5gf3f	26UEEEE0005	26ueeee0005@student.gvpihlr.edu.in	$2a$10$AtoTAiAM7cNh8fih9VlkAeHZLGa7tM.19HgSh2PHA8YgU/fzt5yF2	DOKKARA PRADEEP	9550395765	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6e03q710e042tq80qg	26UEEEE0027	26ueeee0027@student.gvpihlr.edu.in	$2a$10$CtYzhBk6.iqn88nCnBzyrOnJwiErPm90FgD4pOd3YYAh/jyfs.1a.	YEDLA CHANAKYA	8374015677	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6r03vx10e0ek99p8u2	26UEEEE0034	26ueeee0034@student.gvpihlr.edu.in	$2a$10$dc7iaax3I3yMlCMBbsMncu1tRrrdKEFH/Q2pg4yVjkmqagWvcjUsm	VANJARANA SRIHARI	9346367550	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk6t03wd10e0gjxa4o9k	26UEEEE0052	26ueeee0052@student.gvpihlr.edu.in	$2a$10$VcYKtlZX8SqdVkL6hxPK3OqKwpRJep6CAeQXw8OVI8.YvMPhJu9na	PADALA SASI KIRAN	9676933263	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk77042b10e0ncr98ogx	26UEECE0002	26ueece0002@student.gvpihlr.edu.in	$2a$10$PcfonGUYoFd0L1EIsSJpqe.nIp8W8OEW/UaEWd/TJ/OdxmSe7UsPW	AKKIRAJU RUSHITHA PREMALATHA	8897110410	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk77042910e0ubij0dvk	26UEECE0003	26ueece0003@student.gvpihlr.edu.in	$2a$10$BbluYCDnots8xn7tlPmI7OxgBhWwOEERyp/UeWoSi0hjjGH6.rM7i	AKOJU VENKATA KUSUMA	8331862873	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk78042m10e0rrkif0l9	26UEECE0017	26ueece0017@student.gvpihlr.edu.in	$2a$10$pzbhVDIZr10H.UfZJv6CGueYRRq3t.ibhMARnEG0Rq1.uvO99g3sq	BUSI NITHIN SAI	9398545997	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk78042r10e0xcsva9s1	26UEECE0008	26ueece0008@student.gvpihlr.edu.in	$2a$10$xYGlcgphmKU63kszLh4AXuB04zd8IXo1dWgnZXB5MEny0QxdD9GmG	ARATIKATLA LALITH SAI	9949717060	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk7o048l10e004pjrybb	26UEECE0026	26ueece0026@student.gvpihlr.edu.in	$2a$10$OQSkqSEbn8TQ3UOFLi2nFesaQXHhtXN20kEoIbVF3i/xUSqqNZTNC	CHINTHALAPATI LALITHADITYA PRANAV	9652271177	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N	\N	\N	\N	\N	\N
+cmv0lfk7o048f10e0576mdbk2	26UEECE0024	26ueece0024@student.gvpihlr.edu.in	$2a$10$BKnOTGPbK5chk5hY1G22FOR3faeO3eHbk69hLM91MaC3wtmUFEHJe	CH KRISHNA NAGA GOWTHAM	9949157075	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N	\N	\N	\N	\N	\N
+cmv0lfk7p048r10e04mrny66b	26UEECE0037	26ueece0037@student.gvpihlr.edu.in	$2a$10$pTH9..URTzj9id1ZqbknMO57Kc6FQs.FihZEQC9O/GEqSFS1Jjy/C	DURVASULA VYSHNAVI	9492255760	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N	\N	\N	\N	\N	\N
+cmv0lfk7p048t10e0mezj8sj0	26UEECE0038	26ueece0038@student.gvpihlr.edu.in	$2a$10$C54IyTaHbvia3LombinY3ers/hahnzfKHIBtcxkdn8O8opu4f0.Ry	KOMMURI ROHANA	7981905517	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N	\N	\N	\N	\N	\N
+cmv0lfk8504er10e0py9hzzij	26UEECE0050	26ueece0050@student.gvpihlr.edu.in	$2a$10$xX9oK//XneteJDnh1arquuRnbaPpVnl6ttlo2pUuIwEHGbRriaXiG	GONTI MOHANKUMAR	9493362956	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N	\N	\N	\N	\N	\N
+cmv0lfk8504eu10e06lprnht7	26UEECE0051	26ueece0051@student.gvpihlr.edu.in	$2a$10$F5ReYLVPknu78F4/EGOWa.ta2MY4Ge8510N3PMhnVV00G7L6i5FgW	GORJA CHAITRA SOWMYA	7075196844	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N	\N	\N	\N	\N	\N
+cmv0lfk8604f810e0kzexxb3f	26UEECE0070	26ueece0070@student.gvpihlr.edu.in	$2a$10$oAJ7zbKFjKAtEosP65YzCeqJA2SXHYDr04A/zUM9Ln8BG8MBgsJEi	K PRITHAM	8374142762	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N	\N	\N	\N	\N	\N
+cmv0lfk8604f910e0uxqhjri1	26UEECE0069	26ueece0069@student.gvpihlr.edu.in	$2a$10$.oULecrrd9W6D2dwE3ZCsez7V5sAyiOAEgS8m87B6lMIc0ZcdW.Vi	JUNNURI RESHMITHA LAKSHMI SYLUSHIKA	8143161375	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N	\N	\N	\N	\N	\N
+cmv0lfk8r04kx10e01fg5kgx8	26UEECE0073	26ueece0073@student.gvpihlr.edu.in	$2a$10$I4XCFIZUOcUe5zK6gAcw7eJH9Vpwax4cW7l4H8BRcLVhfsd9Dj7ya	PILLA RAHUL	7075678880	t	f	\N	0	\N	2026-10-09 06:37:40.54	2026-10-09 06:37:40.54	\N	\N	\N	\N	\N	\N
+cmv0lfk8t04l610e001bxbtu0	26UEECE0083	26ueece0083@student.gvpihlr.edu.in	$2a$10$J0QVmJgOqIe8dmjL462PA.xaQJeu2cDtVH64kjYIyPgxtJtMmk.GS	KOLLI JEEVA RAJ	8465088573	t	f	\N	0	\N	2026-10-09 06:37:40.541	2026-10-09 06:37:40.541	\N	\N	\N	\N	\N	\N
+cmv0lfk8u04lb10e0917ehah4	26UEECE0088	26ueece0088@student.gvpihlr.edu.in	$2a$10$Bul5dkjXkrPQFZFSUOFdJuNKYs03zLvXVTyIrDC8JGazNWtK7RaxW	SAYYED REHAN UL HASAN KHADARI	9885240837	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N	\N	\N	\N	\N	\N
+cmv0lfk9c04ra10e0yoolkedi	26UEECE0101	26ueece0101@student.gvpihlr.edu.in	$2a$10$7PqfGRtoJqmg5HgXiZnPBebocZN8Sr0NMXUV2BdRIzjiEkRB6a1UO	MARADANA MONIKA	9676314488	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N	\N	\N	\N	\N	\N
+cmv0jr1cd0094mzmyr81ltobw	26UECHE0044	26ueche0044@student.gvpihlr.edu.in	$2a$10$EwYd/1kQtXlGox0s4w.Tzu5i8rbPK0MBlrr280Ud47XsCceWYTDeG	UNGATI NANDU	9502407781	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.052	\N	\N	\N	\N	\N	\N
+cmv0jr1cc008xmzmymsiwel2p	26UECHE0037	26ueche0037@student.gvpihlr.edu.in	$2a$10$HpiOAHe1gb4GAzcE.EknN.PaeAE.d5h0ooC7LrokIfEt9T.xLkeX6	KANAKALA MOHANA SESHU MADHAV	9059796348	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.052	\N	\N	\N	\N	\N	\N
+cmv0lfk3002i110e0zjmd5q9j	26UECSM0134	26uecsm0134@student.gvpihlr.edu.in	$2a$10$rwWjggHpvUtS5qYe/dhKkOH3bcp41yzkMUtEiPdx8L0S5wGwQq6W6	ADAPA SAATVIK	9963843449	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3202ii10e064chultx	26UECSM0143	26uecsm0143@student.gvpihlr.edu.in	$2a$10$0Np7uoEe77weHTAM3URVk.irQppHuJFQCYE/MN/JRc1rY92Cwc/uC	KIMAYA PRESINGI	6304697749	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3m02o910e083qixm5l	26UECSM0160	26uecsm0160@student.gvpihlr.edu.in	$2a$10$BQtBcVeE8zdPhRIOzq21AeDlBdWKnCO0WHRq6eLfaBQ1q2uv3K236	MYLAPALLI MADHU PRAVALLIKA	7288992399	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N	\N	\N	\N	\N	\N
+cmv0lfk3n02oi10e0z8fkfhs5	26UECSM0168	26uecsm0168@student.gvpihlr.edu.in	$2a$10$uQnW0vOzbOx8iSFl2rTaxe5EUvxJNFKy.TLDAfDGZpaSu5zlicadG	MARISARLA PAVANI	9391873474	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N	\N	\N	\N	\N	\N
+cmv0lfk4202ug10e0prxujl59	26UECSM0185	26uecsm0185@student.gvpihlr.edu.in	$2a$10$26e5q6R1.lXS8w2p6mVsyu8NUmoEeEqGhbB/RCetDpt0braOaGL2C	PAPALA BHANU	6305062561	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N	\N	\N	\N	\N	\N
+cmv0lfk4402uz10e0jbpio68k	26UECSC0008	26uecsc0008@student.gvpihlr.edu.in	$2a$10$HcNFJV.e9R/n4rbHe7WeFOOvG8QuBQG7FZgb7jvJsZ/O4wsSr4ETW	CHINTHAMAREDDY CHANDRIKA	7842534230	t	f	\N	0	\N	2026-10-09 06:37:40.372	2026-10-09 06:37:40.372	\N	\N	\N	\N	\N	\N
+cmv0lfk4k030t10e0gwk3oux7	26UECSC0016	26uecsc0016@student.gvpihlr.edu.in	$2a$10$sx9fSbev6tEY7E7V8j1.ye30Ih92xX0IrRneR/qwVXQUMtpSnIRU.	KARRI PAVAN KUMAR	8074724827	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk4l031a10e0sbw096bf	26UECSC0023	26uecsc0023@student.gvpihlr.edu.in	$2a$10$tLIN5d6X74m9KNkuxhTeueaV0P/Q0E1MYHWoPvcAtrCC5vVTlMP/K	NADIMINTI DHARANI	9440564583	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk51037710e0e4rpja0q	26UECSC0048	26uecsc0048@student.gvpihlr.edu.in	$2a$10$1vX8n3Rrz9v.T6AR73bXYuObQADnPudIYFPoBDL964cddU6vDdaOS	UNDI ANANDA VALLI	9247547825	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N	\N	\N	\N	\N	\N
+cmv0lfk52037j10e0r2gnb98j	26UECSC0060	26uecsc0060@student.gvpihlr.edu.in	$2a$10$168GFcJ0v2i0FDDpZqfFJ.KQZUN0K4ICdgmO7YfYLuuwoTW1aYaD.	KANDURI SATVIK	9963556753	t	f	\N	0	\N	2026-10-09 06:37:40.406	2026-10-09 06:37:40.406	\N	\N	\N	\N	\N	\N
+cmv0lfk5h03d810e0dta84kx8	26UECSC0063	26uecsc0063@student.gvpihlr.edu.in	$2a$10$BjJfY6fP6ROLsiDkUEcnf.OJC3pkVQ1qEnDmFWXJHuWJJiZsxhOle	MURAMALLA BALA VENKATA DURGA SAI	9948286555	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N	\N	\N	\N	\N	\N
+cmv0lfk5i03dl10e0ow713cni	26UECSC0078	26uecsc0078@student.gvpihlr.edu.in	$2a$10$ROg5vRcTkWCeDS8Mivfem.1UAPRAIaLJqOBNR1.4ZEN.dXsHzgSb6	ADAPA DURGA NAGA VEERA VENKATA SAI KUMAR	9949103567	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N	\N	\N	\N	\N	\N
+cmv0lfk5y03jq10e05brkp3h3	26UECSD0016	26uecsd0016@student.gvpihlr.edu.in	$2a$10$CRkKwo9WNro.IoIcWMxcguxzVWnhAY7EIZKaMYZ7MuQsED7asYnEi	APPANA V N S JHANSE	9030976777	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N	\N	\N	\N	\N	\N
+cmv0lfk6c03pw10e0fssrnh53	26UEEEE0013	26ueeee0013@student.gvpihlr.edu.in	$2a$10$Ls2E.AXX4Ukbjn2AcI4LsuUf1GSZ4P1t4BRlz64Ya4zB4UI2D/wte	MUKALLA PURNA CHANDINI	7702199481	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6e03q910e0kqr7cpwx	26UEEEE0029	26ueeee0029@student.gvpihlr.edu.in	$2a$10$aMpYJedMuUr3B.CEdUTsleDRRjo2Gjg6iBe3MfhTb5bO/ok452Zmq	AMULOJU UTTAM AVINASH	7702468181	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6r03w310e07hzoyign	26UEEEE0030	26ueeee0030@student.gvpihlr.edu.in	$2a$10$tPn7gxE/JW6C0q95daZyZ.HkiYUdpSpmPgp4NjrasDCau6.2hKqBy	YERRAMSETTI DIMPUL LASYA	6304491274	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk6t03wj10e0maz2fsb8	26UEEEE0054	26ueeee0054@student.gvpihlr.edu.in	$2a$10$QQlDgP1EPFbFhlwGJRqMfOIWEUTv.D9yemy4K21Vg0PWDYx1iS3Le	TIPPANA CHANIKYA	9391473542	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk78042f10e0ryhuei3j	26UEECE0011	26ueece0011@student.gvpihlr.edu.in	$2a$10$leYvRmwACrvBsmrAotbcsOg5mD/0rNlV297C6HsXpKiH2tng6FIh6	BALAGA ROSHAN	9494250999	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk78042g10e0b5rimuq0	26UEECE0014	26ueece0014@student.gvpihlr.edu.in	$2a$10$zR3/bhzWNhewEk9ctxvTlOv.Q4x6hEHxm83lQQAIx.aO8MLH4ETQy	BODDEPALLI HARSHA VARDHAN NAIDU	9949610280	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk79042t10e0179f7wm8	26UEECE0006	26ueece0006@student.gvpihlr.edu.in	$2a$10$LXXiHeggEBZxPqnOVH0epuL6CL1QYRxX2Xfo5EbNX2moPt.yRLkyO	ALLUMALLA VENKATA ADITYA	9989009708	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk7o048i10e0ctr0oah5	26UEECE0025	26ueece0025@student.gvpihlr.edu.in	$2a$10$ShmApCZIjDqZxtYmixBI/ezY.Vj9ymIk5vnLQ5uMjhz8Nfxm4QfHC	CHETTU JYOTHI PRAKASH SIDDU	8247589483	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N	\N	\N	\N	\N	\N
+cmv0lfk7o048p10e01vvwrs70	26UEECE0031	26ueece0031@student.gvpihlr.edu.in	$2a$10$DANtzO.G5ot/lREozF/6teE/5U2xwJ/RDwHM2N.KTLicVevYkppDq	DALIBOYINA SASHI KANTH	9963524108	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N	\N	\N	\N	\N	\N
+cmv0lfk7p048x10e0fedigc26	26UEECE0042	26ueece0042@student.gvpihlr.edu.in	$2a$10$mzQGhvCz1/SbqtfJTEjIwONGVHH/EC8bXV/GdAogrlLw4e.MuxOD6	SARIPILLI CHARAN TEJA	8885667494	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N	\N	\N	\N	\N	\N
+cmv0lfk7p049210e0n03a5khe	26UEECE0034	26ueece0034@student.gvpihlr.edu.in	$2a$10$pSGS8NKZTwUoOnH31htqJ.uJx9meqfmaooFtQub/vuekmBK6JjFyy	DEVARA JAYANT	7032350101	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N	\N	\N	\N	\N	\N
+cmv0lfk8504ev10e05bz1r4ce	26UEECE0058	26ueece0058@student.gvpihlr.edu.in	$2a$10$0p7Y4WGg9j3eP25M89zMAu6jyyRdXhF9HetrlO30h3olqdv1L.88q	KILARI MOKSHITA	9492450584	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N	\N	\N	\N	\N	\N
+cmv0lfk8504ew10e0fglg920e	26UEECE0056	26ueece0056@student.gvpihlr.edu.in	$2a$10$wifeFV2RptSa4yfRptaie.eV0Flte32a7f5w4WQSZKm7qYjR.Ckji	KORUKONDA JAHNAVI	9963942460	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N	\N	\N	\N	\N	\N
+cmv0lfk8604f510e0q24ckuhr	26UEECE0065	26ueece0065@student.gvpihlr.edu.in	$2a$10$VZ8esekeSrisCyCcJR0sautCsuSFerfnQF/uj/OZuM0ashQvOj76S	JAGGINENI DEEKSHITH KUMAR	8978652635	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N	\N	\N	\N	\N	\N
+cmv0lfk8604f210e0m9vubk9k	26UEECE0062	26ueece0062@student.gvpihlr.edu.in	$2a$10$/FTsCekZ1AaXtkGnhAM/W.oJZcjHDui9UvsG81LNLZLZZgRPz9yuu	MOJJADA SAIVEEKSHITH	7337298563	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N	\N	\N	\N	\N	\N
+cmv0lfk8s04l010e0vec5y9sj	26UEECE0078	26ueece0078@student.gvpihlr.edu.in	$2a$10$cs9hn/LoOAIdhyDj.i/gJeoXt2RJNYEI4lnPzJNZ9n.pgYTbDBbB.	BALLEDA MOULI	9182637452	t	f	\N	0	\N	2026-10-09 06:37:40.54	2026-10-09 06:37:40.54	\N	\N	\N	\N	\N	\N
+cmv0lfk8t04l410e05js1yoly	26UEECE0081	26ueece0081@student.gvpihlr.edu.in	$2a$10$lOirXrcIyGvnKDaIrhRicegP6dDAm2xyqKAF59H9DrR75w5X4Cpr6	KETIREDDY MANOJNA	8309315807	t	f	\N	0	\N	2026-10-09 06:37:40.541	2026-10-09 06:37:40.541	\N	\N	\N	\N	\N	\N
+cmv0lfk8u04lc10e0j6fl4dni	26UEECE0090	26ueece0090@student.gvpihlr.edu.in	$2a$10$dho2RP.Q3kPWOG2uHdYONeWajYKVBvBn4v8CzxYyUaBErLRs7oN6u	VADAGA LAVANYA	9701698305	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N	\N	\N	\N	\N	\N
+cmv0lfk8u04lh10e0nhmxw8db	26UEECE0092	26ueece0092@student.gvpihlr.edu.in	$2a$10$upcBqc10nYzZ2dmAlrtbvO2GKIYKyf2gJ6pIiqj5NEKIA3iyPKiOi	MADDIPUDI PARIMAL PRANEETH	9392651174	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N	\N	\N	\N	\N	\N
+cmv0lfk9c04r910e067zv83vv	26UEECE0104	26ueece0104@student.gvpihlr.edu.in	$2a$10$0S0WL92fdAlyuCWp1AiY0Ook7dvw8Ho5hcyOhsvZjShTtYfmxT2f.	MERUGU V B SAI YASWANTH	9848363540	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N	\N	\N	\N	\N	\N
+cmv0jr1cd0095mzmygtwv144q	26UECHE0045	26ueche0045@student.gvpihlr.edu.in	$2a$10$9RoGed1FocF125XbGJ7npuf2D27xdk4baE3ARKLaMmzeraocFWree	BURA SRAVANTHI	7207263162	t	f	\N	0	\N	2026-10-09 05:50:36.684	2026-10-09 06:37:40.052	\N	\N	\N	\N	\N	\N
+cmv0lfk3002hw10e0agm4j3md	26UECSM0132	26uecsm0132@student.gvpihlr.edu.in	$2a$10$J.0nzUgkboa9DDsbkb6a8eyfWePjhfLxE4D.LCF7J08rIYkMfz3Ji	ETHA JYOTHI SWAROOP	9885739407	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3m02of10e0bpzg1yug	26UECSM0167	26uecsm0167@student.gvpihlr.edu.in	$2a$10$M0NfJNUeLBGG8XcWh0gOcum.WRjnMp1ujnucMorbtWrftSjHD0LDe	JAKKANA RUPA MANI SRI	7981718957	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N	\N	\N	\N	\N	\N
+cmv0lfk3n02on10e07sa44s0t	26UECSM0175	26uecsm0175@student.gvpihlr.edu.in	$2a$10$EwTnJc86vY06L6dKit1GCOlonW7q5kL6//ZB0f1DHTXd2jad0/lIC	MITTIREDDY DEEPIKA	9573945667	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N	\N	\N	\N	\N	\N
+cmv0lfk4202ue10e0g2ic815h	26UECSM0181	26uecsm0181@student.gvpihlr.edu.in	$2a$10$FRiQeEpgQASA2R77KEXmk.o4.9SkRywILlEmqp.YucPv79cdv.5h6	PADI ANUSHA	8790383168	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N	\N	\N	\N	\N	\N
+cmv0lfk4k030q10e0gubju2pr	26UECSC0014	26uecsc0014@student.gvpihlr.edu.in	$2a$10$vMTDODLEs8xaNjwdXtgNV.vUevV51pIHbdrnjV.KM2wxPrVEUeCL6	KOTHAPALLI JAYA SREE	8121993460	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk4l031210e0mk5e2hdc	26UECSC0027	26uecsc0027@student.gvpihlr.edu.in	$2a$10$un/lVAT8EUGRvDOkfPfG0uSOv1iCQOA60GxgLafB2FflHE.r43dSu	NALLAMATTI GEETHIKA	7075140571	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk50036z10e0zes31hy5	26UECSC0039	26uecsc0039@student.gvpihlr.edu.in	$2a$10$Exkx35i9Qa2D0CcqTrvzMOy37Nism2otkWACK0a5GqTz28GvbpY2q	TARIGOPPULA NIHARIKA	9652223373	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N	\N	\N	\N	\N	\N
+cmv0lfk52037b10e0jv9015sq	26UECSC0054	26uecsc0054@student.gvpihlr.edu.in	$2a$10$BZAAmnbgkSLdvXBXezKclOJ0egb805MV2icaIdgIW7RjM/ltbnx3.	DHARANIPRAGADA JAGANNADHA SAI LAKSHMI HARSHINI	9985896765	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N	\N	\N	\N	\N	\N
+cmv0lfk5h03db10e0vvhwazjl	26UECSC0068	26uecsc0068@student.gvpihlr.edu.in	$2a$10$EYHsNtGHX6nszfzG172pMeellCCtz/3xsdN/RqcH0ly9DZtHSVNwq	ELURI SRI DURGA VENKATA SURYA	9640609146	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N	\N	\N	\N	\N	\N
+cmv0lfk5i03dp10e0e4myp4n2	26UECSC0081	26uecsc0081@student.gvpihlr.edu.in	$2a$10$4pXUGrR4c9M3rjNmhOULM.QTU2Y3ToLHo7PffCpLTt2j3fHDccFRW	BARLA DURGA SAMPATH SUSHMITHA	9963523666	t	f	\N	0	\N	2026-10-09 06:37:40.422	2026-10-09 06:37:40.422	\N	\N	\N	\N	\N	\N
+cmv0lfk5x03jg10e09ps9isyr	26UECSD0006	26uecsd0006@student.gvpihlr.edu.in	$2a$10$saV7h856LfOrVodqv7GbSe0RTNrgpZxCClRuM6H2z/G6r8FgDLVKK	KOMOLESWARI PANIGRAHI	8341735912	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N	\N	\N	\N	\N	\N
+cmv0lfk5y03jz10e0y169oed6	26UEEEE0002	26ueeee0002@student.gvpihlr.edu.in	$2a$10$gXJRR2pWcamOX6qVzmIMCeI8bub49TbpnvJfv2N6/oYD6JvIgLr36	ARASADA HARSHA VARDHAN	8008766573	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N	\N	\N	\N	\N	\N
+cmv0lfk6c03pt10e077huxt61	26UEEEE0012	26ueeee0012@student.gvpihlr.edu.in	$2a$10$1A/Jk/zLk2sSD54JiPsfSOYwVfrwQ.cE2.P.z/F6JZGzq.zHNerxu	LANKA MONICA MADHURI	8639094904	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6e03q810e0mgomfsjb	26UEEEE0026	26ueeee0026@student.gvpihlr.edu.in	$2a$10$PqGUlbPnDTQINFeMuH3rYu/HRjqx9.4lHlMIJGlHkFR.E.RDuU.da	TAMADA ATUL BHARADWAJ	9182282446	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6r03w010e0nqxwe4qa	26UEEEE0037	26ueeee0037@student.gvpihlr.edu.in	$2a$10$tctIf6q4XqTYm3V1ouBut.phKseFWb09yeoE9rjyh9vZ.DSCccgWe	KOTHAKOTA LIKHIL LOKESH	9000645841	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk6t03wh10e0plpdc5z6	26UEEEE0053	26ueeee0053@student.gvpihlr.edu.in	$2a$10$6lkwT9RZIQOGKUiCUwH5O.76/NeRR5SdF2Dv/hOenTm6nzGd0l2PS	UDAMALA MANOJ	9052893845	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk77042710e0zxpm8f0z	26UEEEE0056	26ueeee0056@student.gvpihlr.edu.in	$2a$10$Ue4Wn9bik85dEIh2y.tSpOM.0SX4b8kqkkGjDVWg8iSjjdyrZkNHK	GARUKU REVATHI	9390923328	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk78042k10e0bev36d4g	26UEECE0018	26ueece0018@student.gvpihlr.edu.in	$2a$10$OZUIeuAqjbBNe7zjQwE9iuty008zZTyEBHyVXwWGpU.VJWLWewhvS	SHANMUKHA BADARINATH CHEMBROLU	9550666075	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk78042p10e0z2i2vl3w	26UEECE0019	26ueece0019@student.gvpihlr.edu.in	$2a$10$R6XGBjZPubMZzaE0f3jI7.DBEhH69rTjD8fT76zbsmvtUui5edyru	CHOKKAKULA KUNDANA SRI	8919938694	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk7o048g10e02l99tqfp	26UEECE0021	26ueece0021@student.gvpihlr.edu.in	$2a$10$5G.3ajhvg1st2/S/KHfhEOmxbatk2tH7NNlmN0V6I1KdnI7gXnq4O	CHALUMURI S V SAJAN KUMAR	8500282056	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N	\N	\N	\N	\N	\N
+cmv0lfk7o048k10e0kf1d5o2b	26UEECE0028	26ueece0028@student.gvpihlr.edu.in	$2a$10$AkygfhgHLAoQ7TuWAS7JgOIV13FsOy6sciLhWff3emIX0goCaHriK	CHITTI LEELA MOHAN	8125229076	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N	\N	\N	\N	\N	\N
+cmv0lfk7p048u10e0eksgecu1	26UEECE0041	26ueece0041@student.gvpihlr.edu.in	$2a$10$o216UfrKqMsUZRjS3EOu4OjZ7O7TBbZoemmfkAhnSvhlplQjpNxmy	GADAGAMMA PREETHI ELINA	8985573679	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N	\N	\N	\N	\N	\N
+cmv0lfk7p049010e0ng55py5l	26UEECE0044	26ueece0044@student.gvpihlr.edu.in	$2a$10$KrWzQRS6tGbOb48zyuA77.hvph3hXfk.qHgcjsdGp9EpETtoRrP8u	GANTI VENKATA ANIRUDH	9949333744	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N	\N	\N	\N	\N	\N
+cmv0lfk8504et10e0nz1hkio0	26UEECE0053	26ueece0053@student.gvpihlr.edu.in	$2a$10$5BbHf/L4zN4pvcpBpwyxReUZoVwVPQRRUKAfA1tGBj5bsUTvkrFPi	GUDALA PAVANI	9985792924	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N	\N	\N	\N	\N	\N
+cmv0lfk8504ey10e0fzfwdzs5	26UEECE0060	26ueece0060@student.gvpihlr.edu.in	$2a$10$G.Q8d6zRt2TfrvkT1fSLVu.cwqQPIP.dnZhbpAPgnJyM0JqYXeQpC	KORUBILLI MONEESH	9908948648	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N	\N	\N	\N	\N	\N
+cmv0lfk8604f310e0yb5h76lj	26UEECE0066	26ueece0066@student.gvpihlr.edu.in	$2a$10$5Br132J2zQfP4MpG7Wj/ye4EkU5y1ZVBIUt3QN6iPSWG32WDNzuUC	PAKALA SAI GAYATRI	8309586163	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N	\N	\N	\N	\N	\N
+cmv0lfk8604fb10e0v2wn32g5	26UEECE0055	26ueece0055@student.gvpihlr.edu.in	$2a$10$j8K2PHlu1L2T7tPsPr9Lr.Gas./wWtxPgkQ6cqXgzvi1nzBBrRV1.	GULLA AKSHYA	7874701688	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N	\N	\N	\N	\N	\N
+cmv0lfk8s04kz10e0j5luom4s	26UEECE0074	26ueece0074@student.gvpihlr.edu.in	$2a$10$BYNGBvHa7.8VuhnjndKLYOTFvtPg34nzEuIDiwTB9QiwmOuE9dY7K	KANDI JYOTHISH KUMAR	9032097118	t	f	\N	0	\N	2026-10-09 06:37:40.54	2026-10-09 06:37:40.54	\N	\N	\N	\N	\N	\N
+cmv0lfk8r04kw10e0ice9b3gw	26UEECE0072	26ueece0072@student.gvpihlr.edu.in	$2a$10$HUMwpsH7qPN1RvavrqKxYekpUJYf4yZEJplUZYIiZMCk4tBdGIAR2	KARAMSETTI OM SWAROOP	8919809024	t	f	\N	0	\N	2026-10-09 06:37:40.54	2026-10-09 06:37:40.54	\N	\N	\N	\N	\N	\N
+cmv0lfk8t04l910e0cqr9htae	26UEECE0077	26ueece0077@student.gvpihlr.edu.in	$2a$10$8iDJGrNHz5W6rMmsYPFGuOW2GVsHJZceahheX5uuFg3h/iBKHduGe	VURUKOOTI NAGA LAKSHMI PRASANNA	8341588199	t	f	\N	0	\N	2026-10-09 06:37:40.541	2026-10-09 06:37:40.541	\N	\N	\N	\N	\N	\N
+cmv0lfk8u04la10e0twfcho6h	26UEECE0086	26ueece0086@student.gvpihlr.edu.in	$2a$10$5vPL7uWeUqxmq4hNupwe5uE2u/APQa2Q9WJSKJRWxtFc4NOs5oDIG	KOYYA PRIYANKA	9293859532	t	f	\N	0	\N	2026-10-09 06:37:40.541	2026-10-09 06:37:40.541	\N	\N	\N	\N	\N	\N
+cmv0lfk9c04rb10e04q4yv3x9	26UEECE0102	26ueece0102@student.gvpihlr.edu.in	$2a$10$H9av/PcQQOMCgg59PnlJtuBpN2ufGfbjv6l57CQ53WjSFgTFrwFRO	MATHIREDDI CHESHANT	8317566731	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N	\N	\N	\N	\N	\N
+cmv0lfk9c04rc10e0ci8xyss8	26UEECE0106	26ueece0106@student.gvpihlr.edu.in	$2a$10$vIr4IDarvz3iHs0XlRizR.aYpfd7lACee0lKAUl8tXjeheaLhuBGC	PORAPU MITHRAVINDA	9491605990	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N	\N	\N	\N	\N	\N
+cmv0lfk9c04r710e0nmieqvt9	26UEECE0097	26ueece0097@student.gvpihlr.edu.in	$2a$10$kqyseOjh.hRge/I0uMAtV.JmYKUWjqvALtIwdf8X3URXnA6tJxZNa	GANGIREDLA DEVENDRA SAI	8555025714	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N	\N	\N	\N	\N	\N
+cmv0jr1cd0097mzmymswjygxi	26UECIV0001	26ueciv0001@student.gvpihlr.edu.in	$2a$10$N8GCVQSKYU660qvtM2XDM.fh8iSPfWpHZ8LtsYZ/htACzSpp5JBEW	ANNAMRAJU TARUN	9989308070	t	f	\N	0	\N	2026-10-09 05:50:36.685	2026-10-09 06:37:40.052	\N	\N	\N	\N	\N	\N
+cmv0lfk3002hy10e0hu39vpfu	26UECSM0130	26uecsm0130@student.gvpihlr.edu.in	$2a$10$buFS.tz33wFrsEeecucEHucKbdzkO3RrLvr4Ta53qKCBr2zimBR4K	PINISETTI DHANUSH KUMAR	9985231315	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3202ih10e0twe3zfzl	26UECSM0152	26uecsm0152@student.gvpihlr.edu.in	$2a$10$6tVuwZ2b2bjCJ8fZ8K6a...KdfM3wntBx9SN0CbEWt.mj/6RXDdSO	VASUPALLI ISHITHA GRACE	6305639669	t	f	\N	0	\N	2026-10-09 06:37:40.333	2026-10-09 06:37:40.333	\N	\N	\N	\N	\N	\N
+cmv0lfk3m02o810e0btvl78xr	26UECSM0157	26uecsm0157@student.gvpihlr.edu.in	$2a$10$XD2/0qgLVOsS5VHF/OL9YOeq28nm2RrtGIpqE58poXcFkzuKm6nAW	MARUPILLI DEEKSHITHA	9705481971	t	f	\N	0	\N	2026-10-09 06:37:40.354	2026-10-09 06:37:40.354	\N	\N	\N	\N	\N	\N
+cmv0lfk3n02oj10e09l0yqnyb	26UECSM0169	26uecsm0169@student.gvpihlr.edu.in	$2a$10$DOBkyoRL6.3.xNDUPUe5RuvUuQqvWQLDyybgb1NYzMxkILA7eJFvW	NAMMI DHANUSH	7989388174	t	f	\N	0	\N	2026-10-09 06:37:40.355	2026-10-09 06:37:40.355	\N	\N	\N	\N	\N	\N
+cmv0lfk4202uf10e00qp536oi	26UECSM0180	26uecsm0180@student.gvpihlr.edu.in	$2a$10$Ug57.Ys.3z9Eyn/OJtiIO.9q5Nx98kYpVjjOWRm81GdfcdqnnWbVO	NAGAVARAPU VENKAT SATYA SAI ADITYA	9907824830	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-09 06:37:40.371	\N	\N	\N	\N	\N	\N
+cmv0lfk4402v010e0cqp5ypub	26UECSC0010	26uecsc0010@student.gvpihlr.edu.in	$2a$10$6hEDA/egAM5RntAX9Ies/OHh7UpK1x/StLP4.C./B6WD1v/ygreyS	GENGI DEEPANVITH	9390546799	t	f	\N	0	\N	2026-10-09 06:37:40.372	2026-10-09 06:37:40.372	\N	\N	\N	\N	\N	\N
+cmv0lfk4k030v10e0fhbw5dq0	26UECSC0020	26uecsc0020@student.gvpihlr.edu.in	$2a$10$8En5rm6GudJFeuyYxXbCGO/vQVbULoPMnUtg6ZDyIhNC.XW8U1ux.	KURIMINA SANJAY KARTHIKEYA REDDY	9492816692	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk4l031910e07t0akfpq	26UECSC0036	26uecsc0036@student.gvpihlr.edu.in	$2a$10$GmtPq03IG4pKLfxu351IzO.gzaPJ/C987NdQVGKg3mHF55CEfN9R.	RAJANA SAI CHARISHMA	7396578455	t	f	\N	0	\N	2026-10-09 06:37:40.389	2026-10-09 06:37:40.389	\N	\N	\N	\N	\N	\N
+cmv0lfk51037510e0vruw687k	26UECSC0043	26uecsc0043@student.gvpihlr.edu.in	$2a$10$rPvFldQHNSygBgGmfkz.b.pT3RbKph7X9KkpLyry9uTQa5S3E79Fa	SARAGADAM YASASWINI	9247811633	t	f	\N	0	\N	2026-10-09 06:37:40.405	2026-10-09 06:37:40.405	\N	\N	\N	\N	\N	\N
+cmv0lfk52037g10e0jrsqvo2x	26UECSC0051	26uecsc0051@student.gvpihlr.edu.in	$2a$10$mcx6MPdDI26AECpgeUJNwuA3h6joG5iVX6qr6Hz3n/W8Uexqnj9/q	DADISETTI BHAGYA APSARA PADMASRI	6302333102	t	f	\N	0	\N	2026-10-09 06:37:40.406	2026-10-09 06:37:40.406	\N	\N	\N	\N	\N	\N
+cmv0lfk5h03dg10e0ff8r8tam	26UECSC0073	26uecsc0073@student.gvpihlr.edu.in	$2a$10$OrthfQTU.tl7SqoWToIaTOcjuVMu44OhlnYAI41bxevrQEAbYcA2K	DORNALA ABHISHEK CHAITHANYA VARDHAN	7013712646	t	f	\N	0	\N	2026-10-09 06:37:40.421	2026-10-09 06:37:40.421	\N	\N	\N	\N	\N	\N
+cmv0lfk5x03ji10e06ulc9ne5	26UECSD0004	26uecsd0004@student.gvpihlr.edu.in	$2a$10$8vL5yDQBFLLpj0YQmB8IPe95whkzbySUKhJ5yJPRMWAG7y.KjNHay	JOSYULA SAISIRI	9515624006	t	f	\N	0	\N	2026-10-09 06:37:40.437	2026-10-09 06:37:40.437	\N	\N	\N	\N	\N	\N
+cmv0lfk5y03js10e0gud0nqu3	26UECSD0019	26uecsd0019@student.gvpihlr.edu.in	$2a$10$KBjUVBgjno.Fk4y.SocgCuqyJwS.HIrLKP2tLdTF13JAO7FK../C.	DARLA BHARATH SAI VIGNESH	9493918385	t	f	\N	0	\N	2026-10-09 06:37:40.438	2026-10-09 06:37:40.438	\N	\N	\N	\N	\N	\N
+cmv0lfk6c03pv10e0c3hbt8e5	26UEEEE0014	26ueeee0014@student.gvpihlr.edu.in	$2a$10$32MAHtIg5lT/5hsZW49Iee9WPfTMt0r6TBtCW3/3aL3HvnT/H31eu	NEELI YAMINI	8106500500	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6d03q310e0flyzylj4	26UEEEE0023	26ueeee0023@student.gvpihlr.edu.in	$2a$10$Sttoj6t4qN5P73kqCHK3jeNG6baPvyzrW/9O7D6wkH5L19SlphHXi	TASUMANTHU MAHESH	9963396064	t	f	\N	0	\N	2026-10-09 06:37:40.453	2026-10-09 06:37:40.453	\N	\N	\N	\N	\N	\N
+cmv0lfk6r03vz10e0pk4yg60p	26UEEEE0032	26ueeee0032@student.gvpihlr.edu.in	$2a$10$nv9wKdKqRZrm3knNe/lpNuo02MDuJXgqYXPAimzJxKB3FmRFQAqPO	MUDDADA JOSHIKA	7674924984	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk6t03wf10e0ejvuw6a0	26UEEEE0049	26ueeee0049@student.gvpihlr.edu.in	$2a$10$ELHM9WhjSuZmSCul0WyWAe9GoYuScXMj.PA5mYdFzh.JygylagZH6	POTHINA DHISWAN	9949868179	t	f	\N	0	\N	2026-10-09 06:37:40.468	2026-10-09 06:37:40.468	\N	\N	\N	\N	\N	\N
+cmv0lfk77042610e0x0hrtyah	26UEEEE0055	26ueeee0055@student.gvpihlr.edu.in	$2a$10$fs/WOOmx8t7Shk4g2UZR8.CHW3TdiNAUTHG9g1utgayTT3e0LTEU6	MANOJ KUMAR YAMALAPALLI	9247838689	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk78042l10e0dfnp8y5b	26UEECE0012	26ueece0012@student.gvpihlr.edu.in	$2a$10$Cc5thH3342QSRVEjP/auKONisgDF69bfiKmJFOnEZ8coWPt5Iz3ki	SAJJA JAHNAVI	8977188789	t	f	\N	0	\N	2026-10-09 06:37:40.484	2026-10-09 06:37:40.484	\N	\N	\N	\N	\N	\N
+cmv0lfk7o048m10e0rixkh9u7	26UEECE0030	26ueece0030@student.gvpihlr.edu.in	$2a$10$i0/4Qwy0kkp1x52STndwZeVaSkurDaORWXUZDjj6NF81cB18nnz62	KODA UJWALA	9642154562	t	f	\N	0	\N	2026-10-09 06:37:40.5	2026-10-09 06:37:40.5	\N	\N	\N	\N	\N	\N
+cmv0lfk7p048w10e0oj91gj62	26UEECE0040	26ueece0040@student.gvpihlr.edu.in	$2a$10$ShDkfI7W47DIhVMu2KXKG.Ps0709CuRmNziBRdOtI9THN4nyYZDJa	GURANA LIKHITA HASINI	9966713714	t	f	\N	0	\N	2026-10-09 06:37:40.501	2026-10-09 06:37:40.501	\N	\N	\N	\N	\N	\N
+cmv0lfk8504eq10e099gm2ufd	26UEECE0046	26ueece0046@student.gvpihlr.edu.in	$2a$10$6f5Ffp/b1Z1GeWwq1qkwceVXJiVb3bNVGYenOQFvuSONZPsMnkH/m	GATTA ARUN KUMAR	7893595868	t	f	\N	0	\N	2026-10-09 06:37:40.517	2026-10-09 06:37:40.517	\N	\N	\N	\N	\N	\N
+cmv0lfk8604f610e08w8t43st	26UEECE0068	26ueece0068@student.gvpihlr.edu.in	$2a$10$pRTeWzHTzjkjzL4ZkHokxuUM1pFm10lL7dQIruMQ2mT787YRKbvd6	DASARI JASWANTH	8008608930	t	f	\N	0	\N	2026-10-09 06:37:40.518	2026-10-09 06:37:40.518	\N	\N	\N	\N	\N	\N
+cmv0lfk8s04l110e0wsct4jhw	26UEECE0076	26ueece0076@student.gvpihlr.edu.in	$2a$10$nITbEcoT/u3n4HM3vm/weu2SLOga44ApuEBqyx5Ol1gNkbgsJkWau	KANDUKURI SHANMUKHA DEEPAK	9949402670	t	f	\N	0	\N	2026-10-09 06:37:40.54	2026-10-09 06:37:40.54	\N	\N	\N	\N	\N	\N
+cmv0lfk8u04le10e0qst6pzav	26UEECE0087	26ueece0087@student.gvpihlr.edu.in	$2a$10$dOZI7pQMT1.OZAWgNMOBLOfHITF/zT0dkMwm78YheJY9ls5Ja8FOG	KUNCHAM SURYA SRI RITEESH	9849998288	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N	\N	\N	\N	\N	\N
+cmv0lfk8u04lg10e0a3mp1oe9	26UEECE0084	26ueece0084@student.gvpihlr.edu.in	$2a$10$pFZxcDayCgHCzgYg4FbqCuKM5V4/zFL7sVt2nBlSSUzzf0j632ihq	KOLLURU SURYANARAYANA MURTHY	9491600742	t	f	\N	0	\N	2026-10-09 06:37:40.542	2026-10-09 06:37:40.542	\N	\N	\N	\N	\N	\N
+cmv0lfk9c04rd10e0l5dobmjm	26UEECE0107	26ueece0107@student.gvpihlr.edu.in	$2a$10$vhaC8.zN.zQh.Z4bDxar3uLkqPsJLNKHyFZITgvLsJ0TYqzvxWAnW	MUNTHA VISHNU VARDHAN	8099655902	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N	\N	\N	\N	\N	\N
+cmv0lfk9c04r510e04iltqaf5	26UEECE0100	26ueece0100@student.gvpihlr.edu.in	$2a$10$KySXCZnbj9GxiyA722XqDOKj45Iv.YozpyAeohUGvNsa6jtoTNN36	MANI SANKAR PANDA	9491567640	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N	\N	\N	\N	\N	\N
+cmv0lfk9c04r810e0t9hczj34	26UEECE0099	26ueece0099@student.gvpihlr.edu.in	$2a$10$iVy/2Wmd3JKyyOUiBcr9be7J.0YpN/QcBg9OQ8WuaE5ZW530YYY8O	MANEM CHARISHMA	7997229793	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N	\N	\N	\N	\N	\N
+cmv0lfk9d04re10e06zvt7db8	26UEECE0103	26ueece0103@student.gvpihlr.edu.in	$2a$10$zYX0Isy0VLPTPmwbxvaNkOCFIO.gvSmD0WWs71ZOCovN5aGJJ.OVC	MEESALA MEGHANA	8309050770	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N	\N	\N	\N	\N	\N
+cmv0lfk9d04rg10e0vdemsnnu	26UEECE0112	26ueece0112@student.gvpihlr.edu.in	$2a$10$K39Pg3QOCNKg97BQHeZBsex2u33VaUBpYWN5XBN9cuXLYozsyuXLu	NAGALA SASHANK SAI	9100128321	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N	\N	\N	\N	\N	\N
+cmv0lfk9d04rf10e03i8fja0a	26UEECE0110	26ueece0110@student.gvpihlr.edu.in	$2a$10$oRUiR1I70vS3Be8gbCEInutpgDYwFmw674ZzBz6u5W804OcFd8wte	MANDA VENKATA SAI CHAYA PRANAVI	9581472650	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N	\N	\N	\N	\N	\N
+cmv0lfk9d04rh10e0pj5itz6e	26UEECE0096	26ueece0096@student.gvpihlr.edu.in	$2a$10$IwRRhVX2pHTpvzK1Jm70B.aRyT/ViUEM7Cw2yV4VS1inwnEKPEgeC	MALIPILLI VASANTHI	9494329634	t	f	\N	0	\N	2026-10-09 06:37:40.56	2026-10-09 06:37:40.56	\N	\N	\N	\N	\N	\N
+cmv0lfk9d04ri10e04wvxg9up	26UEECE0111	26ueece0111@student.gvpihlr.edu.in	$2a$10$ftE8WML/W6V/OpKZhmlnuOeQOcAvtw1YyZuiodyhHAJ.YNWFCesC2	RAJANA BHANODAY	9618566684	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N	\N	\N	\N	\N	\N
+cmv0lfk9d04rj10e09cexdzh9	26UEECE0108	26ueece0108@student.gvpihlr.edu.in	$2a$10$AVOIX4IA7j1k1rHHYlIbzujOmiiGgf4wEYfDAlgLoI2K1hpJKfJnq	MUTYALA MOHAN ADITYA	7569703369	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N	\N	\N	\N	\N	\N
+cmv0lfk9s04xk10e0tyl3jjvz	26UEECE0127	26ueece0127@student.gvpihlr.edu.in	$2a$10$yVvH6kq/fSu29qklROW.Pey3Q.odDuii07fxabeuN11pZ8wTp/zGq	Vennela Palli	9346669196	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfk9t04xt10e0g6m4ckaf	26UEECE0137	26ueece0137@student.gvpihlr.edu.in	$2a$10$igSSVdpgP40Unq.gTFN8r.n6fU0zuORzxopNAczsI1jj7qR/Nsqcu	RAMIREDDI MAHESH SWAMI	9573153772	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfka8053q10e0mz0latam	26UEECE0147	26ueece0147@student.gvpihlr.edu.in	$2a$10$0oE5GSbI95ulgduyNTQrc.jX/jiJRGIRZIcchlMOEVxTQaj3gYiQW	SIMMA NAVYA	9347924649	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N	\N	\N	\N	\N	\N
+cmv0lfka9054310e0h9lqx291	26UEECE0167	26ueece0167@student.gvpihlr.edu.in	$2a$10$8oDUvSgP412AUTVZRtZskOwIM3.raGd3wPtN1wiRQWWvO6n4QQa2e	SASHANK KIMIDI	9392448853	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N	\N	\N	\N	\N	\N
+cmv0lfkao059w10e0nchstke6	26UEECE0173	26ueece0173@student.gvpihlr.edu.in	$2a$10$yle25OfY9QUr4xXYThKylOMp2VkJdtfgjEbucshgYKvD0fR5fF81m	GADI VINEELA	7396423103	t	f	\N	0	\N	2026-10-09 06:37:40.608	2026-10-09 06:37:40.608	\N	\N	\N	\N	\N	\N
+cmv0lfkap05ac10e0kh3k322l	26UEECE0187	26ueece0187@student.gvpihlr.edu.in	$2a$10$GmSOq2MkojTCyF25n3OpVurzmyhJ8z6Fvn5vWZY979KFOCsMvfkKe	MAMIDI MOULI	7756861893	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N	\N	\N	\N	\N	\N
+cmv0lfkb405g710e090grrxnq	26UEECE0201	26ueece0201@student.gvpihlr.edu.in	$2a$10$1tgUJ3SSSbQHgYsAW8GnR.9iYFfwoKqcvBBAkWaqH4wHFOTlLwJTm	POOTHI MANASA	9704685400	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N	\N	\N	\N	\N	\N
+cmv0lfkbl05mp10e0cftueptd	26UEECE0235	26ueece0235@student.gvpihlr.edu.in	$2a$10$P7QD4tdlAK5GKufikrVlQu0MIYc8sIiCkXJ9BMXbAiUcP7m0l5Wym	DUMMU SRIMANTH	9493188935	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N	\N	\N	\N	\N	\N
+cmv0lfkc105sz10e0fr0406f4	26UEECV0001	26ueecv0001@student.gvpihlr.edu.in	$2a$10$JTXxl0pW7Btgc3jyErK04.KkhpkHYOUXAXN.Qi9A8FD2S2Wxs1QIS	ALABANI SHYAM KUMAR	8008624227	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N	\N	\N	\N	\N	\N
+cmv0lfkc205t610e0dkm4m41o	26UEECV0007	26ueecv0007@student.gvpihlr.edu.in	$2a$10$9InJKJR5gqXxXNhnmXPd2eqdS.m.r71kLbCi6aNjjs6R3/PlaF87S	GALIDEVARA ANANYA	7013860883	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N	\N	\N	\N	\N	\N
+cmv0lfkcg05z210e0pwb56i6q	26UEECV0021	26ueecv0021@student.gvpihlr.edu.in	$2a$10$l9zdnGW79946jkgpe8LPm.DojIaLF7PgyJwjRFndKjdgmGC2ZJupm	MAMIDI RUSHILA PRIYA	9390160306	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkci05zc10e0wrqaflht	26UEECV0034	26ueecv0034@student.gvpihlr.edu.in	$2a$10$Rr2oN.3NqnaJye3uAlt./.qXru2/s6X6sBAzTYf6k5kikBJhYrhAy	PERI SAI SAHITYA	8897022499	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkcx065910e0aoidor2i	26UEECV0042	26ueecv0042@student.gvpihlr.edu.in	$2a$10$OWQKBwK67tKNhtlW.m0fUO4KuOCYnEVMAMDe1eGnlu8e1xlv2pHTm	SADI VINAY SRIHARSHUDU	9000633510	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N	\N	\N	\N	\N	\N
+cmv0lfkcy065j10e0kz69n1l8	26UEECV0056	26ueecv0056@student.gvpihlr.edu.in	$2a$10$XU31Uht2D4bHjA71JzdikuK7Pco/x9jj4ZJUXCmwe/boswcAgc5Wm	CHINTAPALLI JASWANTH	9502654822	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N	\N	\N	\N	\N	\N
+cmv0lfkdc06bj10e031dc5nid	26UEMEC0014	26uemec0014@student.gvpihlr.edu.in	$2a$10$2Gw6P0rYkESLFqSespZDUO72Yfxj/JEQg5IFAgwBbNmaq0ID84sga	GABU JHUSHIKETH REDDY	6303258661	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkde06bz10e0sanu2odm	26UEMEC0027	26uemec0027@student.gvpihlr.edu.in	$2a$10$ypAQhwDYcRJYnWo/QJ.xDeV5zxiTCqzZE4bIiH/yd1NGJCtFfY7x6	KAYA SANJAY REDDY	7780728398	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkdt06hy10e000aye9dk	26UEMEC0047	26uemec0047@student.gvpihlr.edu.in	$2a$10$BBId0VoORlyfkCu3pg43W.XeZG1.1XFcdQ1c23RMsrZ89f4wGdp4C	PRIYANSHU KUMAR SINGH	7207515306	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N	\N	\N	\N	\N	\N
+cmv0lfkdu06i910e0dvdw4g2g	26UEMEC0055	26uemec0055@student.gvpihlr.edu.in	$2a$10$nrhLykgjQX42M8ARwNHSP.g1ieQrG2CRtzvmrvkX2L3DrEy09dlka	SUNKARA DEDEEPYA	9640878806	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N	\N	\N	\N	\N	\N
+cmv0lfke906nz10e0ol5yw5an	26UEMEC0061	26uemec0061@student.gvpihlr.edu.in	$2a$10$Bdr.1MHWPdJ.6F1GnysW/ugEiLGOSdox.zWRXwV7.bifzionIpiD2	DEVA MANI TEJUS	7794962240	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N	\N	\N	\N	\N	\N
+cmv0lfkea06o910e08nhndlux	26UEMEC0073	26uemec0073@student.gvpihlr.edu.in	$2a$10$aG4Ev74GlgrArOmfuHBHeex/MNXMVcGjVjPoAq.oer7MFMz6VKgIu	MANDATI NAGA MALLIKARJUNA	9393177097	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N	\N	\N	\N	\N	\N
+cmv0lfkep06ug10e05cbpwzhz	26UEMEC0098	26uemec0098@student.gvpihlr.edu.in	$2a$10$DwPtuhlDz7vdI1k7Auwl/.z.suNdyzl2bxvD/lH4pSECEltYnhP7G	VANDRASI ROHIT	9618430522	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkeq06us10e0lph24h92	26UEMEC0095	26uemec0095@student.gvpihlr.edu.in	$2a$10$Caq3sSYikCVuzut/lfl6I.rozs/zBtflAOhXOiGHMGZwxPKfsIZjq	YELLA MANOHAR	9346368856	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkf5070p10e0tm1i1grl	26UEMEC0123	26uemec0123@student.gvpihlr.edu.in	$2a$10$37KCfqLJAv9zvjlwQVgwFOU2NzTMrFxOnyidgJAtajTPptJJ9wM3y	SURLA JASWANTH	9849570165	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N	\N	\N	\N	\N	\N
+cmv0lfkf6071210e09by3e78z	26UEMEC0136	26uemec0136@student.gvpihlr.edu.in	$2a$10$Fvn3BKPlQHJ89UMRJXszqeK4dxlxa9IzO9sB1SU.acI4ETX.lqX2W	SUNKARA GANESH	7013596013	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N	\N	\N	\N	\N	\N
+cmv0lfkfl076u10e0aqvv7mx1	26UEMRB0010	26uemrb0010@student.gvpihlr.edu.in	$2a$10$N9kHcEAO6F8jtvoDRUGsqOA34UBeAkDPEirNFADYM.9iRDlxZMJoC	PAKKI SANGAM JASWANTH JAI TEJ	7842450708	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N	\N	\N	\N	\N	\N
+cmv0lfkfm077510e0sr54x2nb	26UEMRB0021	26uemrb0021@student.gvpihlr.edu.in	$2a$10$7GouTN8Ri39IHKhFNgcOhefYr89n7M1iphkT7a8NBRHA6igRQZi7G	DULLA RISHI VARDHAN	9347754220	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N	\N	\N	\N	\N	\N
+cmv0lfkgc07d010e0uug9oy7h	26UEMRB0032	26uemrb0032@student.gvpihlr.edu.in	$2a$10$NToITcK1Tk0KV0mDvBc5H.JgQmXL1Ch0zh4HDyEVvouF5CQMbvfeu	SIRUGUDI NETHRANANDA KUMAR	9963810616	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N	\N	\N	\N	\N	\N
+cmv0lfk9d04rk10e0qpe6adea	26UEECE0115	26ueece0115@student.gvpihlr.edu.in	$2a$10$giZHw7oiV0qxqvjoHtJ81OPxtje36X9zikE247gVmFdwCXMnaBxsq	REDDY JASWANTH	9347679441	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N	\N	\N	\N	\N	\N
+cmv0lfk9s04xg10e0x2ogwqbc	26UEECE0122	26ueece0122@student.gvpihlr.edu.in	$2a$10$.g76P8./TEBWDhnY0GGhee2H7uaGXOgMJqS5Q.oEjwywPDbDpw8ym	PADALA LAKSHMI NARASIMHAREDDY	9177569366	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfka8053t10e0frzasac4	26UEECE0150	26ueece0150@student.gvpihlr.edu.in	$2a$10$.gMCOKEh9p4cHBo1/HHhd.cIhsaFszTXlOb4lpcAX2zi6SVJ7LCJK	SUSRITHA ANDEY	8106376842	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N	\N	\N	\N	\N	\N
+cmv0lfka9054710e076reqcn5	26UEECE0170	26ueece0170@student.gvpihlr.edu.in	$2a$10$rGVW0zydmVfYIP16FZLFKuAVa27QSPzQAObx88NqNpapCeNOfGQvi	MATHA VARDHAN NARASIMHA	9000640160	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N	\N	\N	\N	\N	\N
+cmv0lfkao059y10e0qaegnsaf	26UEECE0175	26ueece0175@student.gvpihlr.edu.in	$2a$10$h7YJlc4dUy/nBLMc2lACu.W9ZyiZ1kuaQLqTjELiaTasNqS6S5xqe	KARRI BHARGAVI PRASANNA LAKSHMI	8919477327	t	f	\N	0	\N	2026-10-09 06:37:40.608	2026-10-09 06:37:40.608	\N	\N	\N	\N	\N	\N
+cmv0lfkap05ag10e0ctwpq97w	26UEECE0189	26ueece0189@student.gvpihlr.edu.in	$2a$10$1A.YqCBjbZvIhkeD/Y83bO/0lLoGFi9cCpWAu/W8Ezo0HPFNOPoe.	RAMBHA YASHASWINI	8074058010	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N	\N	\N	\N	\N	\N
+cmv0lfkb405g610e0nn0t9otu	26UEECE0199	26ueece0199@student.gvpihlr.edu.in	$2a$10$Nfh9KgTdJynvav18lHf0UeBwG4Drr3XRLFq/30hDmvpl8m1zBCt5C	DAMMU VIJAYKUMAR	9652644393	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N	\N	\N	\N	\N	\N
+cmv0lfkb605gs10e0ezz9k7ur	26UEECE0220	26ueece0220@student.gvpihlr.edu.in	$2a$10$xSNmBUWwB7taXMqRTpI5J.DpwBjNrhrvlISCpBgok1XXT9fgQ/tRG	GUNTAMUKKALA THORAN AKSHAY	8374808250	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N	\N	\N	\N	\N	\N
+cmv0lfkbk05mf10e0z0i2yvvh	26UEECE0225	26ueece0225@student.gvpihlr.edu.in	$2a$10$n.1RpMkvLmndmumeKPcqGuy.Z6zkWxVY.V2Bv3tIUfbfK64nevJcu	JANGA WEDANT NANDHAN	8529146456	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N	\N	\N	\N	\N	\N
+cmv0lfkbl05ms10e0s3wvygs9	26UEECE0236	26ueece0236@student.gvpihlr.edu.in	$2a$10$5Er2jomAaD6syBJf/lgfM.3GuzIIOYZHXkLf61kwUN4RpnzRPgpbe	MEESALA VENKATA SAI SRIKAR	7093580295	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N	\N	\N	\N	\N	\N
+cmv0lfkc105sr10e02ki8o1wq	26UEECE0251	26ueece0251@student.gvpihlr.edu.in	$2a$10$a74htgQj0ZzwzDIQcQ6UV.cH8zi1h1FsFF6wZK.B.WxRxHH3uCeIC	DONKA ESWAR	9392076551	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N	\N	\N	\N	\N	\N
+cmv0lfkc205t110e0w8qxs7aj	26UEECV0003	26ueecv0003@student.gvpihlr.edu.in	$2a$10$TxluVKMMdpCa/jjORcu2COZ69ab05VdYnFKvRzyypoTsSIhtfo4m2	ANSH PRADHAN	8822573941	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N	\N	\N	\N	\N	\N
+cmv0lfkcg05yw10e0t1ma66b3	26UEECV0016	26ueecv0016@student.gvpihlr.edu.in	$2a$10$0.ExiMLEHEExd6tk7wxq6.BOXbYCD/kg3eKLuMhXVytCJo9p5tkYK	KARROTHU DEEKSHITHA	9701608762	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkci05zi10e00vbhzdyc	26UEECV0038	26ueecv0038@student.gvpihlr.edu.in	$2a$10$VAUV2kcOflHenXVwG0JGmuT.N0bFb4zPvHawZ.cfxuxKzVZnGrism	RAMCHARAN PANDA	9390426040	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkcx065b10e0m2e12w3c	26UEECV0045	26ueecv0045@student.gvpihlr.edu.in	$2a$10$L/o4mF2eggEKXfi4HHGC1u38EYy14fN.IDVGKfFdjACDUBhcTy2PO	SATTI AMRUTHA KEERTHI	9248771666	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N	\N	\N	\N	\N	\N
+cmv0lfkcy065o10e0z0yg02w9	26UEMEC0002	26uemec0002@student.gvpihlr.edu.in	$2a$10$TlcyzwVgBx6uLL4DkabsEejfyJxbahmyLCKztNmGggNj66kbelgra	BALIREDDY GUNAVARDHAN	9885516680	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N	\N	\N	\N	\N	\N
+cmv0lfkdc06bl10e037xjs5fv	26UEMEC0016	26uemec0016@student.gvpihlr.edu.in	$2a$10$ly8fBrEhTntlkbSP4v3oser69rVHF4V9H1n7UuGOLY2F6d2Yizy4y	GANTA PURUSHOTHAM NAIDU	8523078444	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkde06bu10e07racr1o3	26UEMEC0028	26uemec0028@student.gvpihlr.edu.in	$2a$10$ZkUfQXAJ7xekHOXUczqq4.9V9YI8zZ2F0bpspLymlstEfl7KsUC9m	KODAMBAKAM BHUVAN	8639412459	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkdt06hu10e00khiv9q5	26UEMEC0040	26uemec0040@student.gvpihlr.edu.in	$2a$10$Wj80P0QGVkeeujE0KaaNXui8voXkyOcWATeNBnEUpMCuv1jl4IShi	NADIGATLA HOMESWAR	9618063181	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N	\N	\N	\N	\N	\N
+cmv0lfkdu06i210e05q1jyme5	26UEMEC0051	26uemec0051@student.gvpihlr.edu.in	$2a$10$RhCR8fPKzXZaMi7r8koYT.LLUzIaOFQQWnDzZaWYY.rD4esf957cS	SARIKI SAI	9966406263	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N	\N	\N	\N	\N	\N
+cmv0lfke906nw10e08uxtak1u	26UEMEC0060	26uemec0060@student.gvpihlr.edu.in	$2a$10$k9n.g.sTdpHS1rgQuuxEQ.bEROKt/d1F/yF1aFyCa5ur9MUfG89J2	YADLA VARUN	9966083664	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N	\N	\N	\N	\N	\N
+cmv0lfkea06oa10e0dhzwnvwx	26UEMEC0075	26uemec0075@student.gvpihlr.edu.in	$2a$10$hMB7/CspTJVPKzw/xXi5OuknnWtqN6h3t9kc9mpl4iArWTL69jlt6	MOHAMMAD FARHAN KHAN	9618650352	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N	\N	\N	\N	\N	\N
+cmv0lfkeo06ub10e0lv3whqyr	26UEMEC0092	26uemec0092@student.gvpihlr.edu.in	$2a$10$65/ZQ79zj4PR/df8/jzD8OyMPhgbC/einTVgPWuw5Ht9x8JcVKXXK	SEELA CHAITANYA	9494211207	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkep06uq10e00t6c15pn	26UEMEC0109	26uemec0109@student.gvpihlr.edu.in	$2a$10$iZSL.FnSFiPM475K0PjjwuZSqcF5TN4YeGb5HBcQoSM5FhwG0jlt2	VOOLLA YASASWINI	9040760077	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkf5070q10e0zc3owo4o	26UEMEC0124	26uemec0124@student.gvpihlr.edu.in	$2a$10$V9ZHHrI2mCTzJg1VjUQ8a.aDjlZOn1xqSkLdDNHvRSx807ssgB3Te	PESALA SAI VARDHAN	9014880691	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N	\N	\N	\N	\N	\N
+cmv0lfkfl076s10e0qoyhqdxi	26UEMRB0007	26uemrb0007@student.gvpihlr.edu.in	$2a$10$AY5orFyfh4LqWbxddxNYKuLkXAAYkWGfAznfemnFNo0ROtqvOLu9C	MAILIPILLI ADITYA	7330950025	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N	\N	\N	\N	\N	\N
+cmv0lfkfm077810e0otqk68ch	26UEMRB0014	26uemrb0014@student.gvpihlr.edu.in	$2a$10$jrjyrna5Qn6WNwTC8f1fg.BfvrLtIAUO0yqR.qmFhLWLELEQP67de	SINGUPURAM VENKAT NIRUP	6301798234	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N	\N	\N	\N	\N	\N
+cmv0lfkgc07cy10e0h8kifoac	26UEMRB0025	26uemrb0025@student.gvpihlr.edu.in	$2a$10$PZdLmde8tOpDQX.GLxUsZOI1KsYOJt/l1xy9kuOyPuQa.cC46BTy2	DASARI PRASANTH KUMAR	8639396346	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N	\N	\N	\N	\N	\N
+cmv0lfk9d04rn10e01y803swu	26UEECE0116	26ueece0116@student.gvpihlr.edu.in	$2a$10$EXkR0qiQiullK3Q87slqduLVZZ12ju3LB4nGDt9gMRi2LTXRb0Oxm	NARASUPALLI SUSHITH NAIDU	9440416460	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N	\N	\N	\N	\N	\N
+cmv0lfk9d04ro10e07nsjbmwl	26UEECE0117	26ueece0117@student.gvpihlr.edu.in	$2a$10$ZKHV6UrU/ZFCLNZAniJEDuYNhdsgNvqSBAeeACxaCewhrUnIu1omS	NEKKALA HEMPREETH	8297243143	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N	\N	\N	\N	\N	\N
+cmv0lfk9d04rp10e0q8qc3eme	26UEECE0118	26ueece0118@student.gvpihlr.edu.in	$2a$10$VoMSr6V78/BLmsPzr3I05usb4lzRDBFPCMIWgqieRlOt2B8g.1v/u	REGIDI JYOTHIRADITYA	9848155744	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N	\N	\N	\N	\N	\N
+cmv0lfk9e04rt10e0gd6q6rhz	26UEECE0109	26ueece0109@student.gvpihlr.edu.in	$2a$10$m5T4LGovIjDJWuwPPNVj7e0xXoxW6UIlTnTh9vemDSa.2K37GH2mC	MUVVALA VENKATA SHYAM SAATVIK	9848018442	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N	\N	\N	\N	\N	\N
+cmv0lfk9s04xl10e05frmx7ss	26UEECE0129	26ueece0129@student.gvpihlr.edu.in	$2a$10$uPl.gGCE0aheH0k4gbphX.2ja8EyViEuseuk5NbHtfEWLoEaYfilC	PERI S S KARTHIKEYA	9441607181	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfk9s04xj10e0wlj8dnf6	26UEECE0126	26ueece0126@student.gvpihlr.edu.in	$2a$10$2.6ADN3ou8VKj9HQaiWwBelQ6XegJJyiiw/S68Asya3c1Lr61fx7S	PENTYALA NAGA SAI LOHITA	6281418546	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfk9s04xh10e074dv7xme	26UEECE0125	26ueece0125@student.gvpihlr.edu.in	$2a$10$5aoQfP47CZILaTm/pE5qU.5kvYG0EcdI3UvilIUGemaKToJ2rXseu	TATISETTI YASWANTH	9985788142	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfk9s04xm10e02f85psj2	26UEECE0128	26ueece0128@student.gvpihlr.edu.in	$2a$10$5k4XOh9oH9k7UVXP0bX3A.TkKJqdJMA3HqM6L98PG6JF6Lpqr3K96	GUTTAVALLI VENKATA KRISHNA PRIYA	9848854311	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfk9s04xi10e0fzfxqf3i	26UEECE0124	26ueece0124@student.gvpihlr.edu.in	$2a$10$g/WGzg96Zy4eKedGFk8Z6./1fndargnYciPRm/q3UBMG9G4Zfupie	Surada sahithi	8247536772	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfk9t04xu10e0bn1u2tni	26UEECE0138	26ueece0138@student.gvpihlr.edu.in	$2a$10$E53ysbV.ig3cEx.4wqxM3u6s8hBzK3CA4V.6XLSpNlDdwdkGZY/jC	GUNDU NOHITH	8978999599	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfk9t04xw10e0bw8z6pe8	26UEECE0141	26ueece0141@student.gvpihlr.edu.in	$2a$10$sGeLOD7Zeo83q2j5oKy80Oqt7ED7oV6DKPTrEcdvyEEsZMhJu49VK	PANGA SAIKIRAN	8985920598	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfk9t04xv10e072svkksc	26UEECE0139	26ueece0139@student.gvpihlr.edu.in	$2a$10$1Ma3cmHelqYK/8hb.h0qtu6LQmLJFlKQNLeBerccYYXaBIiNSa6VK	MAVURU ROHITH	8074661731	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfk9u04xy10e02pjmnh18	26UEECE0142	26ueece0142@student.gvpihlr.edu.in	$2a$10$IJsVaS3i0mgRAur2HKoR2ORxAbckh57D5hiHLLj4pdMsmcr4j2Qc6	SAGI HAMSINI RANI	9440540416	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfk9u04y210e0n9pd7x0e	26UEECE0145	26ueece0145@student.gvpihlr.edu.in	$2a$10$JMy3Bpof/1wpDYaIeH.tVOgm7TsTsrk2DXU0c1V3MlsaCQmw1bj7S	SEEPANA SANTHOSH KUMAR	9951514022	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfka8053r10e0if63l5w0	26UEECE0153	26ueece0153@student.gvpihlr.edu.in	$2a$10$85IeFZZQvVWhJafoX64WNOmW2DDBlQVSRSsFpvqwm9Toude73szsW	TATSALLA JAHNAVI RAMANI	6304691661	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N	\N	\N	\N	\N	\N
+cmv0lfka8053p10e04utx5om3	26UEECE0149	26ueece0149@student.gvpihlr.edu.in	$2a$10$TahVFhEAfCMPb8mFAzVJd.QEfYTdV2Y6TuuW48F1bmtVz3jpbjrby	SIRIPURAPU VAISHALI	8374222328	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N	\N	\N	\N	\N	\N
+cmv0lfka8053s10e0mvrcaujc	26UEECE0148	26ueece0148@student.gvpihlr.edu.in	$2a$10$PMqwxmf7SNVfpA1Hpb2iu.Hu3osZ2f5vsM6pasBd1oMh0SX8ndLEK	SIMMA PAVANSATHVIKA	7702245947	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N	\N	\N	\N	\N	\N
+cmv0lfka8053w10e0c0lr01tk	26UEECE0156	26ueece0156@student.gvpihlr.edu.in	$2a$10$.pqEY5bPYknvWP81flkT2eRM5iTX/jtb7fLUOMR1EUkc/rxDX0DSO	KARTHIK NAKKA	7330799913	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N	\N	\N	\N	\N	\N
+cmv0lfka8053y10e05ec8244j	26UEECE0160	26ueece0160@student.gvpihlr.edu.in	$2a$10$c1cIfWL.OsIh1aU4R7Q5f.nE5JJLvbcpZPvJXkR19OQkwEKHgQHGW	VITTANALA DIKSHITHA	9704659191	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N	\N	\N	\N	\N	\N
+cmv0lfka9054110e0flix5oy0	26UEECE0163	26ueece0163@student.gvpihlr.edu.in	$2a$10$kYKONS0y9.1ZVTn5o9PDxe..pEgtWC2qd.59T5PYuHWmvlK11a6WW	PAGOTI SUSEELA PALLAVI	9440820426	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N	\N	\N	\N	\N	\N
+cmv0lfka9054410e0hvsv05gz	26UEECE0164	26ueece0164@student.gvpihlr.edu.in	$2a$10$MGDTsR2GQ1fK2Tevt6Sjuu0ePNdH8MUSVKrRhk6Fkpg7ZKYinf/VG	VURUTHA MANASA DEVI	8143232668	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N	\N	\N	\N	\N	\N
+cmv0lfka9054810e0m3pwy9xz	26UEECE0159	26ueece0159@student.gvpihlr.edu.in	$2a$10$VmdNlkRyz2HJUt3U.Va1BOPEJRYKPbqAS5uuAWSo5cY9MQRVRyuii	VILAMANDIPARTHI ASRITA	8790146656	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N	\N	\N	\N	\N	\N
+cmv0lfka9054a10e035po4q26	26UEECE0155	26ueece0155@student.gvpihlr.edu.in	$2a$10$FGyKAOaYGM.Ns4XehMHbausi5u0yhvlMWB4xPgc6/KfkZt6B6qtf.	VISSAPRAGADA VENKATA RAMANA SHANMUKHA SAI	7036269164	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N	\N	\N	\N	\N	\N
+cmv0lfkao05a310e0elajv1tg	26UEECE0178	26ueece0178@student.gvpihlr.edu.in	$2a$10$xvVwvD0zuRtt1HbN56heyuUFK0tG6lFA2Xct1YOFYzaw0Kz7j1NNC	BALIVADA SRIKOUSHIK	8500894754	t	f	\N	0	\N	2026-10-09 06:37:40.608	2026-10-09 06:37:40.608	\N	\N	\N	\N	\N	\N
+cmv0lfkao059z10e0azrhbu3e	26UEECE0174	26ueece0174@student.gvpihlr.edu.in	$2a$10$ALkpnroK9z5XNvkXBtCHQe7DMtPNVPai/gtC5vpW2iJfXefGMPqR.	TANNA TEJESWARA RAO	9849319694	t	f	\N	0	\N	2026-10-09 06:37:40.608	2026-10-09 06:37:40.608	\N	\N	\N	\N	\N	\N
+cmv0lfkao05a410e0z0ac4k9o	26UEECE0180	26ueece0180@student.gvpihlr.edu.in	$2a$10$kfBgQHBi9ozWgRMYJFtfn.mcy0DQhxmQw4/Y9Lhc0e5P.1zjBdE96	EJJADA SUKANTH	9550626409	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N	\N	\N	\N	\N	\N
+cmv0lfkap05a710e03ttmtu1e	26UEECE0184	26ueece0184@student.gvpihlr.edu.in	$2a$10$nJdiMCyB7trxk4/cqeyv/.nKbSyky1fLP9Vfwzj2fOcu9J2DfUqJa	PAMU JAGRUTHI	6309005651	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N	\N	\N	\N	\N	\N
+cmv0lfkap05a810e04grzelll	26UEECE0172	26ueece0172@student.gvpihlr.edu.in	$2a$10$OYKKyjmVrV1tvaj0l.5J/evy0H4uKtl/Z4tiPx0xTLgkMyGeanRnW	YELAMANCHILI PUNEETH	9848865458	t	f	\N	0	\N	2026-10-09 06:37:40.608	2026-10-09 06:37:40.608	\N	\N	\N	\N	\N	\N
+cmv0lfkap05aa10e0atsqdbuj	26UEECE0188	26ueece0188@student.gvpihlr.edu.in	$2a$10$buGsKrwMniHDjPvT9efIWO4QxA7NaMZiCwJvbQMt2fJikD6NlIKue	KEMBURU LOHIT NAIDU	9437944638	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N	\N	\N	\N	\N	\N
+cmv0lfkap05ae10e0thhbgjs1	26UEECE0190	26ueece0190@student.gvpihlr.edu.in	$2a$10$O1wPNNzS9400LzDhvEuhue9h29OQEAuHJC09fZN4Vxy/n4y5kgheG	MEESALA KEERTHI	8309540627	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N	\N	\N	\N	\N	\N
+cmv0lfkap05af10e0401r8xgo	26UEECE0191	26ueece0191@student.gvpihlr.edu.in	$2a$10$m1EEW52kMNkT2Pr.zrXnPugRxzKmomEsljhKKXVnOOUojfz2SCuSa	PURAMA DELHIESWARA RAO	9440540463	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N	\N	\N	\N	\N	\N
+cmv0lfkap05ai10e0rz7a4mnn	26UEECE0195	26ueece0195@student.gvpihlr.edu.in	$2a$10$ADPG0hU91LYI730xlanTruXxVWIGXMOscZ2ibgPC3w4BoAIvjuF0K	BATTULA VAISHNAVI HARINI	9849841396	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N	\N	\N	\N	\N	\N
+cmv0lfkap05aj10e09xypju65	26UEECE0194	26ueece0194@student.gvpihlr.edu.in	$2a$10$dZ.0mvAFkaBb1QPsCAeX7OrV329pgIaJZFiZxG7f1slDx46d1OPHy	PILLA SAMPATH SUCHITH	6302419847	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N	\N	\N	\N	\N	\N
+cmv0lfkb405g810e01g6i859p	26UEECE0203	26ueece0203@student.gvpihlr.edu.in	$2a$10$yno0p3RYESYazAorzVP3k.JO8GGwqmZC5KDhMSNAl4ToR1halqXH6	JAMI MOHIT	9989398411	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N	\N	\N	\N	\N	\N
+cmv0lfkb405gc10e0i0fw8kiu	26UEECE0206	26ueece0206@student.gvpihlr.edu.in	$2a$10$kvNEB4WaPPCcSLm3hl5G4.K4noIpTLMXwZiEHgPu90MEFHo7G/azS	BARINIKI LAKSHMI NARAYANA SAI SIVACHARAN	7661075202	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N	\N	\N	\N	\N	\N
+cmv0lfk9d04rl10e0c1xq8ok3	26UEECE0113	26ueece0113@student.gvpihlr.edu.in	$2a$10$.RsBAbpN6/MopkfVgmuDxe3KJj9l3tRgYAlkq36nPy/31/2gDledK	NAGIREDDY RISHIKA NAIDU	9440597244	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N	\N	\N	\N	\N	\N
+cmv0lfk9t04xo10e087a1spj9	26UEECE0134	26ueece0134@student.gvpihlr.edu.in	$2a$10$MYqxKINtDlvrn1GnTFQD0eMDBcMglpAe3S9ALDrmE1LX56RC7YO0i	POTNURU JASWANTH	9573276472	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfk9u04xx10e06quyi4d7	26UEECE0140	26ueece0140@student.gvpihlr.edu.in	$2a$10$VuiDLeJ6Jb/t/U02uOdZnedJWA.JLSwn10HAMs5QB2kz57RlYEVHO	YEDLA VAIBAVI	9963562366	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfka8053n10e0w88ft0wk	26UEECE0152	26ueece0152@student.gvpihlr.edu.in	$2a$10$MjCObKastee9eYS5mSu1F.74hl7WDmnyVX.COa6U0NDM6sQhlywJu	TAMADA SANDHYA	9573418635	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N	\N	\N	\N	\N	\N
+cmv0lfka9054010e03bcfdd8o	26UEECE0161	26ueece0161@student.gvpihlr.edu.in	$2a$10$4Lyxx9.BNdogg8QjFq8WMek/DyWrPNYMpuMnSA5u9d4HEIx3x0lKC	VOODA KOUSHAL	8121827695	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N	\N	\N	\N	\N	\N
+cmv0lfkao05a010e0c9h5jdmn	26UEECE0177	26ueece0177@student.gvpihlr.edu.in	$2a$10$sfrptM9v1qa4h8ww0UpGeu2Eg/ElVvcMXCjnu0cO/L8sUl.IOaCMm	VISWANADHAPALLI JOSHU BABU	9912988217	t	f	\N	0	\N	2026-10-09 06:37:40.608	2026-10-09 06:37:40.608	\N	\N	\N	\N	\N	\N
+cmv0lfkap05ah10e01uen3ihr	26UEECE0192	26ueece0192@student.gvpihlr.edu.in	$2a$10$RVS.9u6nxs/mXZFsDrNh6eItG8T7FYMWiw/Ps6sJIWHluhIxUenqu	B. BHANU CHAKRAVARTHI	9491812176	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N	\N	\N	\N	\N	\N
+cmv0lfkb405ga10e01m5xczgi	26UEECE0202	26ueece0202@student.gvpihlr.edu.in	$2a$10$zR/LUgAokczVAujKN/gDBe4bxVtsaRCfYFX/T8WatjXUx8ufvyMUC	PARAMSETTI LAKSHMI LIPSIKA	9441277639	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N	\N	\N	\N	\N	\N
+cmv0lfkb505gm10e0ivb8b8wz	26UEECE0212	26ueece0212@student.gvpihlr.edu.in	$2a$10$/FX..UAYx/EHhtujsv5zpeWpH8VoljXu8ZuJPTwHpuQtgQauHj7/y	KUPPILI MANIKANTA	9701490953	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N	\N	\N	\N	\N	\N
+cmv0lfkbl05mq10e0yebokbo4	26UEECE0224	26ueece0224@student.gvpihlr.edu.in	$2a$10$5FRH7d5vr24qOSKY6jD8cuYMX8/L40HXMblVV.h.YcifsFtGVcMr2	MANDALA HARSHA VARDHAN	9078767437	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N	\N	\N	\N	\N	\N
+cmv0lfkbm05n110e0e3wirme6	26UEECE0245	26ueece0245@student.gvpihlr.edu.in	$2a$10$y6tkc1TkGo8Fi6h4mKnWzemEMPrS6kpAkyBHZZWe/LpKoZdezVK.e	N HRUDAY KUMAR	7008319324	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N	\N	\N	\N	\N	\N
+cmv0lfkc105su10e09aav3tm6	26UEECE0256	26ueece0256@student.gvpihlr.edu.in	$2a$10$qR6eg8wXjkA7ljw9DUj/Gu97Hv3uywQHpY6BBhVnCnVZVPPAWr5wK	VOODIKALA YADAV DURGA NAVEEN	7036934473	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N	\N	\N	\N	\N	\N
+cmv0lfkc205t210e0ltq3sj2k	26UEECV0006	26ueecv0006@student.gvpihlr.edu.in	$2a$10$QuiFYxWwni9/F2.wrQfDieEgZfe6csQOLc5fkTUcLhB4LTVWIy6Dy	KURMALA SAI HARSHA	9494197578	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N	\N	\N	\N	\N	\N
+cmv0lfkch05z710e0fwrr0i5s	26UEECV0025	26ueecv0025@student.gvpihlr.edu.in	$2a$10$qsVyZLdi3.PC/HFzf00u3erqvsgccsuDU.ah3SNlq1YHqAek6pPnu	MUPPURI SIVA GANESH	9182233083	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkci05zj10e0ix5j9rkd	26UEECV0028	26ueecv0028@student.gvpihlr.edu.in	$2a$10$HmnD1sjxDhHtW7aJuy7zoOH66Y7Y0UEfLG6RoHV4y7U2tsUtnJsTO	KOTHURU SAI PRASANTH BABU	8332816424	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkcx065c10e0ritk9fh1	26UEECV0050	26ueecv0050@student.gvpihlr.edu.in	$2a$10$OiB7XwKw1tZJXo11gaKPK.UCIQ2KwzpWZtV0/d0clLTuV/5mO4.UO	VARANASI SAMPATH	7995771858	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N	\N	\N	\N	\N	\N
+cmv0lfkcz065r10e0vkjz36cs	26UEMEC0004	26uemec0004@student.gvpihlr.edu.in	$2a$10$gwP4jzVH.i.gSJVvafHsW.GDztj5zdFnrY0cIPVWtCIaJ9jZz9Bw.	BATHINA MANOHAR	8309403294	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N	\N	\N	\N	\N	\N
+cmv0lfkdc06bf10e0c11o4lfe	26UEMEC0007	26uemec0007@student.gvpihlr.edu.in	$2a$10$UofFfqkHsdSwfo89TyfhGOW9oknFeU5DtrmMAgTDCXZeTT1FpnmA.	CHODI VENKATA SAI KAUSHIK	6305722323	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkde06bw10e0713dde31	26UEMEC0026	26uemec0026@student.gvpihlr.edu.in	$2a$10$YAM7hOBy2Z/pAvFKas40COdYA9q0APnIjcDQp5Q2AdgcT/6Yl3Iu.	KATTUBOYINA PHANI NAGA VENKAT	7981736379	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkdt06ht10e06kbnj8ix	26UEMEC0038	26uemec0038@student.gvpihlr.edu.in	$2a$10$mpFWa4CknmiolYGJHvq3hOcr6CRgZxYWp1fUNHHFd1B3FShRQwM/q	MANDAVILLI KRISHNA SATWIK	9533777732	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N	\N	\N	\N	\N	\N
+cmv0lfkdu06i310e03zgroccy	26UEMEC0050	26uemec0050@student.gvpihlr.edu.in	$2a$10$rOsOmU.yBLFtA4ayJUa7du3uEy8.3cz04v5ZqhRfTUWR0s5epJ/ta	KARRI VENKATA GOWRI MURARI	7095987363	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N	\N	\N	\N	\N	\N
+cmv0lfke906o610e0nt010pv3	26UEMEC0070	26uemec0070@student.gvpihlr.edu.in	$2a$10$kkjGERmwWdSLmQUvXanopuY7Ga2DuyT8X8YnCWu6GYIo/NiqWXmzG	MAKALA JAYARAM NANDESWAR	9281351499	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N	\N	\N	\N	\N	\N
+cmv0lfkeo06ua10e0a88pghf8	26UEMEC0085	26uemec0085@student.gvpihlr.edu.in	$2a$10$WlAmpVfjQEvHU.oGvQVaFeuwM2iejqEaHVHv7EuJOv55HrFkxW3Yu	REDDY JITENDRA	7989334010	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkep06uo10e0wp7fqyt3	26UEMEC0106	26uemec0106@student.gvpihlr.edu.in	$2a$10$7HunzWOYMY/luW9zr2PRE.MmWQXEHD1r7H003d7WAJg9sGjh72OD.	SHAIK MOULA	9642474706	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkf5070o10e0uh3zlp9f	26UEMEC0122	26uemec0122@student.gvpihlr.edu.in	$2a$10$1pOz61REx1QaJBHV5qnqdu6R/dIyjPnk2jSavj0i6eH83ecoYKpeu	SADA BHARGAV SRI SOMASEKHAR	8125113672	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N	\N	\N	\N	\N	\N
+cmv0lfkf6071010e00xuoyr9b	26UEMEC0134	26uemec0134@student.gvpihlr.edu.in	$2a$10$KO.xQgMc/.oGo8bFi.W4deTzePw9ZGyxtoO//1WZ2cViF10qzMn.a	LINGAM SHIVA	6309028066	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N	\N	\N	\N	\N	\N
+cmv0lfkfl076o10e0ycf1eud8	26UEMRB0002	26uemrb0002@student.gvpihlr.edu.in	$2a$10$oGlfjOMrQA33moVYEPvj/eeLiN9mWanaOUZWLR4iW3ZFdt5qkWWWS	BAGU DILLESWARARAO	7842954145	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N	\N	\N	\N	\N	\N
+cmv0lfkfm077110e096wmnw9e	26UEMRB0017	26uemrb0017@student.gvpihlr.edu.in	$2a$10$9yYrZaGLYg5kylExjXVMFenMgRmS0mCP3o1Jg6r9cMa3r3C49ht9e	VASAMSETTI SAI REVANTH	9494753632	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N	\N	\N	\N	\N	\N
+cmv0lfkgc07d410e0frs38n2s	26UEMRB0034	26uemrb0034@student.gvpihlr.edu.in	$2a$10$j5B8l57Ub5DOlyBe2gxZ0.pir6DWmBmpUu7HKP9OnbI0YNTcWf.kW	KARRI SANJANA	9686169696	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N	\N	\N	\N	\N	\N
+cmv0lfk9e04rq10e05q3ly4bt	26UEECE0119	26ueece0119@student.gvpihlr.edu.in	$2a$10$WHP9LodmZF5DoVW9UyKJtui9vfvaUCtrIOImLjoMlAhpd2qnbdUwO	NUNNA DEEKSHITHA	9491553801	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N	\N	\N	\N	\N	\N
+cmv0lfk9e04rs10e0fixdywjy	26UEECE0105	26ueece0105@student.gvpihlr.edu.in	$2a$10$pGNRTyn.UIpDzM6CHUZdYuRHpdVcHmEApkrxY9ZAn7OQqvSESv1MC	PUSAPATI SRI HASINI	9573279698	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N	\N	\N	\N	\N	\N
+cmv0lfk9s04xf10e0vqdyg2na	26UEECE0123	26ueece0123@student.gvpihlr.edu.in	$2a$10$dTnM0Rk23i5HE.E1fwOW1.Ss0pb8jLi0LGHpQbN.CjkkdgDXDJHfS	PEDADA PRAVEENPRAKASH	6305336872	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfk9t04xp10e01exlaxzd	26UEECE0130	26ueece0130@student.gvpihlr.edu.in	$2a$10$uB8PNbzAY0BVdxHMvlMI8.QsjgOL8V2Y6hlqR7FwF6J.C0IgTq4W2	PERURI SAI PRIYA	9010011840	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfk9t04xs10e07cuumety	26UEECE0132	26ueece0132@student.gvpihlr.edu.in	$2a$10$3/MeIaav4XS78NhtliRs3O1QImd9boMegZhZ5ramF7RiFQhUnzyh.	PINNINTI REKHA TRILOCHANA	6281328315	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfk9u04y010e00i0l2cu1	26UEECE0131	26ueece0131@student.gvpihlr.edu.in	$2a$10$Tx.oaFjdnqmFGzo7ROMzC.8Duicjhp6npRWUip6ftZmO0LzPvsyEK	SAREPAKA VENKATA HEMANTH	7995998747	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfka8053u10e0afqc14jd	26UEECE0146	26ueece0146@student.gvpihlr.edu.in	$2a$10$wBlxYypotUSuu/SzMhn8uOUtCYqX.kCoI.iDrBKFxBekb134WiwRK	NIKHIL KUMAR SIMIDI	9440148525	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N	\N	\N	\N	\N	\N
+cmv0lfka8053x10e0gf8k6foj	26UEECE0158	26ueece0158@student.gvpihlr.edu.in	$2a$10$yADt6bPlQ/GZoEMx4C9/Hu22LF0UcIYLaW52r05PD1BWFxgH356BO	VALLABHADASU RAJ KIRAN	9912103956	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N	\N	\N	\N	\N	\N
+cmv0lfka9054210e0qknmrmpc	26UEECE0165	26ueece0165@student.gvpihlr.edu.in	$2a$10$xv1gHXzZpTbTQCjP06a48.y/0cFFw15gqkvVB9CDSlXJ6iQqJ3LkK	YERIPILLI SRI HARSHA	7793946655	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N	\N	\N	\N	\N	\N
+cmv0lfka9054910e013qxuveo	26UEECE0169	26ueece0169@student.gvpihlr.edu.in	$2a$10$0h3ph008ik2k6tMZjlDEMuRbniXM54c/Ccbp2RhT9QfG6c1kgTnNO	YERRAMSETTI PRAVALLIKA MANGATAYARU	9392805876	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N	\N	\N	\N	\N	\N
+cmv0lfkao059x10e0g9d1n0mi	26UEECE0171	26ueece0171@student.gvpihlr.edu.in	$2a$10$UVk2Icz0sHNXZON6FPxt3.zWXOgRhLLHI3/shL9vEGFrTnr3wfVr2	SANAPATHI HASINI	9393841300	t	f	\N	0	\N	2026-10-09 06:37:40.608	2026-10-09 06:37:40.608	\N	\N	\N	\N	\N	\N
+cmv0lfkao05a110e0c0juqosi	26UEECE0176	26ueece0176@student.gvpihlr.edu.in	$2a$10$PkhdxFJivdSA.s5mXr5BIu3oqY26zndp6WrWO0haQE.jQCBNCX.j2	CHILAKANTI DEEPAK SAI	9490703464	t	f	\N	0	\N	2026-10-09 06:37:40.608	2026-10-09 06:37:40.608	\N	\N	\N	\N	\N	\N
+cmv0lfkap05a910e0mdyq9aq9	26UEECE0181	26ueece0181@student.gvpihlr.edu.in	$2a$10$.Ltc9/yy5uCwPEw5DLfTEOuXKijjE/DgB0droTob.//BxhJCGOjca	MADUGULA MOHAN VAMSI	8008023737	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N	\N	\N	\N	\N	\N
+cmv0lfkap05ab10e0hxpn8j39	26UEECE0186	26ueece0186@student.gvpihlr.edu.in	$2a$10$mMlbVd5zrHR0GH.HXFdDY.CfIW/uxHR/WJ6bPHQc/9VCasiZ4INQe	YENNI SURYA	8919962088	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N	\N	\N	\N	\N	\N
+cmv0lfkb405g910e0fsozc4n6	26UEECE0200	26ueece0200@student.gvpihlr.edu.in	$2a$10$mOSgGtR867Pd/vGrka71Q.FMTVCnreMxs6v0BjpWojnu6BkKHssVq	PATOJU SATYA SAI SURENDRA	8500906029	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N	\N	\N	\N	\N	\N
+cmv0lfkb405ge10e0r0msm2dq	26UEECE0208	26ueece0208@student.gvpihlr.edu.in	$2a$10$DJXGiSA/kPYmCO6IYA7epegfQx8IuNim5c6kVbCS03uxT9hujCtJi	NARNI NAGA SAI NIKHIL	9391481505	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N	\N	\N	\N	\N	\N
+cmv0lfkb405g510e0iioyiqm6	26UEECE0196	26ueece0196@student.gvpihlr.edu.in	$2a$10$qsMdGC/knIsqpu90jhW.AOOX3mGV7EwrVbZpVvMauYlnZTu66SYd2	DASETTY HEMA BHANU CHANDER	6300739438	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N	\N	\N	\N	\N	\N
+cmv0lfkb405gh10e0n0mrd3ku	26UEECE0197	26ueece0197@student.gvpihlr.edu.in	$2a$10$pIjNG6P/enjm4ICIE0Xa1udC.HhRhsdwyU3cAnrJuzPZBGYMG2USu	CHELLIBOINA JOSHITHA	9063363379	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N	\N	\N	\N	\N	\N
+cmv0lfkb505gj10e086n6hqbf	26UEECE0210	26ueece0210@student.gvpihlr.edu.in	$2a$10$Yzni7tRGMnptTXxXFzjXzOSeU3SEsRIcSC16iyiLkWIiiqNQkzqZ.	GARA THASWAN	6303951572	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N	\N	\N	\N	\N	\N
+cmv0lfkb505gn10e0f16w1mjr	26UEECE0214	26ueece0214@student.gvpihlr.edu.in	$2a$10$EGOrGbbDRC/7dl7Zo1w7t.kiAKnAFzJ9YQ8t75GjDBSJg8Pi5/6gy	BUDHA THANSIKA RANI	7780759699	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N	\N	\N	\N	\N	\N
+cmv0lfkb505go10e06s6wpqje	26UEECE0215	26ueece0215@student.gvpihlr.edu.in	$2a$10$Xyxhs5M8k5QnY577lqt1ROV4HWfcaNiJBYFS.MFKEn.e//mGQ8ZN6	DUMPALA SAHITHI	9493812076	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N	\N	\N	\N	\N	\N
+cmv0lfkb505gr10e003ui4fh4	26UEECE0219	26ueece0219@student.gvpihlr.edu.in	$2a$10$hQ.gDLhcg2RTH83AOQ/ZROz.7hoO8VhyyxmSgFefX1tlG4bPL8RMK	CHEKURI NISHANT VARMA	9848061604	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N	\N	\N	\N	\N	\N
+cmv0lfkb605gt10e015jjbule	26UEECE0218	26ueece0218@student.gvpihlr.edu.in	$2a$10$Haf7enbeqNP1WT6kjho5Oeq2xBRKWFypyudhg98zCo.dUSWIOUHLS	AMBATI HARSHITH	9059958007	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N	\N	\N	\N	\N	\N
+cmv0lfkbk05mj10e0vewu01za	26UEECE0228	26ueece0228@student.gvpihlr.edu.in	$2a$10$LhWf1xJi2YuTHDyxe26aA.lVgT6bRLdcOyqfsLVyBHNKrrEymdp3K	TAMMU AASHRITHA \r\nKALYANI	8688833859	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N	\N	\N	\N	\N	\N
+cmv0lfkbk05ml10e0pl2qf3ze	26UEECE0229	26ueece0229@student.gvpihlr.edu.in	$2a$10$6wDzNC9BLPsgQF9Dba07IOB/yB8oL1FeysVKywEZ043RDxFrI8B1S	MALLADHI SRINIDHI	9912124202	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N	\N	\N	\N	\N	\N
+cmv0lfkbk05mk10e0r068ocg2	26UEECE0223	26ueece0223@student.gvpihlr.edu.in	$2a$10$Yr.saU1w72tvck8rIYpds.lzr7gsb2AUAWCGWm9kMd7egtlSKQrv.	JAGGARAJU HANSIKA	8106033182	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N	\N	\N	\N	\N	\N
+cmv0lfkbk05mh10e0twyctn5p	26UEECE0221	26ueece0221@student.gvpihlr.edu.in	$2a$10$W.39PlyRkGXIDexbB1pvkuEiZCMEtIEWveuf8Ffb0RctkoIKnaxvm	LOCHARLA SASI KIRAN	9963764126	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N	\N	\N	\N	\N	\N
+cmv0lfkbk05mo10e0il6u14zd	26UEECE0233	26ueece0233@student.gvpihlr.edu.in	$2a$10$hYR0ypBWR918LshvPN1Np.M25zkVk/nSYKnS8Nc7mXhal1o.8CeU2	VALLAMULA SAI TEJA	9182214096	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N	\N	\N	\N	\N	\N
+cmv0lfkbl05mt10e0dpwjlqp2	26UEECE0237	26ueece0237@student.gvpihlr.edu.in	$2a$10$14l7V5.UFwQt5aqhufy1/uZlHWJ0lS10NcGi6Uhxi0VYqtjBkbt.6	NAMALA MAHASWIN KUMAR	6305432088	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N	\N	\N	\N	\N	\N
+cmv0lfkbl05mu10e0ngo0wfxq	26UEECE0240	26ueece0240@student.gvpihlr.edu.in	$2a$10$1ocNSb5vYV.FlyzS4lBDXOWGvMqq6/iN16kedAmfwBerHcNenPvCO	KINTALI LAKSHMI VARDHAN	9063725963	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N	\N	\N	\N	\N	\N
+cmv0lfkbl05n010e0zxwgtivk	26UEECE0243	26ueece0243@student.gvpihlr.edu.in	$2a$10$lZlic2UiQwMhJCCdddhZM.XQD4itICNnfymBqR.iLggvthCmY7P8y	VADDEMPUDI VENKATA SUBBA REDDY	9160184820	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N	\N	\N	\N	\N	\N
+cmv0lfkbl05mz10e003zz3o98	26UEECE0230	26ueece0230@student.gvpihlr.edu.in	$2a$10$ln/z2SP7PLTSn0PSu0TwXeJOSV0C0O.Z1uT4VQIRTKHx.ZNkvyz0m	ADURTY LAKSHMI SAI LIKITHA	9490753384	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N	\N	\N	\N	\N	\N
+cmv0lfkbm05n210e02mieds6r	26UEECE0244	26ueece0244@student.gvpihlr.edu.in	$2a$10$241jGj0B5Q4j/92MHP5QHe.k14tPtIODt.hs5/8cV99KHWErEMzjG	CHUKKALA KANAKA SAI	8897268728	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N	\N	\N	\N	\N	\N
+cmv0lfkc105st10e02grwv08o	26UEECE0253	26ueece0253@student.gvpihlr.edu.in	$2a$10$rMbYZkxHjHF1bjJTAVnM6ebHjTBVS8qMvM24RX/hpCQLZkCISYxD2	PEDIREDLA CHARAN TEJ	8328227280	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N	\N	\N	\N	\N	\N
+cmv0lfkc105sn10e0kbedmblf	26UEECE0246	26ueece0246@student.gvpihlr.edu.in	$2a$10$JaynrxVU4OhUJm4.WEctHeB1NyX.yhv2T9zYSgKVicb8C8AjIJ7de	DONDAPATI JYOTHIRMAYE	9246636172	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N	\N	\N	\N	\N	\N
+cmv0lfk9d04rm10e0c4cf01hp	26UEECE0114	26ueece0114@student.gvpihlr.edu.in	$2a$10$g8vqRGE./aKgv34L1.YnVuNXoLQ1Re9.g2KrwrjcBc9eXPdQUbzSi	N KOUSHIK	9281296345	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N	\N	\N	\N	\N	\N
+cmv0lfk9t04xn10e02jj0flyh	26UEECE0133	26ueece0133@student.gvpihlr.edu.in	$2a$10$o3E/F1zIZA5BFNbv63lKyudqjHmOfwOok6HHl/so5XfiQ.Q5KPQ/q	YADLA HEMALATHA	6303227038	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfk9u04xz10e080sxeu0j	26UEECE0143	26ueece0143@student.gvpihlr.edu.in	$2a$10$myd/LwU87ZIz4T2ygWueZuid0ThyCPld.psMJEVU3SJXobjKw5rq6	DAMMU PRABHASH	6302539976	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfka8053v10e0q35y3uyc	26UEECE0154	26ueece0154@student.gvpihlr.edu.in	$2a$10$wMcJIEkCbKn13cPOZYcCgOwsA6JeeSVNhXtSmxu76pDx1qrbMgk8S	VURAKARANAM HARSHIT PHANI VEER	9398111931	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N	\N	\N	\N	\N	\N
+cmv0lfka9054510e0tvc5665g	26UEECE0166	26ueece0166@student.gvpihlr.edu.in	$2a$10$3Re.chaYnb2MUdB9pj0CjeeZt3VL2AASr8Xt8Yx56iGuZZ3HHPqBq	YERNINTI JAYA VARDHAN	9701603541	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N	\N	\N	\N	\N	\N
+cmv0lfkap05a510e0nx3oaejk	26UEECE0183	26ueece0183@student.gvpihlr.edu.in	$2a$10$zk676FfUZleBkzRwFBsdz.q34U1aSzymNT0q3A3fLKgYG1uAZhvQ.	MUNJETI AKSHINI	9908474078	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N	\N	\N	\N	\N	\N
+cmv0lfkaq05ak10e0i8yb0jxs	26UEECE0185	26ueece0185@student.gvpihlr.edu.in	$2a$10$DPFlO5WR1ECE7nmZ.bgYdepm7rXX.3nDKCmnIYQ7njrhnEbfBpnMS	CHELLURI TEJASWINI	9502157633	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N	\N	\N	\N	\N	\N
+cmv0lfkb405gg10e0bl1ogb3u	26UEECE0198	26ueece0198@student.gvpihlr.edu.in	$2a$10$Po565udG3D7o78if23lfR.8cTYj4vMCp8teNXhSyg77AWfTExMDfa	DAMMU GOPI CHAND	9866304078	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N	\N	\N	\N	\N	\N
+cmv0lfkb505gq10e0z43ko2gt	26UEECE0217	26ueece0217@student.gvpihlr.edu.in	$2a$10$UP/Jr5XsOM8doYetROFwh.ef2FoiatgNUiw42/YR55UoIz9x4h7si	PONNADA POOJITHA	7893296267	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N	\N	\N	\N	\N	\N
+cmv0lfkbk05me10e0accafrvb	26UEECE0226	26ueece0226@student.gvpihlr.edu.in	$2a$10$hg2e.Cpct0lSaLtFRKBx4uSnVjd6dL8hik5qhk1d1ebPX9y1XSYOK	ANASURI ANAND	7794072396	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N	\N	\N	\N	\N	\N
+cmv0lfkbl05mr10e0jkqqyz0t	26UEECE0234	26ueece0234@student.gvpihlr.edu.in	$2a$10$XfGlOOGikvxiHoM5YovlLOepj308AXVR46twVSAQHiL7QNO1qZapC	KANCHERLA SRUJAN	9849947431	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N	\N	\N	\N	\N	\N
+cmv0lfkc105sv10e0sbltks85	26UEECE0255	26ueece0255@student.gvpihlr.edu.in	$2a$10$e8Ek6YiwaIaKPUA4Sfk9xOHi6zetXHtATlKHHGHV0xf42etz3ti9a	KOSURU YASASWINI	9701698804	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N	\N	\N	\N	\N	\N
+cmv0lfkch05z610e0j46yuzgy	26UEECV0015	26ueecv0015@student.gvpihlr.edu.in	$2a$10$IMDL//n/R.JVrI/XDjRhRu9W0nCsSHyBEzBALcOZZ7phH10iZTLHW	KARRI GAGAN SURYA TEJA	9398679438	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkci05ze10e0n7m925hz	26UEECV0032	26ueecv0032@student.gvpihlr.edu.in	$2a$10$WoRgEPuQE4eAWLHRx60zp.3KS1n8JZquh4c44n4TOtIrVzvZso4ry	PEEDIKAKANDI CHACKRA MANJULA PREM	9052417300	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkcx065810e0r96ze8rv	26UEECV0041	26ueecv0041@student.gvpihlr.edu.in	$2a$10$NWgGjEgpcuzxAn3gfbAoPu1Tskl7PhzJ9S4o6bVbhg5xHwISwtdi.	RONGALA MANOJ	7731010977	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N	\N	\N	\N	\N	\N
+cmv0lfkcy065p10e0zcil8wvi	26UEECV0049	26ueecv0049@student.gvpihlr.edu.in	$2a$10$xQHKa9o1Q7IoBjbdohCQSOYuMuFqjl6h9ouEL24itpbOVjMGNvYc6	VADRA PRAVEEN CHAND RAHUL	8522965959	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N	\N	\N	\N	\N	\N
+cmv0lfkdd06bq10e0vo9ybw0s	26UEMEC0018	26uemec0018@student.gvpihlr.edu.in	$2a$10$5kA/umEqxAJYlCzfFNbok.JcsyA1AMosM5hr3mn5TIFKqxEBroVJC	GORLE MUKESH	9010544525	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkdt06hp10e0079oc9q4	26UEMEC0032	26uemec0032@student.gvpihlr.edu.in	$2a$10$E5WIkIhjBU/pY9BriMf/6.ezZmnyTFJEcTuJZlylz3hu5Iwj1e4Qy	KONNI SAI HEMANTH	9951769846	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N	\N	\N	\N	\N	\N
+cmv0lfkdu06ia10e0za2w06kf	26UEMEC0057	26uemec0057@student.gvpihlr.edu.in	$2a$10$c5m9QX2Cek3j9S/cx4Q9s.LU3UH9tz2u7Z5H7zzjhQ/hUgHjeI03m	TATA SRI VARSHA	9441117848	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N	\N	\N	\N	\N	\N
+cmv0lfke906nx10e0fopkd337	26UEMEC0066	26uemec0066@student.gvpihlr.edu.in	$2a$10$WWDZ/kBQ/Xdkvv/vQkHPr.dyH7UnS4uQFmhHrMxTpuI2Ghj.gDoIm	BOGA DINESH VENKATA YADAV	7659933999	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N	\N	\N	\N	\N	\N
+cmv0lfkea06oi10e0p6yhzd2j	26UEMEC0079	26uemec0079@student.gvpihlr.edu.in	$2a$10$isneTro9j/.vhK/hLOFWeuL2.LAGyJGCt4kyEdVWg9JkKHBztJRzu	MATURI NANDA GOPAL	8639377030	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N	\N	\N	\N	\N	\N
+cmv0lfkeo06u810e0zb33e9pv	26UEMEC0089	26uemec0089@student.gvpihlr.edu.in	$2a$10$nXGAvUAgVmoUA7MiMhjkAuKyNt7ilCt22xZPmdO73ozHgQNCnIJ6y	ONUMU SHYAM SHANKAR	7386460380	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkep06up10e0vm4y020q	26UEMEC0110	26uemec0110@student.gvpihlr.edu.in	$2a$10$VxSZVsv9kkW720b2Z6J1IOBbWiqiAuySxdSS6hL684mNZBoukR1ta	KANDI GOWTHAM	7095556156	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkf5070h10e0om84oks4	26UEMEC0116	26uemec0116@student.gvpihlr.edu.in	$2a$10$lCKR7tBQ1lTTEqCvovIdNOYOzyZM2ixKg01taZpeefTm2kG7vQ4J2	Pathri bharath	6303539401	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N	\N	\N	\N	\N	\N
+cmv0lfkf6070v10e07dzjzcby	26UEMEC0129	26uemec0129@student.gvpihlr.edu.in	$2a$10$LF/VkbEe8IKu7px3R5WyeOw66dVQJGJekIqfZKPcaj5Fik9LpSrbK	KOMARA MAHESH BABU	9030881102	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N	\N	\N	\N	\N	\N
+cmv0lfkfl076w10e0zmj1kkch	26UEMRB0009	26uemrb0009@student.gvpihlr.edu.in	$2a$10$iyRNcM1BgW.GYcGHk1q72unyz5tJ0ANd5jJKe8mkGVKnH6TAjcDKu	NAKKA MANI DEEP	7095941914	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N	\N	\N	\N	\N	\N
+cmv0lfkfm077010e0uymjgd4n	26UEMRB0018	26uemrb0018@student.gvpihlr.edu.in	$2a$10$FmTjYdC9pGoxKSKXppohNe9F0MyQHPqCzWefmQwl30xBopHII3e1e	YANAPU BALADITYA	9032174975	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N	\N	\N	\N	\N	\N
+cmv0lfkgc07d710e04kck74iq	26UEMRB0037	26uemrb0037@student.gvpihlr.edu.in	$2a$10$5ZwZO8YCIb1pQlH9tihEVuEdnlO7LApO84/5T.v.pXpzQg04QAQom	CHUKKA SAI SUDWIK	8106255559	t	f	\N	0	\N	2026-10-09 06:37:40.813	2026-10-09 06:37:40.813	\N	\N	\N	\N	\N	\N
+cmv0lfk9e04rr10e0cspm38h2	26UEECE0120	26ueece0120@student.gvpihlr.edu.in	$2a$10$oc26.mqzLlHmmrLLdaOdFeOff2urC8KLLotm4La0wPPwlmKCy4gB6	P UJWAL KUMAR	9949007796	t	f	\N	0	\N	2026-10-09 06:37:40.561	2026-10-09 06:37:40.561	\N	\N	\N	\N	\N	\N
+cmv0lfk9s04xe10e0hgp5jy9o	26UEECE0121	26ueece0121@student.gvpihlr.edu.in	$2a$10$SKSBaNVjvfFmdOtq9zQ7POzgAWJ4BhvBTPtc7GqohdWCGRl.2ZcwK	PALLI VEDA LATHA	9989719385	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfk9t04xq10e044l940p1	26UEECE0136	26ueece0136@student.gvpihlr.edu.in	$2a$10$sfh0PL6P8hSPI4/TanG4A.xx8ixnXDf7dACkHnyNS9PRrIUhnd1Bu	RAAVI VARSHINI	8341110228	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfk9t04xr10e03z7acqby	26UEECE0135	26ueece0135@student.gvpihlr.edu.in	$2a$10$zeE6Et7ueZgnFkcOylzlX.CIi0ymtaFcJWg8HHEzddJCliGtcseme	POTNURU TRISHANK	8712829866	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfk9u04y110e0eoi1bebk	26UEECE0144	26ueece0144@student.gvpihlr.edu.in	$2a$10$QNPHXGP/yslilvkycqFLzeVGJxJ7BtcJYfc8zKdiwIW7JFfGl3tse	SANKABATTULA HARSHA VARDHAN	9885199959	t	f	\N	0	\N	2026-10-09 06:37:40.577	2026-10-09 06:37:40.577	\N	\N	\N	\N	\N	\N
+cmv0lfka8053o10e01atgpvu5	26UEECE0151	26ueece0151@student.gvpihlr.edu.in	$2a$10$z3E00YQ/DBxfLRSu4ZynXOzJTwwBJ5510ymWgxOFTzk2PHlYk0nAa	TONTIPAKA JAYASREE SHANKAR JASWANTH	9985039988	t	f	\N	0	\N	2026-10-09 06:37:40.592	2026-10-09 06:37:40.592	\N	\N	\N	\N	\N	\N
+cmv0lfka8053z10e0f0dstd4n	26UEECE0162	26ueece0162@student.gvpihlr.edu.in	$2a$10$eeJEoFiWe0FQAqnk/BJ1DOgDyhVxpPFcggzxdwHDbQSP9Qzd8k1OO	MORAMPUDI LITHIKA SANTHOSHI	8019797535	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N	\N	\N	\N	\N	\N
+cmv0lfka9054610e0cuoc0unh	26UEECE0168	26ueece0168@student.gvpihlr.edu.in	$2a$10$DaIDY.w8RgI9L448sNrhA.eFjmFIiwBxFJq4HxFE7aE7M4OqEyG6e	ALLURI SHREE HARSHINI	9581893866	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N	\N	\N	\N	\N	\N
+cmv0lfka9054b10e0dodx4pka	26UEECE0157	26ueece0157@student.gvpihlr.edu.in	$2a$10$s5lny6JSZ567VHzca03dPeCiyBg2I7Dpczbuk9malpbj7EtWyUApe	KANCHAGARA GANESH VISHWATEJA	7382108278	t	f	\N	0	\N	2026-10-09 06:37:40.593	2026-10-09 06:37:40.593	\N	\N	\N	\N	\N	\N
+cmv0lfkao05a210e0t3i6bfd4	26UEECE0179	26ueece0179@student.gvpihlr.edu.in	$2a$10$EgopwcHOrD8pg5eWlhksp.MxgAebDU/tCEVWtL6vHeBWPS0L7RTB6	RUTTALA YASHWANTH	9000662564	t	f	\N	0	\N	2026-10-09 06:37:40.608	2026-10-09 06:37:40.608	\N	\N	\N	\N	\N	\N
+cmv0lfkap05a610e0mbhoi3r9	26UEECE0182	26ueece0182@student.gvpihlr.edu.in	$2a$10$vTkocY1KxqoXWCTRZuByc.KGlHM0ESHM.w76vEZcHEQdNGKSuNRci	PILLA SRAVANTHI	9885365628	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N	\N	\N	\N	\N	\N
+cmv0lfkap05ad10e00tgpn9yi	26UEECE0193	26ueece0193@student.gvpihlr.edu.in	$2a$10$W29H0CgHQ4ovkAg1nxOJ5.HOOrL0/1.Cc/x0NiDl6xKEzrOFNai9C	ARUGULA DINESH	9281106149	t	f	\N	0	\N	2026-10-09 06:37:40.609	2026-10-09 06:37:40.609	\N	\N	\N	\N	\N	\N
+cmv0lfkb405gd10e0b22z5blr	26UEECE0205	26ueece0205@student.gvpihlr.edu.in	$2a$10$ZhIqU35z7IlreZxngYtTwu/sLlzP7We26NBVfskSxK6xKqbJsIOBi	DHAVALA LOUKYA	9347828040	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N	\N	\N	\N	\N	\N
+cmv0lfkb405gb10e0ps085ojm	26UEECE0204	26ueece0204@student.gvpihlr.edu.in	$2a$10$lmTIX7f8Rvx4KFEbnSYw/urIpYAeY307Ssp/Ovqz1TiwDX/2Z25zW	AKULA YASWANTH KUMAR	9985337016	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N	\N	\N	\N	\N	\N
+cmv0lfkb405gf10e0gpl499v8	26UEECE0207	26ueece0207@student.gvpihlr.edu.in	$2a$10$2rtp4npgssbSgy/MCZHX2.hTE2/cJTOhUtrv6Qy20FbQsN2nj5rFG	JAGUPILLA GANESH SAI	9440375767	t	f	\N	0	\N	2026-10-09 06:37:40.624	2026-10-09 06:37:40.624	\N	\N	\N	\N	\N	\N
+cmv0lfkb505gk10e0zfca1kxy	26UEECE0211	26ueece0211@student.gvpihlr.edu.in	$2a$10$Lsi0JXJ.KpYn73I4FGJvDuBBXFfw9ZJ44.RC/rjYUq4NZbS5mHJ6W	THIMMAREDDY MANASVI	8328383882	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N	\N	\N	\N	\N	\N
+cmv0lfkb505gi10e0p9ctw9uw	26UEECE0209	26ueece0209@student.gvpihlr.edu.in	$2a$10$iunrDHRD/wYfWSU8Z40rBOxkJ2vDrzl/N1i.eUOTkhQSZqRXkPe7C	NEMANI SWARNA MAHATHY	9502480381	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N	\N	\N	\N	\N	\N
+cmv0lfkb505gl10e04zy2x927	26UEECE0213	26ueece0213@student.gvpihlr.edu.in	$2a$10$PiR9haksuwsaIZDXVgclquGLB4EDPZObpwhJdT5OT/93TS0Zcyol2	ALLIPILLI JAIRAM	7386690600	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N	\N	\N	\N	\N	\N
+cmv0lfkb505gp10e042erbgjk	26UEECE0216	26ueece0216@student.gvpihlr.edu.in	$2a$10$8goB85KBP6.3JTbE8v2feegqDCb9UWHdVogvx3wAJrRa/H0fAzgm2	ESAI VISHNU VARDHAN	9391730346	t	f	\N	0	\N	2026-10-09 06:37:40.625	2026-10-09 06:37:40.625	\N	\N	\N	\N	\N	\N
+cmv0lfkbk05mi10e0nl4oqxbk	26UEECE0222	26ueece0222@student.gvpihlr.edu.in	$2a$10$zA2Y2VtMftIZ5t9AgmkuEuMlQZwj1Ykh31f2skvgtVGT4kGEh5h7S	GOLUSU V S S JAGADEESH	8333838563	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N	\N	\N	\N	\N	\N
+cmv0lfkbk05mg10e00jzl7bd4	26UEECE0227	26ueece0227@student.gvpihlr.edu.in	$2a$10$EqtP74Mf6T/MpshrbDV2IeCrPRU.DzHnz/zE.pVeTVVwk060KlQ02	PULUGU AASHISH VIJAY SAI	7024843431	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N	\N	\N	\N	\N	\N
+cmv0lfkbk05mn10e06887g3ac	26UEECE0232	26ueece0232@student.gvpihlr.edu.in	$2a$10$ECU6EpCjhC0R0/nHpSg52uwW4/pp8Ah6rhc2jfaBWH6K1WQz9yxGm	PULI TEJASWINI	9490036447	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N	\N	\N	\N	\N	\N
+cmv0lfkbk05mm10e0xwht3b35	26UEECE0231	26ueece0231@student.gvpihlr.edu.in	$2a$10$XRiUkUdyjTUYpHoDAGTDu.9tiuyAE.iSTxbUrKGTMReXRPZ.8fxey	AVANTSA VENKATA PARIMALASRI HARINI	9490261183	t	f	\N	0	\N	2026-10-09 06:37:40.64	2026-10-09 06:37:40.64	\N	\N	\N	\N	\N	\N
+cmv0lfkbl05mx10e0smi0nfmy	26UEECE0239	26ueece0239@student.gvpihlr.edu.in	$2a$10$vfvNmBQ6iyWtRh2h4pQ0NesMtG6KOXsIzTmfC7nTYCa6C/rhpzjk6	SALADI SAI SURYA TEJ	9989701978	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N	\N	\N	\N	\N	\N
+cmv0lfkbl05my10e0ul9ym9p8	26UEECE0242	26ueece0242@student.gvpihlr.edu.in	$2a$10$QMQkFB952VN.q.AsZfM4M.jLytjgmycG.PDfOpj7B4jfKWRjDo6Ju	GULLIPILLI HASHINI	7981861760	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N	\N	\N	\N	\N	\N
+cmv0lfkbl05mw10e0mw31rxzc	26UEECE0238	26ueece0238@student.gvpihlr.edu.in	$2a$10$6jFxs.PWwQsYiqPIdYyqH.cJZ9bzcRh.nc2465ZNzbGvMK9ibapo2	NOWDU SIVA SANDEEP	9440340698	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N	\N	\N	\N	\N	\N
+cmv0lfkbl05mv10e0t7ythl9b	26UEECE0241	26ueece0241@student.gvpihlr.edu.in	$2a$10$yZLl8D0kpzf190D74bxg3O060J9r84XUFhGbIftzzed9vaopEms/u	YADLA VENU ABHIJIT REDDY	9989014886	t	f	\N	0	\N	2026-10-09 06:37:40.641	2026-10-09 06:37:40.641	\N	\N	\N	\N	\N	\N
+cmv0lfkc105sx10e0uvn49baq	26UEECE0257	26ueece0257@student.gvpihlr.edu.in	$2a$10$FzFLYyDm/YJF1Pl.wIpKKevpq/oi9EhXNKzTX1JGBLUR50lOh9TTW	GORJA NIRANJAN NAIDU	7995806017	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N	\N	\N	\N	\N	\N
+cmv0lfkc105ss10e0p6vtirc9	26UEECE0250	26ueece0250@student.gvpihlr.edu.in	$2a$10$KFt8FGZUBV7m1zHL0jzApOuvjUS0YWmH68m4liYiCpIAX5QlqbTRq	PILLA JAYANTH SREENIVAS	7981773243	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N	\N	\N	\N	\N	\N
+cmv0lfkc105sq10e0ibifkxn7	26UEECE0254	26ueece0254@student.gvpihlr.edu.in	$2a$10$04f4COmQicMoN27GSzKzkuh7XmXubiI9/TXA5T56y36NzlLffYIgG	ANANTARAPU SAI CHETAN	7904752044	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N	\N	\N	\N	\N	\N
+cmv0lfkc105sp10e0arrdx41d	26UEECE0249	26ueece0249@student.gvpihlr.edu.in	$2a$10$TFx2HB1vD.yc3H3Au0zRy.jJHFFii3vZt88Nqs5DnhNWE1ElAJjOC	CHINTAKAYALA ASHOK	9963815091	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N	\N	\N	\N	\N	\N
+cmv0lfkc105so10e00up58vwf	26UEECE0248	26ueece0248@student.gvpihlr.edu.in	$2a$10$ccwqD5wif0/7Y4qpl0k/juKkbSSelXjYAwAP/mWGmd70m15ZG9H4.	KOMARAGIRI JESWANTH ABHISHIKTH	9885569987	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N	\N	\N	\N	\N	\N
+cmv0lfkc105sw10e0silxfdpw	26UEECE0252	26ueece0252@student.gvpihlr.edu.in	$2a$10$KQApOilYYWn9iy2aypW/oeQpNFlOHjOK/a92X9xWO3wJTFag7Q5zy	ADDURU KANAKA PRAGNA	9390057519	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N	\N	\N	\N	\N	\N
+cmv0lfkc105sy10e0iuiipp07	26UEECE0247	26ueece0247@student.gvpihlr.edu.in	$2a$10$BdT9Na2z39sOmSQXp20tPebM2x04kXLG68Er3PwayUeXdRILgvvMa	MAHAVRATAYAJULA LAKSHMI RAJESWARI SAHASRA	9393456575	t	f	\N	0	\N	2026-10-09 06:37:40.657	2026-10-09 06:37:40.657	\N	\N	\N	\N	\N	\N
+cmv0lfkc205t010e0nf43w6g2	26UEECV0002	26ueecv0002@student.gvpihlr.edu.in	$2a$10$2./l7lMYnhsi5c8ZoTzDIOQeq4kEpFlcGVMY6sXsSeAdqw3z0AWeq	ALLANKI SESHANK	7730071750	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N	\N	\N	\N	\N	\N
+cmv0lfkc205t410e0lvk3f995	26UEECV0009	26ueecv0009@student.gvpihlr.edu.in	$2a$10$.5VEGCKAFRNVGNPNbCzwGOGNkjYBV0p0hztTJyPDGPoKM2RWX3l1K	GINAGAM LATIKA SRIPRIYA	7207577373	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N	\N	\N	\N	\N	\N
+cmv0lfkcg05yx10e05jk0u8yj	26UEECV0014	26ueecv0014@student.gvpihlr.edu.in	$2a$10$FVGQFQwt1sq3Ei2bHZmBEuzGGKVZJwCjfBScNY72Nh4hVu69k1Q8G	K SAI SURYA ASRITH	6302691154	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkci05z910e0l08pjsto	26UEECV0030	26ueecv0030@student.gvpihlr.edu.in	$2a$10$DyNJ0UtzZ5H4UExT4N8/p.mEOeV1f2QN8Lkaz7tzzNMerLGCSPBty	MUPPARAJU PRAHASITHA	8919484609	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkcx065710e0xekbd6n3	26UEECV0043	26ueecv0043@student.gvpihlr.edu.in	$2a$10$ex.Uo0yiT1fnGQZXd79WKe8SBO15kl6NVKwujEnRUEgWIOXQnuspS	TYADA YESWANTH VAISHNAV CHARAN	9989073223	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N	\N	\N	\N	\N	\N
+cmv0lfkcy065i10e0q2mqceey	26UEECV0054	26ueecv0054@student.gvpihlr.edu.in	$2a$10$YVQM0jBYUxLY4NxYti8M..Tyk.MTOfJI0T0PdVL8JDskLrJwECyXO	YERRA RESHMA	7093779404	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N	\N	\N	\N	\N	\N
+cmv0lfkdd06bp10e0bfyd32da	26UEMEC0020	26uemec0020@student.gvpihlr.edu.in	$2a$10$KbXip7dn0k6EMo5mNLGVuemTtpWuVEc1N/tZ4ylrjhl0SyzxsOZfW	VIPPARTHI PRATHIK	9954879708	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkde06c010e0vveisw7y	26UEMEC0031	26uemec0031@student.gvpihlr.edu.in	$2a$10$pUnsB1nYdoJHAcZUTz62u.6lJm/oAwUwolST7Sx3bTvY.MpsWnC9G	BETA SURYA PRAKASH	9014144214	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkdt06hv10e0q39a0vw3	26UEMEC0042	26uemec0042@student.gvpihlr.edu.in	$2a$10$xR9LeDxrmBtx46NZ/h2tS.Tsi3VV1iUPK4erYIMBkGJbavGraAUc6	NEELATHI ROHITH SAYIE	7989186717	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N	\N	\N	\N	\N	\N
+cmv0lfkdu06i410e01gjx0i8s	26UEMEC0052	26uemec0052@student.gvpihlr.edu.in	$2a$10$q53n4aWa6wrad6MDR9AD8.0FA5T8iEL.I.QsCiziyLPciGpnApCsm	SHAIK NIHAN	9154216869	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N	\N	\N	\N	\N	\N
+cmv0lfkea06oe10e09nvk90ri	26UEMEC0077	26uemec0077@student.gvpihlr.edu.in	$2a$10$kDs6l1TB8U9AkbGysI9s5.ViO90.czYROGkznFJnwfbXjyqEqRl4q	PITHANA POORNA BHARATH	9908600257	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N	\N	\N	\N	\N	\N
+cmv0lfkeo06uf10e0hlmi3hx8	26UEMEC0097	26uemec0097@student.gvpihlr.edu.in	$2a$10$1cYznM5Eo5jbnFDWPoDeuO3MiBX7dlf.vM8H/B1uANPsn//Xb7tom	KOTTALI YASWANTH	9912681603	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkep06un10e0a1aw8e2o	26UEMEC0107	26uemec0107@student.gvpihlr.edu.in	$2a$10$K1UoBpZgow47MKBQaqsr1.x6e6oMif6tKeOB.YWsNfwt6HP1qJra2	SHAIK SOHAIL AHMED	9989482576	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkf5070n10e003g38x66	26UEMEC0118	26uemec0118@student.gvpihlr.edu.in	$2a$10$HM0UMDHdz3tnEjGzSOqaNuXvPoFucj3/D/HmEwnyz6FNN0GtmNOU.	RAVADA GANESH KUMAR	9542022347	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N	\N	\N	\N	\N	\N
+cmv0lfkf6071110e0ft7tmqiu	26UEMEC0135	26uemec0135@student.gvpihlr.edu.in	$2a$10$bpMEz3cOrd1NbvMgh7OOpeHb8S/Y6fAPkQPFBuXqz10blc1LcvEq2	YAGATI LIKHIT KUMAR	9177331604	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N	\N	\N	\N	\N	\N
+cmv0lfkfl076v10e0nm02mr1s	26UEMRB0005	26uemrb0005@student.gvpihlr.edu.in	$2a$10$QZR2DDTsFOwDVTWhaGqsT.0qv0bSJiobjkR5o1Ekix.aCZbkvdiYG	INJARAPU DRUVAS BALAJI	7075170635	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N	\N	\N	\N	\N	\N
+cmv0lfkfm077910e0t9xau8jo	26UEMRB0023	26uemrb0023@student.gvpihlr.edu.in	$2a$10$5sqPtNdTuCXfp6LyhK15H.FidvzVKhDGK9EBlrjYtnQ6jRkGkOfNa	YERUMAKU TARUN TEJ	9948607520	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N	\N	\N	\N	\N	\N
+cmv0lfkgc07d310e0txu8t8nr	26UEMRB0033	26uemrb0033@student.gvpihlr.edu.in	$2a$10$N.EIiAFpw18ayAig1D.ZNeIXircGniMGjRzJVez3vrvjFvumTYuci	BOLLA RITHESH	9059372897	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N	\N	\N	\N	\N	\N
+cmv0lfkc205t310e04o0rik2k	26UEECV0008	26ueecv0008@student.gvpihlr.edu.in	$2a$10$0oSaNneuc1Kxf1htKWhnIONszJVwJEcdAjso7io1ffNgmNcyokj9a	GARIKIPATI SAI VIGNESWARA PRAMODIT	8978021288	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N	\N	\N	\N	\N	\N
+cmv0lfkcg05z410e0tx4blow9	26UEECV0023	26ueecv0023@student.gvpihlr.edu.in	$2a$10$1/JCjspKXKHYwyH2VXp0qOXVKupvbeXZJylmdTBxZLeu3syXc2hCi	KALABANDALAPATI VENKATA SAI HARSHIL	9177765914	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkci05zg10e04vyalmnz	26UEECV0037	26ueecv0037@student.gvpihlr.edu.in	$2a$10$1/HYm8J.cXM3wASOXRw1T.qo.eEcVCTCWkfOtibWQorlDMnLB9TnC	PULAPA HARENDRA NATH	9553355577	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkcx065510e0w91w1xhf	26UEECV0040	26ueecv0040@student.gvpihlr.edu.in	$2a$10$Kl8pSeSlrFZM56P33OJv8.NXnXPz2QLT9iDs..3WrwnXLllhkviU2	REESU GREESHMA HASINI	8008215254	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N	\N	\N	\N	\N	\N
+cmv0lfkcy065l10e0bbowpfjz	26UEMEC0001	26uemec0001@student.gvpihlr.edu.in	$2a$10$ZSOXV7ELcF7ZfaZRacWedepyac9vCxGJdM3s6apzUArnWEjYoxrwi	BAGGAM BHAVANI SIVA SAI SREEKAR	9246662355	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N	\N	\N	\N	\N	\N
+cmv0lfkdd06bn10e0wxi35xx6	26UEMEC0017	26uemec0017@student.gvpihlr.edu.in	$2a$10$.QJeasEWYkWibPDfFiRwlOsQFly6wFySb.ZMy6Yni7AQTemi1UHbS	GEMBALI JAYA VARDHAN	8340057383	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkde06c110e02vz8hx33	26UEMEC0019	26uemec0019@student.gvpihlr.edu.in	$2a$10$zM7kO4JpzVmmg.K8J9FXtO9p.oJStrg9KSkmM76PvDwR9xIzeohES	KOTEDDI DEEPAK REDDY	7702497922	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkdt06hx10e0bypdsta5	26UEMEC0045	26uemec0045@student.gvpihlr.edu.in	$2a$10$GGq8pbhhT1Lt6D1H.f7l.ObSdbuFXs4NOy5as7sFHjsQQtgg8SYRO	PENTELA VIRI	7396127757	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N	\N	\N	\N	\N	\N
+cmv0lfkdu06ib10e0hg2eob58	26UEMEC0046	26uemec0046@student.gvpihlr.edu.in	$2a$10$.3zmpEhv5uJRdbxJrdNdSu9AhuWSJgfSnwjJdDbaxG48PTP4UC7PC	PILLI MOHITH VIKASH REDDY	9391288485	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N	\N	\N	\N	\N	\N
+cmv0lfke906o810e07oqaiy4k	26UEMEC0071	26uemec0071@student.gvpihlr.edu.in	$2a$10$lVIedZpsx4ZiDee.fcvhyukBEjpS2n9LvA0cV.kVDnfa/qfBGhRiu	NEELAMSETTY SESHWAR	8143112759	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N	\N	\N	\N	\N	\N
+cmv0lfkea06ok10e0rd2soagx	26UEMEC0083	26uemec0083@student.gvpihlr.edu.in	$2a$10$dYNDi.AglTmg.E3nWv7XSuEBk9hm8CScCwBuTbBxTKnmjlDCiAApG	NARAYANA SETTY RAGHAVA	7989265501	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N	\N	\N	\N	\N	\N
+cmv0lfkeo06u710e00ouju5rw	26UEMEC0084	26uemec0084@student.gvpihlr.edu.in	$2a$10$0YKOCiY0eiKoUNWF2D.Hmu1JanHmbJYBNgXdWGz4Nmv9jKos8OwfO	PATHIVADA YASWANTH VINAY	9949971802	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkep06uj10e0g73f94y0	26UEMEC0100	26uemec0100@student.gvpihlr.edu.in	$2a$10$J0taV.dAlVO5Q6AQrhmKWuKPKVy4JY7vYkcvAxpWD4N0yKv5MN36O	DHARMANA KALYAN RAM	9963063209	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkf5070f10e02dl3oadh	26UEMEC0111	26uemec0111@student.gvpihlr.edu.in	$2a$10$WpJOX8lyjXW2KoHc8HHA2euQxYxqWuZX5gW.ddIB9ea6WbszpFjS6	CHAPPA HITESH	9296102789	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N	\N	\N	\N	\N	\N
+cmv0lfkf6070x10e0xhld35kq	26UEMEC0131	26uemec0131@student.gvpihlr.edu.in	$2a$10$xxCNshgnD1abCPRBI.vuGuwV2kP2HeqN2Rbi8etcsDGivxY85EftK	MORAM BALA VARDHAN KUMAR	9493574464	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N	\N	\N	\N	\N	\N
+cmv0lfkfl076n10e0yms9sw6i	26UEMRB0003	26uemrb0003@student.gvpihlr.edu.in	$2a$10$KGyrbpBtuL.eocaU.qi0TuNl/bX.jMGVMndbON/ZPa7KWpEoX7pX6	BANDARU ROHIT	6301548053	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N	\N	\N	\N	\N	\N
+cmv0lfkfm077610e0foejpbh0	26UEMRB0020	26uemrb0020@student.gvpihlr.edu.in	$2a$10$pxVTMOa/L93YoMSJgVloW.9sIE/J0.wgfHyqCsP8BpHab11pTvqUW	USURUMATI MRUNADHAR	9440000103	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N	\N	\N	\N	\N	\N
+cmv0lfkgc07d210e0837hdeh6	26UEMRB0029	26uemrb0029@student.gvpihlr.edu.in	$2a$10$u/VcEbA2M3bP3xTwQnA6N.sm/ROiPHft64v5mxuoyeABwMRX6syXu	RAMA LOKESH	7416420075	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N	\N	\N	\N	\N	\N
+cmv0lfkc205t510e0t7ewefon	26UEECV0004	26ueecv0004@student.gvpihlr.edu.in	$2a$10$/59akOpUL5gKMf04Our2IehBn8fOuzkemJHclwB8z3lGsDHl/Gnom	VIYYURI VEERA SATYA DURGA REVANTH	6300128872	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N	\N	\N	\N	\N	\N
+cmv0lfkcg05z310e0lulyw7if	26UEECV0022	26ueecv0022@student.gvpihlr.edu.in	$2a$10$iU5.hasCmRhoP4nqCy1Ed.A6vGlkB8aAdoevjYnQFttv0I8H.GRNC	MANDAVA SAI KEERTHANA	8142343999	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkcx065f10e0ox80scg7	26UEECV0051	26ueecv0051@student.gvpihlr.edu.in	$2a$10$w63Yz0/A48xX6X8m.vZVE.bnbydpt2CCWs97ukZbHUZF1FQYFfSau	VASAMSETTI SURYA TEJASWI	9390985995	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N	\N	\N	\N	\N	\N
+cmv0lfkcy065q10e08kolry2t	26UEMEC0003	26uemec0003@student.gvpihlr.edu.in	$2a$10$V9/MNIruu/zNCM4M/FkideSgQlWd2uvIMF4dibNOzAmzTnEc0rY3C	BALLA RAVI TEJA	9182532004	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N	\N	\N	\N	\N	\N
+cmv0lfkdc06bi10e0m0rrktlk	26UEMEC0013	26uemec0013@student.gvpihlr.edu.in	$2a$10$CAu2k1tukKaOM61deI8W4erTFVfclnzZeWLreZFbD6Yrq.H20Reca	ENDALA SRINIVASU	9347292446	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkde06bv10e071nbf2eh	26UEMEC0029	26uemec0029@student.gvpihlr.edu.in	$2a$10$EEItXnwwES7gOY8rxGTwRuYqybOuTKirbEbbZG.EkVTiBt4d.ToXu	KOLLU RISHI RAJ	9553158357	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkdt06hr10e002lp7x6s	26UEMEC0039	26uemec0039@student.gvpihlr.edu.in	$2a$10$e05Lx/QeGfRxITQIJ435g.1dIhrnEM7taKWyNwImcweWxOBSgf3Dq	MUPPANA CHAKRADEV	9290255851	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N	\N	\N	\N	\N	\N
+cmv0lfkdu06i610e0larcg97i	26UEMEC0043	26uemec0043@student.gvpihlr.edu.in	$2a$10$/O4KLcTbiv2huiAtbY1zQ.lzwAZPJ3A.1wQy.gY7lNs9e.N3UmYFu	PALAKURTHI PAVAN KALYAN	7981617656	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N	\N	\N	\N	\N	\N
+cmv0lfke906o310e0em45152f	26UEMEC0067	26uemec0067@student.gvpihlr.edu.in	$2a$10$qOEj48TxLhN1lYboVniZhuhs5.dD61G.5evASm5Iett1wMrchuyqC	VANAPALLI NITHIN	9290053561	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N	\N	\N	\N	\N	\N
+cmv0lfkea06oh10e0u0spp1bv	26UEMEC0082	26uemec0082@student.gvpihlr.edu.in	$2a$10$RSjvdXQElTG.H9U6KSYftOduwsUdXQCxnNXTK2OzsP2r7.yv5FOcy	BUDAGATLA LIKHIL	7675078436	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N	\N	\N	\N	\N	\N
+cmv0lfkeo06u610e0zfaxsqxv	26UEMEC0086	26uemec0086@student.gvpihlr.edu.in	$2a$10$U5T2zQXKxOj38b1JLLveCeG58v9eQ/RtRUAtnyrb2E1/Z2eBcx0Qm	INDUGUBILLI BARALI SRI BHANU	9346013305	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkf5070k10e0e49zdgf9	26UEMEC0112	26uemec0112@student.gvpihlr.edu.in	$2a$10$M8Z/RfHeAHCgy8w5aoEkKei4AA9z00/omv.EMdG4Z.g9N159dA40y	REDDI KALYAN	8985082256	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N	\N	\N	\N	\N	\N
+cmv0lfkf6070u10e0037sj0rh	26UEMEC0128	26uemec0128@student.gvpihlr.edu.in	$2a$10$FrfOFZE4XKUiA0wJzD1cN.GERMxLtVPUcgb/ftRd5GAPgK034CPDi	KODIBOINA RAHUL	9346043642	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N	\N	\N	\N	\N	\N
+cmv0lfkfl076p10e0uzzchh1f	26UEMEC0137	26uemec0137@student.gvpihlr.edu.in	$2a$10$9WClomIhiVPzIiITxH05Ee6yW5tLIlq8w44SZRGMRhZNXrp9ehNuW	Dudi jagadeesh kumar	9392649116	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N	\N	\N	\N	\N	\N
+cmv0lfkfm077210e0ieyug8sl	26UEMRB0015	26uemrb0015@student.gvpihlr.edu.in	$2a$10$ryl27MgRXxyh8Rem7duqjeq6uDpfUoN6MLqdLKMWGeaaoHCZjAt7u	TOTA THARUN BABU	8790367793	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N	\N	\N	\N	\N	\N
+cmv0lfkgc07cw10e0207g47h0	26UEMRB0028	26uemrb0028@student.gvpihlr.edu.in	$2a$10$GzKoeHULIgOhyomvdmD6KOJ4XXxJhubDA8E9h.T94OdrmEuZZw4Ny	KOTYADA SAI BHARAT TEJA	7755889967	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N	\N	\N	\N	\N	\N
+cmv0lfkgd07d910e0u3wd3ztc	26UEMRB0039	26uemrb0039@student.gvpihlr.edu.in	$2a$10$rbbfIodVKkSv.rPlgcKc/eAW2gDOYI9WMae36uzyb6ho6FhPiHega	MAREMANDA SHANMUKH	9491715885	t	f	\N	0	\N	2026-10-09 06:37:40.813	2026-10-09 06:37:40.813	\N	\N	\N	\N	\N	\N
+cmv0lfkc205t710e025ff6ogc	26UEECV0011	26ueecv0011@student.gvpihlr.edu.in	$2a$10$TjCqvyNmgGBfaqe8HX0uZe0hn3PXjvNwK2UKLfzQUkWxjOfBL/qii	GONDELA ALEKHYA	9704855525	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N	\N	\N	\N	\N	\N
+cmv0lfkcg05z010e0wtioqp3d	26UEECV0018	26ueecv0018@student.gvpihlr.edu.in	$2a$10$saxjNepozd5OQfIGT0WkRODEx1EOF3qtrBQiIO7puvNkcdCLCeSL6	IRIGINENI VENKATA SAI PUNIT	7381090094	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkci05zf10e0kzaz5trq	26UEECV0035	26ueecv0035@student.gvpihlr.edu.in	$2a$10$g/W/tHwpOWp58XipMWYr.OWP7i8hRbP7ohFPGLRfabubOnI9kZ68e	PILLA SHANMUKA RAO	8121443748	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkcx065e10e0zenn240i	26UEECV0044	26ueecv0044@student.gvpihlr.edu.in	$2a$10$f8se48XBQYQC73SQ1QGulexJTySdEbyiVcHR6q/U0TCizpsO549/e	SANAPALA JASMITHA	9704054360	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N	\N	\N	\N	\N	\N
+cmv0lfkcy065n10e02pf5hf90	26UEECV0047	26ueecv0047@student.gvpihlr.edu.in	$2a$10$h3x2aIZJHodHKUq9GbN7P.8sH36dNj8uxYeaBD16kw4Ztgr4cIBLi	UMMADISETTY RISHITHA	9440087779	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N	\N	\N	\N	\N	\N
+cmv0lfkdd06bo10e0xrt7pn30	26UEMEC0009	26uemec0009@student.gvpihlr.edu.in	$2a$10$dp7LGmpSQg/3xH.P72Jf2OAAl55KYxisDoDSzrz6R946oRG/HKpJy	CHEEKATI PRASANTH NAIDU	8639902337	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkde06c210e0a5xnwjzd	26UEMEC0021	26uemec0021@student.gvpihlr.edu.in	$2a$10$Un/6PybZg6mzTgTZFKpSfONAmpvmWdoWPGrA6jSo3NPf6/gksAiwm	KALLA TEJAS	9247180040	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkdt06ho10e0fm2f4uat	26UEMEC0035	26uemec0035@student.gvpihlr.edu.in	$2a$10$.SqR.q63JGwhEDlFsy4fsuftEmcbH.cfwk6W96whn46FHuo2CyBeK	KUNCHI AVINASH	7981930879	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N	\N	\N	\N	\N	\N
+cmv0lfkdu06i710e044sxj31v	26UEMEC0056	26uemec0056@student.gvpihlr.edu.in	$2a$10$FBnDCxlQ8SjLQTYaqUS3mOvui..BsVmIoPfxRmCPF7wJWPhkoxpcy	TANGETI JASHITH PAWAN	8309041193	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N	\N	\N	\N	\N	\N
+cmv0lfke906o710e0g51bl4zt	26UEMEC0059	26uemec0059@student.gvpihlr.edu.in	$2a$10$dqN0CHgpaGALfmUIbqW.KeNdqSxTyr8RxB4kAWqgDPFAXWF.bBRuS	YEDLA VENKATA SAI HARSHITH	7337478070	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N	\N	\N	\N	\N	\N
+cmv0lfkea06oj10e077mgp21j	26UEMEC0080	26uemec0080@student.gvpihlr.edu.in	$2a$10$4rDqkseqLMtptM0tI1ACJOBl7Sz70OCPShNQeJpmU2jgRwEQ7WrPK	POTHINA GOPI	9959335917	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N	\N	\N	\N	\N	\N
+cmv0lfkeo06uc10e0dsdcm66w	26UEMEC0091	26uemec0091@student.gvpihlr.edu.in	$2a$10$zCZV9WSXgXFq8FoM8DdkvuYxsbf8tnkGhzJx1ba71PEeTq25rjPC2	BATTINA BHARAT CHANDRA	7989157516	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkep06ur10e07720t8jw	26UEMEC0099	26uemec0099@student.gvpihlr.edu.in	$2a$10$lnQUUtzFXKFv9OIXqU1vRe0WhbtCWO91aGmfiOePi5TPqJp6zahfi	OMMI UDAY SAI MANIKANTA	6305554046	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkf5070l10e01nihtx34	26UEMEC0120	26uemec0120@student.gvpihlr.edu.in	$2a$10$Gt1VNx4yQgCfXBE4/16DkeIN5siIZ7IU4lnKeoLFv1nipgyGVU3Rq	PYLA RAJA ROHIT	9398896275	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N	\N	\N	\N	\N	\N
+cmv0lfkf6070s10e0zf9ropcl	26UEMEC0126	26uemec0126@student.gvpihlr.edu.in	$2a$10$iFntC1T9/NbFzXrMkW2txejyXOuqwpO5ld/iRMTVsFmTNfevheaLC	ZETTI NIKHIL RATNAM	6302662503	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N	\N	\N	\N	\N	\N
+cmv0lfkfl076x10e0szu995r4	26UEMRB0011	26uemrb0011@student.gvpihlr.edu.in	$2a$10$34R3JJh7QnhVXbykgX.c/ePz3YRH6Y0lFtbHlAbY6HaNiEvyqTiwu	PERAMBUDUR SHYAM SUPRATIK	9010244944	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N	\N	\N	\N	\N	\N
+cmv0lfkfm077310e02jed44tw	26UEMRB0019	26uemrb0019@student.gvpihlr.edu.in	$2a$10$/ykGAIFclBeMEp4R7tDHFe4PD7wWow5NNRwyolstXdOA4Tr3PgWn6	YERRAMSETTI DILESH SRIRAM SAI	6304401274	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N	\N	\N	\N	\N	\N
+cmv0lfkgc07d610e0fbbm4mob	26UEMRB0038	26uemrb0038@student.gvpihlr.edu.in	$2a$10$xmXvKhr1Gs9zphA0pdIq/.YHnlQALOXTNdlg5TtFchoghNN6UTwOe	KANDI RINEE SUSHANTH	7207074630	t	f	\N	0	\N	2026-10-09 06:37:40.813	2026-10-09 06:37:40.813	\N	\N	\N	\N	\N	\N
+cmv0lfkc205t810e06gm8t0ca	26UEECV0012	26ueecv0012@student.gvpihlr.edu.in	$2a$10$R2J4dYkUHv30MuxSBO.IPOAyN8tSEwfOVt8.FQCgs1RB78QcwUeoS	GURI SHANMUKH SRI SAI	9966984455	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N	\N	\N	\N	\N	\N
+cmv0lfkcg05yy10e0ai2kxbq7	26UEECV0020	26ueecv0020@student.gvpihlr.edu.in	$2a$10$sYpimttm2CXa7ANXQY.rIOTiKyVy78vHGu4Uiv20NFSuw2Juek3/i	MAMIDI INDHU VARSHITHA	9440837151	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkcj05zk10e0i48p73lt	26UEECV0026	26ueecv0026@student.gvpihlr.edu.in	$2a$10$qFU3MZIYKGBfAoRU62MvRujA5K6MpeserFE9PFE3PL82G7/dO4A7m	NAKKA NAMRATHA MAHI	7569611852	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkcx065610e0u9y84yhs	26UEECV0039	26ueecv0039@student.gvpihlr.edu.in	$2a$10$XP0BNR0fjt3ePSS6QwoA1u3zPlba9tjHcZHhK9glv0ylQvc7gkVea	RATALA VENKATA SRI	9014380661	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N	\N	\N	\N	\N	\N
+cmv0lfkcy065m10e09x3999yp	26UEECV0057	26ueecv0057@student.gvpihlr.edu.in	$2a$10$vVcoopBA/MKSECc5UshOAO09nju0BhoXiBJt4dxjUnEeNU44KkEyO	VISAKOTI HARINI	9492023167	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N	\N	\N	\N	\N	\N
+cmv0lfkdc06bg10e0j7qrmj2o	26UEMEC0008	26uemec0008@student.gvpihlr.edu.in	$2a$10$OrcQC6gORgryYMTQhRHBHeQkXuC6RdAhkaXZrK19.PN9OVOBJW6We	CHAMARTHY VEDA VIVEK	7993398996	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkde06bt10e001f0ilxh	26UEMEC0024	26uemec0024@student.gvpihlr.edu.in	$2a$10$Td4IAOUIYiWuHaYswlQIPOzHo9pF8SIJ4wovq.OO0mIsnwUNDXaOG	KARROTU VENKATA SAI SIRI VARSHINI	9959899096	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkdt06hn10e043ez3h4w	26UEMEC0037	26uemec0037@student.gvpihlr.edu.in	$2a$10$VUf7Cx.WnPGzaW4R/GBxweQovhMynk3l.IRq9MgV8eAY90DHRi/xm	MANDA BHAVESH KUMAR	9032460316	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N	\N	\N	\N	\N	\N
+cmv0lfkdu06i010e0usp404de	26UEMEC0049	26uemec0049@student.gvpihlr.edu.in	$2a$10$WKWL.Xxk5kG4BBGKQ7ykBOoFtLy5oTkSYFDVIdh5jMlySqVeBDwfm	SAPPATI GUNASEKHAR	7981295829	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N	\N	\N	\N	\N	\N
+cmv0lfke906o110e0t5iwu115	26UEMEC0065	26uemec0065@student.gvpihlr.edu.in	$2a$10$opw.o/x6vpa8MxTsoeFDvu1ya7yFq6Y8gBZvrCDC1j.ooA21N0.cS	MENDA PRUDHVITEJA	9441320420	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N	\N	\N	\N	\N	\N
+cmv0lfkea06od10e0le1s3d40	26UEMEC0074	26uemec0074@student.gvpihlr.edu.in	$2a$10$CdRTGwW8gtLC2u8egQC8/ejyTMhwcV8vXNjAAKkH5hrR45nG8J996	M MOHAN VAMSI	9885057992	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N	\N	\N	\N	\N	\N
+cmv0lfkeo06u910e0oq62e3fc	26UEMEC0087	26uemec0087@student.gvpihlr.edu.in	$2a$10$mtyJKPzpV6z0rXRCpd.geOsoF/adTgYPHKDkHamDOy4bqGCbcv1rK	GADI TARUN	9618221848	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkep06um10e0gkv9wgyv	26UEMEC0104	26uemec0104@student.gvpihlr.edu.in	$2a$10$qMPgeb8yWoKHfL5P1eNKxeqkES5BGRmNSvi0TBOrdmdaCDzb49MGu	PINAKANA SIDARDHA	7690915627	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkf5070j10e0c2a8e3tn	26UEMEC0119	26uemec0119@student.gvpihlr.edu.in	$2a$10$hhWUZ5uKq.uVGoQUja1joOCxq91bsr.58olAMdE/A8tc1Dl1Szxt2	GAJULA JWALA PRASAD	9441872429	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N	\N	\N	\N	\N	\N
+cmv0lfkf6070z10e0mmi2mr01	26UEMEC0133	26uemec0133@student.gvpihlr.edu.in	$2a$10$QgBZy57PKk2nVlTFaAOiU.wzwVWJsSwh8iU7XLgsTBU3emtGF83F6	Mypala Sai Satya Phanendra	9494612467	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N	\N	\N	\N	\N	\N
+cmv0lfkfl076t10e0bpt6fg0p	26UEMRB0008	26uemrb0008@student.gvpihlr.edu.in	$2a$10$8SH2mFO7j2Wp2anyFFXBhuYBEZqQJdK/4yHJhiTkcNwK1jGJ4LnzS	NIMMAKAYALA VENKATA SATYA ABHIRAM	9849292426	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N	\N	\N	\N	\N	\N
+cmv0lfkfm077410e0cjkr1eo9	26UEMRB0016	26uemrb0016@student.gvpihlr.edu.in	$2a$10$/lYOJNUmRc4mMY2Miysj7OwFLWS8vnvJgxm195iwRjspiCx4Yy7p6	VALETI SRIKAR	8688181415	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N	\N	\N	\N	\N	\N
+cmv0lfkgc07d510e0lhx6kkvs	26UEMRB0036	26uemrb0036@student.gvpihlr.edu.in	$2a$10$Zf9nKODItUak5RYr9d9zq.tyXaxF6T3HSg9JYAyvhW2.cLTgEJ1He	KAREDLA SAI PRAVALLIKA	9949981211	t	f	\N	0	\N	2026-10-09 06:37:40.813	2026-10-09 06:37:40.813	\N	\N	\N	\N	\N	\N
+cmv0lfkc305ta10e0kdyhmoav	26UEECV0013	26ueecv0013@student.gvpihlr.edu.in	$2a$10$Bu0mBdy2t6odxi67aD6FoehNnpkBjH580mY6ScGvjhOLhgcAJVErq	IPPILI KEERTHIKA	9492202567	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N	\N	\N	\N	\N	\N
+cmv0lfkcg05yz10e0cieg6tii	26UEECV0019	26ueecv0019@student.gvpihlr.edu.in	$2a$10$zlAldPzNEZ79fvzADb.DIeZncWglhLYMl/4Tgf01qMPbTvkDMEkwi	SURAVARAPU CHARITHA NAIDU	8790186970	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkch05z810e0arq2qzp1	26UEECV0029	26ueecv0029@student.gvpihlr.edu.in	$2a$10$1CqC2r9AHlMQSP5vBCOwjOC19knGBWeTQDjXWlKsb4RC.vZM9k5iK	NARASIMHA DATH PAPPU	7396701281	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkci05za10e0xaswshxp	26UEECV0031	26ueecv0031@student.gvpihlr.edu.in	$2a$10$k02fz3pCm5kuB2oizkU6Ee/2cIAu1eLE3ZviUVdzx1d3WIdLzQIAy	PEDDINTI SAI CHARAN TEJA	6304190675	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkci05zb10e0r34iq5zw	26UEECV0027	26ueecv0027@student.gvpihlr.edu.in	$2a$10$xY8z/vNsBJlS3/RmDHM/tuiCsjjzi2g5d2W0t1nHuWxINO7t.WG7e	NALAMATI RISHI	\N	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkcx065a10e07ns357ov	26UEECV0046	26ueecv0046@student.gvpihlr.edu.in	$2a$10$Rp2je/H9Kng2lRCYD4SWMerRMjVdnzPznw91HQKmaIGWxCeEdZBFG	SURU BHARATH KUMAR	9849669006	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N	\N	\N	\N	\N	\N
+cmv0lfkcy065h10e0n71270ld	26UEECV0053	26ueecv0053@student.gvpihlr.edu.in	$2a$10$kqIdAEuHQo45AexYJi5LFuGlv5Yc8eCj6zVBDFu9V4.guiLvv4pIa	YERRA RAASHMI	7993724402	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N	\N	\N	\N	\N	\N
+cmv0lfkcy065k10e0x90xdpjf	26UEECV0055	26ueecv0055@student.gvpihlr.edu.in	$2a$10$fMCEmJVA9XpBxZBhjcFexePpEjOzkscWSefP0kMrZldsrszWsiF96	RAPETI CHARAN	\N	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N	\N	\N	\N	\N	\N
+cmv0lfkcz065t10e0eswxgq8z	26UEMEC0006	26uemec0006@student.gvpihlr.edu.in	$2a$10$5D6K6JnZbaR4V/aF8Vm.IuhZ3/ByrtUrL2cdDlx4SOSfIZz8ByNRG	KARROTHU BHANU PRASAD	8688441247	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N	\N	\N	\N	\N	\N
+cmv0lfkdd06bm10e0m5phuuzj	26UEMEC0015	26uemec0015@student.gvpihlr.edu.in	$2a$10$9rvThAGylX1mHiDkeO2CHObm5ohvEa6.tLmS.9MPtBhvJyLLrlyBm	GANTA KRITIKA	6261925281	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkdc06bk10e0gzvswgry	26UEMEC0011	26uemec0011@student.gvpihlr.edu.in	$2a$10$3ZwZLsjXoZsA7/9KQ/ZtWudMfyKjXHIqiYRYo9bT9Y7G0SjX9iJ8G	DESETTI THANMAYA CHARAN	9490648768	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkde06bx10e0p5mt0fha	26UEMEC0025	26uemec0025@student.gvpihlr.edu.in	$2a$10$yhaHsEuuLVvH5xc5pnR8MeN4qN.ddK.RkKTyllR1tFTBxIzC3CV5e	KASIMIKOTA RAMAKRISHNA	9550931433	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkde06by10e09oavzim4	26UEMEC0030	26uemec0030@student.gvpihlr.edu.in	$2a$10$GfTa8Ay5yYl9AjtlvIHnj.AVLf0Hlp/yxXJOV224MYKa05nqW38AO	KOLURU RISHI BRAHMAI	9030344367	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkdt06hw10e0crexwnke	26UEMEC0044	26uemec0044@student.gvpihlr.edu.in	$2a$10$iOofTGo4Wgk.oDrsE0.VE.8RdWwBKo5XFYvXuG/L2AQSIxU23eMJm	PALLANTLA GEETH	6304185118	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N	\N	\N	\N	\N	\N
+cmv0lfkdt06hz10e0xax932oa	26UEMEC0034	26uemec0034@student.gvpihlr.edu.in	$2a$10$i9l4T6hInJnwXeCAiaGSR.C59pKNpE4V.eT48W5bkVP6rgczFj6yK	KORUPOLU VENKATA JAPESH	7416468094	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N	\N	\N	\N	\N	\N
+cmv0lfkdu06i510e0a2by9661	26UEMEC0053	26uemec0053@student.gvpihlr.edu.in	$2a$10$guzf9UNJz2FaPz2ZNq7EDuscEaKo9614YZKWaO7mZrVqrO2HpKNLy	BODDETI SNEHITH	7680831323	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N	\N	\N	\N	\N	\N
+cmv0lfke906o010e0sgrv40az	26UEMEC0058	26uemec0058@student.gvpihlr.edu.in	$2a$10$93C8Cncektf6ri6a2D0vMOyHZpdfTIXUFQp3orLBhaqeTVV/9SNWu	VEGI PEDA VENKATA SAI MANIKANTA	9398669015	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N	\N	\N	\N	\N	\N
+cmv0lfke906o410e0axpxqoi0	26UEMEC0069	26uemec0069@student.gvpihlr.edu.in	$2a$10$mVeGpq9.9cCfUymjK3pScOo8rA5zo2VBaOZq0cAOPj.fGx33cV45q	VANKA DINESH	8248587400	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N	\N	\N	\N	\N	\N
+cmv0lfkea06of10e01c8h7vrh	26UEMEC0078	26uemec0078@student.gvpihlr.edu.in	$2a$10$utDRZFVxxBkWy35nuEK.2uV9U0q/3DwCLR/hvVXYTQbYLcA33ijtK	KURAMANA SAKETH HARSHA	8919421188	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N	\N	\N	\N	\N	\N
+cmv0lfkea06oc10e0tuhl4bzp	26UEMEC0072	26uemec0072@student.gvpihlr.edu.in	$2a$10$HT2pI7AJyH85587589fGGulWwJxWAMssGM3kGPikMWK3MCY8g4v9K	TOLETY BHASKARA SEETAN	7780548436	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N	\N	\N	\N	\N	\N
+cmv0lfkeo06u510e0khkjng0x	26UEMEC0088	26uemec0088@student.gvpihlr.edu.in	$2a$10$0tX7sp1hj0WTgJTlgPD7feerc6lfK/IsKNSJiiP9KuGYFZdaxMFIK	MOHAMMED SAIFAN	7337004924	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkep06uh10e0hanfp4hz	26UEMEC0093	26uemec0093@student.gvpihlr.edu.in	$2a$10$V5FYLd/vmMoi6qSRYdwSfuOGbZ2SKWwvJjbkGv3IUizzHjUKczaRC	VEGI JAYADEV	9885277229	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkep06ui10e08bvztlsi	26UEMEC0101	26uemec0101@student.gvpihlr.edu.in	$2a$10$gdUotUkR4cPxWP2VQ.WU.u.1fhNmsO7SslyF6HHfzN.7nOSWLJ08W	DUPPALA HARSHIT KUMAR	7056067327	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkeq06ut10e0joqf2p5l	26UEMEC0108	26uemec0108@student.gvpihlr.edu.in	$2a$10$2V7RCtVX3EjcojScWYDgleeYEZDQJQxfv7ivX9dTvhsfubjUICnH.	SUNKARA JAI RAM CHARAN	9492056565	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkf5070i10e0jlg4mbmz	26UEMEC0114	26uemec0114@student.gvpihlr.edu.in	$2a$10$Y9upRg5FBiI1OxHn7dkQJes9hlQk0BH9rqrMDkzeN5Ng1yRCU1BFC	Senna Lokesh	6304231727	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N	\N	\N	\N	\N	\N
+cmv0lfkf5070e10e0cw2bouer	26UEMEC0113	26uemec0113@student.gvpihlr.edu.in	$2a$10$Ql6UymiIbLrQJ9BDuBAaO.ahqAXkwappVL7MkpFQiAn9eIGm2CqPW	REGANI VEERA VENKATA KRISHNA SAI YASWANTH	7036879010	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N	\N	\N	\N	\N	\N
+cmv0lfkf6070t10e00x629o2a	26UEMEC0127	26uemec0127@student.gvpihlr.edu.in	$2a$10$5xtQA/9AlDruEq3sMQpoIeoSHqyqrYho2ecOkSAw26Wxx1U54ao3u	BONDA PRANAV	9908234486	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N	\N	\N	\N	\N	\N
+cmv0lfkf6070w10e04a5rctuc	26UEMEC0130	26uemec0130@student.gvpihlr.edu.in	$2a$10$18qLMC/wuFqYlDvi.LjCbeRp.9VtR0oCGeFE04kgd1UG9cUIlDuya	MALLUVALASA RAMESH	6301975811	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N	\N	\N	\N	\N	\N
+cmv0lfkfl076r10e06gl5v9sw	26UEMRB0006	26uemrb0006@student.gvpihlr.edu.in	$2a$10$2uA0avrNlr7QW.gqwJjRTuvK1bgD6GbopMX/PnvrG5syAAO7YDYwS	KODUKULA R S GAUTAM	9182374320	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N	\N	\N	\N	\N	\N
+cmv0lfkfl076y10e0993hu6id	26UEMRB0013	26uemrb0013@student.gvpihlr.edu.in	$2a$10$bHINrLYngej1hwPw/fdwaOzy7SLrtOjdz./MMBUn.1OeBSh/lrq3.	POTLADA DILLESHWARA ASHISH	7207409515	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N	\N	\N	\N	\N	\N
+cmv0lfkfm077b10e044rhn09p	26UEMRB0022	26uemrb0022@student.gvpihlr.edu.in	$2a$10$O9L/EwqlWli21Wrs1EmWiuYH37xvqklrvv665QpZIMwiCA5UKFuf6	VANA RADHA KRISHNA	9849145747	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N	\N	\N	\N	\N	\N
+cmv0lfkgc07d110e0bn1nh9dr	26UEMRB0026	26uemrb0026@student.gvpihlr.edu.in	$2a$10$5WbKQ1vf7bnc3LwnCus0l.6Uo5oOcLKdPUQ49gtpWf2VrCmNCltZi	MANIPATRUNI RAJNI	9989105102	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N	\N	\N	\N	\N	\N
+cmv0lfkgc07d810e0s8dsucy5	26UEMRB0035	26uemrb0035@student.gvpihlr.edu.in	$2a$10$x4vodSWLaP.P.OSjciqwtuJ25VL6cjJtHIkYKMqdUSIZBSaJ5djEK	LINGISETTY SAI ASHWITH	9985582826	t	f	\N	0	\N	2026-10-09 06:37:40.813	2026-10-09 06:37:40.813	\N	\N	\N	\N	\N	\N
+cmv0lfk52037d10e0q9nitk8l	26UECSC0055	26uecsc0055@student.gvpihlr.edu.in	$2a$10$Cnn1fVYpOAOcKDfcB34pmegMKcmm/2IKu9lFy7ESgO7eP.WYDCXL6	GANTA KRISHNA SAI	9491951559	t	f	2026-10-09 08:32:11.295	0	\N	2026-10-09 06:37:40.405	2026-10-09 08:32:11.296	\N	\N	\N	\N	\N	\N
+cmv0lfkfm077a10e0jt1y7xf7	26UEMRB0024	26uemrb0024@student.gvpihlr.edu.in	$2a$10$wpElSv5EsYq2yl24W7ihouPecQzqPRSw5PDpWJIsmR9sbBRPcm5GG	MUVVALA RAMCHARAN GOPI	7799868899	t	f	2026-10-09 08:41:25.934	0	\N	2026-10-09 06:37:40.786	2026-10-09 08:41:25.935	\N	\N	\N	\N	\N	\N
+cmv0lfkc205t910e0tmwsucv5	26UEECV0005	26ueecv0005@student.gvpihlr.edu.in	$2a$10$m3nU360KLgOVrxzO1gzRUusNnOyjph8X4NOzX5Sby6dPeTwckMwCm	CHALAPAKA VENKAT NEERADH	7993612629	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N	\N	\N	\N	\N	\N
+cmv0lfkch05z510e0uoftzd0f	26UEECV0024	26ueecv0024@student.gvpihlr.edu.in	$2a$10$9Qw.klQUOP/whlgLCTJ8qO9SE65gBn1TyJoJprPkTcldpq0KENX4S	METTA MANUSHRI	6302262613	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkci05zd10e01rnyt7m4	26UEECV0033	26ueecv0033@student.gvpihlr.edu.in	$2a$10$0Ujairk8q37y2NlTaDYDoeJ0CNaNhHKE7uBUGwheQzrt9ipz38WwO	PERI GAYATRI	9494420789	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkcy065g10e0hnbo1l2k	26UEECV0052	26ueecv0052@student.gvpihlr.edu.in	$2a$10$.6tsR8yoMxjp/atq7Cj8D.MhAWf.X.HpNHwmDM2O2yU6T/VxDvBZq	VUGGINA SHANTANU KUMAR	9989961222	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N	\N	\N	\N	\N	\N
+cmv0lfkdc06bh10e0y4ot9xpx	26UEMEC0010	26uemec0010@student.gvpihlr.edu.in	$2a$10$bSVzTHVj282G/tukOYNPQu20mlpzO/M9AuWc0UrGbFc6J8jt.fOtm	DAMODARA BHAVESH	9848022342	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkde06bs10e0x8jkmql2	26UEMEC0022	26uemec0022@student.gvpihlr.edu.in	$2a$10$AavHl0onarkmiqebrtji7OUZKP0uOQRoVNdNhAGsqJGy7Mgt.qAKy	KALLURI GOPI CHANDU	9390706441	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkdt06hs10e0z50mmnbq	26UEMEC0036	26uemec0036@student.gvpihlr.edu.in	$2a$10$ctXMEC8xiaobz/Il.wxF5uym1y8xi5qQOzumVu6ZihaVLuKWJUv2C	MARMALA SESHA SAI KARUNAKARA KASHYAP	9440576824	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N	\N	\N	\N	\N	\N
+cmv0lfkdu06i810e0qi51hauk	26UEMEC0054	26uemec0054@student.gvpihlr.edu.in	$2a$10$nnjnrbuszI.N4Cppp3hqROFOo2EMdoadW.uFsSusFKj1fyUC5bgOW	SUGGU DHUSHYANTH KUMAR REDDY	7671028979	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N	\N	\N	\N	\N	\N
+cmv0lfke906o510e0c1zsou4q	26UEMEC0068	26uemec0068@student.gvpihlr.edu.in	$2a$10$f7yPwfBY4xB3qA/AkjCcoejeytXQbEu8Pr2c2yGem2.pRd.4SEsz.	DADI BALA MANOJ	9866081307	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N	\N	\N	\N	\N	\N
+cmv0lfkea06og10e0izgeilui	26UEMEC0081	26uemec0081@student.gvpihlr.edu.in	$2a$10$p4flZ0hyps90gXLFbVg4Ze.LiodAXZMJagcLIfDrl02T6ugSxM/IO	MEGHANADH KODA	6281092971	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N	\N	\N	\N	\N	\N
+cmv0lfkeo06ud10e0yp3zm4bl	26UEMEC0090	26uemec0090@student.gvpihlr.edu.in	$2a$10$Ju9VDPDJadT3ecKkl/tPx.0JZcR7s5RQI3jMdt8KzWkw01qQKjjbq	RITTAPALLI DEENESH	9866470281	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkep06ul10e0w6hhmap7	26UEMEC0103	26uemec0103@student.gvpihlr.edu.in	$2a$10$docAvY9Q6aBYkQFMOP5.meBBjkVjwFXQQUP0UNbJnYEGYVcYjubZS	LEKKALA JNANADEEP	9182296951	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkf5070g10e0mpqujno2	26UEMEC0117	26uemec0117@student.gvpihlr.edu.in	$2a$10$lNhxlOFIwgLbORHFdKsnZO4NKS9I1E5.BNEaPBkovoEY3O5nRcYAu	NAIDU ASISH SIVA SAI	8328215111	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N	\N	\N	\N	\N	\N
+cmv0lfkf6070r10e0gfi8hqoj	26UEMEC0125	26uemec0125@student.gvpihlr.edu.in	$2a$10$RDZyAmIBqvn6Z9ADko0Tku5BWWrV/9CFuPTraHTZ9JOIMYABJHPye	BURLI CHARAN	6300383650	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N	\N	\N	\N	\N	\N
+cmv0lfkfl076q10e0ecdcsh6t	26UEMRB0004	26uemrb0004@student.gvpihlr.edu.in	$2a$10$Ld5Og3C8b48Q2Lie3NfImO.0nqcNCdBtONFT2oxbXhEZsFbmt2ez6	DANDU UDAY KIRAN	8688363028	t	f	\N	0	\N	2026-10-09 06:37:40.785	2026-10-09 06:37:40.785	\N	\N	\N	\N	\N	\N
+cmv0lfkfm077710e0p2mhm44a	26UEMRB0001	26uemrb0001@student.gvpihlr.edu.in	$2a$10$W.PgLHxzrA0y8iWsru6nneZLC3Q7Hgao/GxSNhvp3PEZMJ5TLtCJ2	BADATYA SHYAM	8331906760	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N	\N	\N	\N	\N	\N
+cmv0lfkgc07cx10e09ui8a4ld	26UEMRB0031	26uemrb0031@student.gvpihlr.edu.in	$2a$10$MVPASA0.70miqtDuo9KdROxss7HXK0.wGmbsyauUjXPviISMUvu4u	DONTHALA TEJASREE	9550114406	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N	\N	\N	\N	\N	\N
+cmv0lfkgd07da10e0upfezo53	26UEMRB0040	26uemrb0040@student.gvpihlr.edu.in	$2a$10$0PB.rWaTTxClb8OpzO/kg.obdsN8Gr3E0LCq8ZzxrjURC1xURr8k.	ROKALLA CHIRANJEEVI KUSHAL REDDY	9440566555	t	f	\N	0	\N	2026-10-09 06:37:40.813	2026-10-09 06:37:40.813	\N	\N	\N	\N	\N	\N
+cmv0lfkc305tb10e0kncmqtmo	26UEECV0010	26ueecv0010@student.gvpihlr.edu.in	$2a$10$u7UpjNQxGom.d9wxsdo4eOF9AfdKvEmTRHyvyKD10.U26ulPwuH4i	GOMPA GURU CHARAN YADAV	7075618131	t	f	\N	0	\N	2026-10-09 06:37:40.658	2026-10-09 06:37:40.658	\N	\N	\N	\N	\N	\N
+cmv0lfkcg05z110e0ov6g8blq	26UEECV0017	26ueecv0017@student.gvpihlr.edu.in	$2a$10$lzljaaYr6kjS07nKA8Oyd.gSWJhhtmoy6D9gLsntW3e9aQhl6Beam	LACHIREDDI SUDHEER	9676405319	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkci05zh10e0953s2o12	26UEECV0036	26ueecv0036@student.gvpihlr.edu.in	$2a$10$Qy6Ja.6ijOErG1HrV7zcK./D03pXCQCAIOE57qKze/uUrkJKR9VDG	PONNAGANTI JOSHITHA	9440713888	t	f	\N	0	\N	2026-10-09 06:37:40.673	2026-10-09 06:37:40.673	\N	\N	\N	\N	\N	\N
+cmv0lfkcx065d10e04v0xqbsd	26UEECV0048	26ueecv0048@student.gvpihlr.edu.in	$2a$10$RYwNuGgQxazLQfeMK5D13eHxmExcnnh5X.RrYikKYFgdpAbW8KNT6	VADDI JYOTSNA	9989183506	t	f	\N	0	\N	2026-10-09 06:37:40.689	2026-10-09 06:37:40.689	\N	\N	\N	\N	\N	\N
+cmv0lfkcz065s10e0i9ipyiyv	26UEMEC0005	26uemec0005@student.gvpihlr.edu.in	$2a$10$Dsdr6dzS0M6TEIInjg1iq.ULCK.rrGUDTNus/CQRwalO5uHVClD5O	BHUMA SAI CHANUKYA	9247789897	t	f	\N	0	\N	2026-10-09 06:37:40.69	2026-10-09 06:37:40.69	\N	\N	\N	\N	\N	\N
+cmv0lfkdc06be10e0vdbylsxr	26UEMEC0012	26uemec0012@student.gvpihlr.edu.in	$2a$10$WO6rJ/FhslRYoxOjEZD5kOM3d88Nivolc9h9OOe/KWN/.B4ohbSAq	DUKKA SAIKIRAN	9848172922	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkdd06br10e0sno7kh7o	26UEMEC0023	26uemec0023@student.gvpihlr.edu.in	$2a$10$MYIzSPV6FKZdYWY7ycTog.JGmSRRGwkEt2wkvEXctsBxn2Jjh1JGG	KARANAM DIVYA TEJA	9246644676	t	f	\N	0	\N	2026-10-09 06:37:40.705	2026-10-09 06:37:40.705	\N	\N	\N	\N	\N	\N
+cmv0lfkdt06hq10e0hak7osi4	26UEMEC0033	26uemec0033@student.gvpihlr.edu.in	$2a$10$m7QSk4bsvS9wM6pbvEeYiOZIf7LVTz2.jO0vPB.6gyh8QdmOVvKDe	KORUKONDA SUSHANTH	8074013090	t	f	\N	0	\N	2026-10-09 06:37:40.721	2026-10-09 06:37:40.721	\N	\N	\N	\N	\N	\N
+cmv0lfkdu06i110e0fzgag1f5	26UEMEC0048	26uemec0048@student.gvpihlr.edu.in	$2a$10$uK8rc9D3aKeMfKIPYPz9..VJ6Z4pdoMjtx3GJL32FMHtvR3ud0GUm	REDDY SARAN TEJA	8317612926	t	f	\N	0	\N	2026-10-09 06:37:40.722	2026-10-09 06:37:40.722	\N	\N	\N	\N	\N	\N
+cmv0lfke906ny10e0yup2om2s	26UEMEC0063	26uemec0063@student.gvpihlr.edu.in	$2a$10$CKYWt0DdzwlrX1NSF.3jNuLDbv8gejBRdqdQkZzUwU8k3rbE6RRQO	GANDI GIRISH KUMAR	8341810683	t	f	\N	0	\N	2026-10-09 06:37:40.737	2026-10-09 06:37:40.737	\N	\N	\N	\N	\N	\N
+cmv0lfkea06ob10e0wgr5y4iw	26UEMEC0076	26uemec0076@student.gvpihlr.edu.in	$2a$10$bTEfY1TuLH/1z0ryvTL8i.UsPD2zzQYRQyOchyu11B1eY2IOtbq..	NIDDARA SIVA KUMAR	9951529630	t	f	\N	0	\N	2026-10-09 06:37:40.738	2026-10-09 06:37:40.738	\N	\N	\N	\N	\N	\N
+cmv0lfkeo06ue10e0a5kwpnj4	26UEMEC0094	26uemec0094@student.gvpihlr.edu.in	$2a$10$cxGRG/VSGV7pZt3UIoK1wOArvV18I5LEz0Dlc0J0Xzcu.Ba/Yacoa	NEELADRI HEMANTH	8688889148	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkep06uk10e0b2jvb6bn	26UEMEC0105	26uemec0105@student.gvpihlr.edu.in	$2a$10$QoNrjrEyJDrjsZYJE1ysvePvWvGQINSFM92eX46QO533JipoZRiLK	SADI YOGESH	8456964697	t	f	\N	0	\N	2026-10-09 06:37:40.753	2026-10-09 06:37:40.753	\N	\N	\N	\N	\N	\N
+cmv0lfkf5070m10e0y7gk7dep	26UEMEC0121	26uemec0121@student.gvpihlr.edu.in	$2a$10$LcxKnRTWTuoMeLsqjshvpO9Td5Sd8rseDk8Fw5Qc3W2oZ/g7IH0wC	GUNDA VAMSI KRISHNA	9959433243	t	f	\N	0	\N	2026-10-09 06:37:40.769	2026-10-09 06:37:40.769	\N	\N	\N	\N	\N	\N
+cmv0lfkf6070y10e0coksc98s	26UEMEC0132	26uemec0132@student.gvpihlr.edu.in	$2a$10$AAmj8bvVcBdwLMwiNVionOQFo2WVzjXhWdk31CM8UR/UQS0xsZWFa	MUMMANA PAVAN	8125571717	t	f	\N	0	\N	2026-10-09 06:37:40.77	2026-10-09 06:37:40.77	\N	\N	\N	\N	\N	\N
+cmv0lfkfl076z10e0rve3p6ob	26UEMRB0012	26uemrb0012@student.gvpihlr.edu.in	$2a$10$085YdfwpMJuz5HqDcRT/KOimGpqEWvyXl17GVDCrZUaP/YZ44KsW2	PILLA MAHALAKSHMI	9951955780	t	f	\N	0	\N	2026-10-09 06:37:40.786	2026-10-09 06:37:40.786	\N	\N	\N	\N	\N	\N
+cmv0lfkgc07cz10e0tzt4nmyq	26UEMRB0027	26uemrb0027@student.gvpihlr.edu.in	$2a$10$OfU3tn9MDv88kMp3TSmQauMe8.FVGWtxqLCNETBZlc5v.KOKJgGQK	MORRI HASINI	8106174393	t	f	\N	0	\N	2026-10-09 06:37:40.812	2026-10-09 06:37:40.812	\N	\N	\N	\N	\N	\N
+cmuzu9oof003iydphgyvr3cii	BSK	bsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. B Santosh Kumar	+91 9440112233	t	f	2026-10-12 14:14:32.509	0	\N	2026-10-08 17:57:16.72	2026-10-12 14:52:18.437	\N	\N	\N	\N	\N	\N
+cmuzu9oox004rydph03f490gx	GSK	gsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Dr. G Santosh Kumar	+91 9440112233	t	f	2026-10-08 18:00:33.331	0	\N	2026-10-08 17:57:16.737	2026-10-12 14:52:18.442	\N	\N	\N	\N	\N	\N
+cmv5cxakt000110wnsmb2rfxg	office	office@gvpihlr.edu.in	$2a$12$eHRDQeKY5VRYfvRvea56qe.3rUAtZNlnupZqsbbT635dtHW221Z1C	GVPIHLR Central Academic Office	+91 891 2739507	t	f	2026-10-13 04:49:30.789	0	\N	2026-10-12 14:38:22.157	2026-10-13 04:49:30.79	\N	\N	\N	\N	\N	\N
+cmv98chky002014e0otlmvk1u	26UEMEC0138	26uemec0138@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	RAVURI JAYENDRA PAVAN	7989675713	t	f	\N	0	\N	2026-10-15 07:41:17.698	2026-10-15 07:41:17.698	\N	\N	\N	\N	\N	\N
+cmv98chlt002714e09ns7053d	26UEMRB0042	26uemrb0042@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	Dudi jagadeesh kumar	9392649116	t	f	\N	0	\N	2026-10-15 07:41:17.729	2026-10-15 07:41:17.729	\N	\N	\N	\N	\N	\N
+cmv98chmy002e14e0h8uggo9b	26UECSE0175	26uecse0175@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	ADAPA GNANA LAHARI	9390678999	t	f	\N	0	\N	2026-10-15 07:41:17.771	2026-10-15 07:41:17.771	\N	\N	\N	\N	\N	\N
+cmv98chn4002l14e0zl6qdcpv	26UEMEC0062	26uemec0062@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	KALINGI PAVAN KUMAR	7989201225	t	f	\N	0	\N	2026-10-15 07:41:17.776	2026-10-15 07:41:17.776	\N	\N	\N	\N	\N	\N
+cmv98chn7002s14e0kpt2cqg3	26UECIV0019	26ueciv0019@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	RAYUDU HASINI	8008270119	t	f	\N	0	\N	2026-10-15 07:41:17.779	2026-10-15 07:41:17.779	\N	\N	\N	\N	\N	\N
+cmv6bio250001wlgnf01b2c0s	incharge	incharge@gvpihlr.edu.in	$2a$12$DACBbHg15IyRSP8lHGwRAe1l4CbSFlZuQ.03oE3eOaTalwW7Q/Ltu	First Year Incharge	+91 9876543211	t	f	2026-10-13 06:55:09.373	1	\N	2026-10-13 06:46:46.35	2026-10-13 06:59:31.725	\N	\N	\N	\N	\N	\N
+cmv98chna002z14e0on5z02b0	26UECIV0038	26ueciv0038@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	Salapu jaswanth	9949630187	t	f	\N	0	\N	2026-10-15 07:41:17.783	2026-10-15 07:41:17.783	\N	\N	\N	\N	\N	\N
+cmv98chnd003614e028lq8211	26UEECE0275	26ueece0275@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	MATHALA PUJITHA	8919880979	t	f	\N	0	\N	2026-10-15 07:41:17.786	2026-10-15 07:41:17.786	\N	\N	\N	\N	\N	\N
+cmv98chng003d14e0f8nj3pzx	26UEECE0280	26ueece0280@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	SIRIKI TEJESWAR	9398545151	t	f	\N	0	\N	2026-10-15 07:41:17.789	2026-10-15 07:41:17.789	\N	\N	\N	\N	\N	\N
+cmv98chnl003k14e0ymammkfc	26UEMEC0041	26uemec0041@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	NARAMSETTY YOGESWAR	7013412594	t	f	\N	0	\N	2026-10-15 07:41:17.793	2026-10-15 07:41:17.793	\N	\N	\N	\N	\N	\N
+cmv98chnq003r14e05p2bi5ru	26UEMEC0096	26uemec0096@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	BODDU SAI CHARAN	8008642352	t	f	\N	0	\N	2026-10-15 07:41:17.798	2026-10-15 07:41:17.798	\N	\N	\N	\N	\N	\N
+cmv98chnt003y14e02myhd7jl	26UEMRB0030	26uemrb0030@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	RUDRI PARDHASARADHI	8247526531	t	f	\N	0	\N	2026-10-15 07:41:17.801	2026-10-15 07:41:17.801	\N	\N	\N	\N	\N	\N
+cmv98chnw004514e0w0p2gv9q	26UEMRB0041	26uemrb0041@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	CHITTIPALA HARSHA VARDHAN	8639068635	t	f	\N	0	\N	2026-10-15 07:41:17.805	2026-10-15 07:41:17.805	\N	\N	\N	\N	\N	\N
+cmv6bio1q0000wlgnrfs3tz71	firstyearincharge	firstyearincharge@gvpihlr.edu.in	$2a$12$DACBbHg15IyRSP8lHGwRAe1l4CbSFlZuQ.03oE3eOaTalwW7Q/Ltu	First Year Incharge	+91 9876543211	t	f	2026-10-13 07:25:28.241	0	\N	2026-10-13 06:46:46.335	2026-10-13 07:25:28.242	\N	\N	\N	\N	\N	\N
+cmv0jr1ap002smzmye42lwppp	26UECHE0003	26ueche0003@student.gvpihlr.edu.in	$2a$10$qHWxhRVDpvqla30KI.psQeGfeZsNzUmA1IhMptuhBoU5gG2TsdKea	BATHINA TARUN SAI	6303291136	t	f	2026-10-22 06:21:37.018	0	\N	2026-10-09 05:50:36.599	2026-10-22 06:21:37.019	\N	\N	\N	\N	\N	\N
+cmv0lfk4202ui10e0i0ku2h2a	26UECSD0014	26uecsm0189@student.gvpihlr.edu.in	$2a$10$kgCiA2r8gWxrW8B3b8XjGu9luh5uh7pU9h2xG2kLVeMy4QJsqWZLy	ARISINGALA NAGA VINAYAKA JEEVAN	9177554366	t	f	\N	0	\N	2026-10-09 06:37:40.371	2026-10-15 07:40:00.529	\N	\N	\N	\N	\N	\N
+cmv98ch16000214e0vh43yq5y	26UECIV0039	26ueciv0039@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	DOLA HARSHA VARDHAN	8074627167	t	f	\N	0	\N	2026-10-15 07:41:16.987	2026-10-15 07:41:16.987	\N	\N	\N	\N	\N	\N
+cmv98ch30000914e0wunxrfbl	26UECSC0085	26uecsc0085@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	JAMMU KARTHIK	\N	t	f	\N	0	\N	2026-10-15 07:41:17.052	2026-10-15 07:41:17.052	\N	\N	\N	\N	\N	\N
+cmv98ch3s000g14e0u4izpwso	26UECSE0012	26uecse0012@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	ADAPA MOHIT SIVA SAI	7997877153	t	f	\N	0	\N	2026-10-15 07:41:17.08	2026-10-15 07:41:17.08	\N	\N	\N	\N	\N	\N
+cmv98chg8000n14e0ug8lh1hv	26UEECE0258	26ueece0258@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	NAGULAPALLI DEVI NARASIMHA SAI CHARAN	8639099035	t	f	\N	0	\N	2026-10-15 07:41:17.528	2026-10-15 07:41:17.528	\N	\N	\N	\N	\N	\N
+cmv98chgp000u14e0nhqm2wb9	26UEECE0259	26ueece0259@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	YOGESH KOTAMSETTI	6303167679	t	f	\N	0	\N	2026-10-15 07:41:17.546	2026-10-15 07:41:17.546	\N	\N	\N	\N	\N	\N
+cmv98chgt001114e0btho1itr	26UEECE0260	26ueece0260@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	CHUKKA JAGADISH	9948769465	t	f	\N	0	\N	2026-10-15 07:41:17.549	2026-10-15 07:41:17.549	\N	\N	\N	\N	\N	\N
+cmv98chi0001814e0ga2onszt	26UEEEE0060	26ueeee0060@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	KOMMU SEETA RAM NAIDU	7995968399	t	f	\N	0	\N	2026-10-15 07:41:17.593	2026-10-15 07:41:17.593	\N	\N	\N	\N	\N	\N
+cmv98chi4001f14e0y3pymvg9	26UEEEE0061	26ueeee0061@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	YAMPADA SANDEEP REDDY	9391819058	t	f	\N	0	\N	2026-10-15 07:41:17.597	2026-10-15 07:41:17.597	\N	\N	\N	\N	\N	\N
+cmv98chk1001m14e07d9h5yjb	26UEMEC0102	26uemec0102@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	DWADASI SAI VENKAT VISHAL	8499811954	t	f	\N	0	\N	2026-10-15 07:41:17.666	2026-10-15 07:41:17.666	\N	\N	\N	\N	\N	\N
+cmv98chke001t14e0stynzgy7	26UEMEC0115	26uemec0115@student.gvpihlr.edu.in	$2a$10$2Ky3JN2kuN1Pv0xcG.F3x.R7Zm/nY9C1342MjbRchRGTJNfLK42Fu	Damarasingh kartikeya	8688661181	t	f	\N	0	\N	2026-10-15 07:41:17.679	2026-10-15 07:41:17.679	\N	\N	\N	\N	\N	\N
+cmuzp7hsc000bbynpr08m4i25	admin	admin@gvpihlr.edu.in	$2a$12$olLcQ23IA0/wz/9ao901q.un91tdowzuc1DUEvtNvPsUZ2sGYuR5q	GVPIHLR Super Administrator	+91 9876543210	t	f	2026-10-22 06:30:22.915	0	\N	2026-10-08 15:35:36.396	2026-10-22 06:30:22.916	\N	\N	\N	\N	\N	\N
+cmuzu9ore00dsydph0i05x8t6	NVSK	nvsk@gvpihlr.edu.in	$2a$12$xeaN9lAkxzyQrTmPeA9LUeemxQGhvInSgBuZIi7pvSrajJeoupvGW	Mr. NV Siva Krishna	+91 9440112233	t	f	2026-10-22 06:29:57.256	0	\N	2026-10-08 17:57:16.826	2026-10-22 06:29:57.258	\N	\N	\N	\N	\N	\N
+cmv0jr1am002pmzmyhq3k4q28	26UECHE0001	26ueche0001@student.gvpihlr.edu.in	$2a$10$HZMHHs5f2Zp0J2Ce0aM8FOjzTBDfg6R6cKGzdtKRsz0d3zm3o4CYO	ADIRAJU SRI NAGA PRADYUMNA	8019888678	t	f	2026-10-22 06:20:28.078	0	\N	2026-10-09 05:50:36.599	2026-10-22 06:39:41.726	\N	\N	\N	\N	\N	\N
 \.
 
 
@@ -125183,6 +125471,22 @@ ALTER TABLE ONLY public."AuditLog"
 
 
 --
+-- Name: CourseMaterial CourseMaterial_pkey; Type: CONSTRAINT; Schema: public; Owner: saranneralla
+--
+
+ALTER TABLE ONLY public."CourseMaterial"
+    ADD CONSTRAINT "CourseMaterial_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: CourseQuiz CourseQuiz_pkey; Type: CONSTRAINT; Schema: public; Owner: saranneralla
+--
+
+ALTER TABLE ONLY public."CourseQuiz"
+    ADD CONSTRAINT "CourseQuiz_pkey" PRIMARY KEY (id);
+
+
+--
 -- Name: Department Department_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -125223,11 +125527,43 @@ ALTER TABLE ONLY public."LabBatch"
 
 
 --
+-- Name: LecturePlanTopic LecturePlanTopic_pkey; Type: CONSTRAINT; Schema: public; Owner: saranneralla
+--
+
+ALTER TABLE ONLY public."LecturePlanTopic"
+    ADD CONSTRAINT "LecturePlanTopic_pkey" PRIMARY KEY (id);
+
+
+--
 -- Name: Program Program_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public."Program"
     ADD CONSTRAINT "Program_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: QuestionBankItem QuestionBankItem_pkey; Type: CONSTRAINT; Schema: public; Owner: saranneralla
+--
+
+ALTER TABLE ONLY public."QuestionBankItem"
+    ADD CONSTRAINT "QuestionBankItem_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: QuizQuestionMapping QuizQuestionMapping_pkey; Type: CONSTRAINT; Schema: public; Owner: saranneralla
+--
+
+ALTER TABLE ONLY public."QuizQuestionMapping"
+    ADD CONSTRAINT "QuizQuestionMapping_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: QuizStudentAttempt QuizStudentAttempt_pkey; Type: CONSTRAINT; Schema: public; Owner: saranneralla
+--
+
+ALTER TABLE ONLY public."QuizStudentAttempt"
+    ADD CONSTRAINT "QuizStudentAttempt_pkey" PRIMARY KEY (id);
 
 
 --
@@ -125260,6 +125596,14 @@ ALTER TABLE ONLY public."School"
 
 ALTER TABLE ONLY public."Section"
     ADD CONSTRAINT "Section_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: StudentActivityLog StudentActivityLog_pkey; Type: CONSTRAINT; Schema: public; Owner: saranneralla
+--
+
+ALTER TABLE ONLY public."StudentActivityLog"
+    ADD CONSTRAINT "StudentActivityLog_pkey" PRIMARY KEY (id);
 
 
 --
@@ -125438,6 +125782,20 @@ CREATE INDEX "AuditLog_userId_idx" ON public."AuditLog" USING btree ("userId");
 
 
 --
+-- Name: CourseMaterial_assignmentId_unitNumber_idx; Type: INDEX; Schema: public; Owner: saranneralla
+--
+
+CREATE INDEX "CourseMaterial_assignmentId_unitNumber_idx" ON public."CourseMaterial" USING btree ("assignmentId", "unitNumber");
+
+
+--
+-- Name: CourseQuiz_assignmentId_idx; Type: INDEX; Schema: public; Owner: saranneralla
+--
+
+CREATE INDEX "CourseQuiz_assignmentId_idx" ON public."CourseQuiz" USING btree ("assignmentId");
+
+
+--
 -- Name: Department_code_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -125564,6 +125922,13 @@ CREATE INDEX "LabBatch_sectionId_idx" ON public."LabBatch" USING btree ("section
 
 
 --
+-- Name: LecturePlanTopic_assignmentId_unitNumber_idx; Type: INDEX; Schema: public; Owner: saranneralla
+--
+
+CREATE INDEX "LecturePlanTopic_assignmentId_unitNumber_idx" ON public."LecturePlanTopic" USING btree ("assignmentId", "unitNumber");
+
+
+--
 -- Name: Program_code_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -125589,6 +125954,41 @@ CREATE INDEX "Program_regulationId_idx" ON public."Program" USING btree ("regula
 --
 
 CREATE INDEX "Program_schoolId_idx" ON public."Program" USING btree ("schoolId");
+
+
+--
+-- Name: QuestionBankItem_subjectId_unitNumber_difficulty_idx; Type: INDEX; Schema: public; Owner: saranneralla
+--
+
+CREATE INDEX "QuestionBankItem_subjectId_unitNumber_difficulty_idx" ON public."QuestionBankItem" USING btree ("subjectId", "unitNumber", difficulty);
+
+
+--
+-- Name: QuizQuestionMapping_questionBankId_idx; Type: INDEX; Schema: public; Owner: saranneralla
+--
+
+CREATE INDEX "QuizQuestionMapping_questionBankId_idx" ON public."QuizQuestionMapping" USING btree ("questionBankId");
+
+
+--
+-- Name: QuizQuestionMapping_quizId_idx; Type: INDEX; Schema: public; Owner: saranneralla
+--
+
+CREATE INDEX "QuizQuestionMapping_quizId_idx" ON public."QuizQuestionMapping" USING btree ("quizId");
+
+
+--
+-- Name: QuizStudentAttempt_quizId_studentId_key; Type: INDEX; Schema: public; Owner: saranneralla
+--
+
+CREATE UNIQUE INDEX "QuizStudentAttempt_quizId_studentId_key" ON public."QuizStudentAttempt" USING btree ("quizId", "studentId");
+
+
+--
+-- Name: QuizStudentAttempt_studentId_idx; Type: INDEX; Schema: public; Owner: saranneralla
+--
+
+CREATE INDEX "QuizStudentAttempt_studentId_idx" ON public."QuizStudentAttempt" USING btree ("studentId");
 
 
 --
@@ -125652,6 +126052,27 @@ CREATE INDEX "Section_programId_idx" ON public."Section" USING btree ("programId
 --
 
 CREATE INDEX "Section_year_semester_idx" ON public."Section" USING btree (year, semester);
+
+
+--
+-- Name: StudentActivityLog_category_createdAt_idx; Type: INDEX; Schema: public; Owner: saranneralla
+--
+
+CREATE INDEX "StudentActivityLog_category_createdAt_idx" ON public."StudentActivityLog" USING btree (category, "createdAt");
+
+
+--
+-- Name: StudentActivityLog_studentId_createdAt_idx; Type: INDEX; Schema: public; Owner: saranneralla
+--
+
+CREATE INDEX "StudentActivityLog_studentId_createdAt_idx" ON public."StudentActivityLog" USING btree ("studentId", "createdAt");
+
+
+--
+-- Name: StudentActivityLog_targetResource_idx; Type: INDEX; Schema: public; Owner: saranneralla
+--
+
+CREATE INDEX "StudentActivityLog_targetResource_idx" ON public."StudentActivityLog" USING btree ("targetResource");
 
 
 --
@@ -125918,6 +126339,22 @@ ALTER TABLE ONLY public."AuditLog"
 
 
 --
+-- Name: CourseMaterial CourseMaterial_assignmentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: saranneralla
+--
+
+ALTER TABLE ONLY public."CourseMaterial"
+    ADD CONSTRAINT "CourseMaterial_assignmentId_fkey" FOREIGN KEY ("assignmentId") REFERENCES public."FacultySubjectAssignment"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: CourseQuiz CourseQuiz_assignmentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: saranneralla
+--
+
+ALTER TABLE ONLY public."CourseQuiz"
+    ADD CONSTRAINT "CourseQuiz_assignmentId_fkey" FOREIGN KEY ("assignmentId") REFERENCES public."FacultySubjectAssignment"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: Department Department_schoolId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -125998,6 +126435,14 @@ ALTER TABLE ONLY public."LabBatch"
 
 
 --
+-- Name: LecturePlanTopic LecturePlanTopic_assignmentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: saranneralla
+--
+
+ALTER TABLE ONLY public."LecturePlanTopic"
+    ADD CONSTRAINT "LecturePlanTopic_assignmentId_fkey" FOREIGN KEY ("assignmentId") REFERENCES public."FacultySubjectAssignment"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: Program Program_regulationId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -126014,6 +126459,46 @@ ALTER TABLE ONLY public."Program"
 
 
 --
+-- Name: QuestionBankItem QuestionBankItem_subjectId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: saranneralla
+--
+
+ALTER TABLE ONLY public."QuestionBankItem"
+    ADD CONSTRAINT "QuestionBankItem_subjectId_fkey" FOREIGN KEY ("subjectId") REFERENCES public."Subject"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: QuizQuestionMapping QuizQuestionMapping_questionBankId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: saranneralla
+--
+
+ALTER TABLE ONLY public."QuizQuestionMapping"
+    ADD CONSTRAINT "QuizQuestionMapping_questionBankId_fkey" FOREIGN KEY ("questionBankId") REFERENCES public."QuestionBankItem"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: QuizQuestionMapping QuizQuestionMapping_quizId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: saranneralla
+--
+
+ALTER TABLE ONLY public."QuizQuestionMapping"
+    ADD CONSTRAINT "QuizQuestionMapping_quizId_fkey" FOREIGN KEY ("quizId") REFERENCES public."CourseQuiz"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: QuizStudentAttempt QuizStudentAttempt_quizId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: saranneralla
+--
+
+ALTER TABLE ONLY public."QuizStudentAttempt"
+    ADD CONSTRAINT "QuizStudentAttempt_quizId_fkey" FOREIGN KEY ("quizId") REFERENCES public."CourseQuiz"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: QuizStudentAttempt QuizStudentAttempt_studentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: saranneralla
+--
+
+ALTER TABLE ONLY public."QuizStudentAttempt"
+    ADD CONSTRAINT "QuizStudentAttempt_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES public."Student"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: Section Section_academicYearId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -126027,6 +126512,22 @@ ALTER TABLE ONLY public."Section"
 
 ALTER TABLE ONLY public."Section"
     ADD CONSTRAINT "Section_programId_fkey" FOREIGN KEY ("programId") REFERENCES public."Program"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: StudentActivityLog StudentActivityLog_studentId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: saranneralla
+--
+
+ALTER TABLE ONLY public."StudentActivityLog"
+    ADD CONSTRAINT "StudentActivityLog_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES public."Student"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: StudentActivityLog StudentActivityLog_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: saranneralla
+--
+
+ALTER TABLE ONLY public."StudentActivityLog"
+    ADD CONSTRAINT "StudentActivityLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES public."User"(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 --
@@ -126190,8 +126691,15 @@ ALTER TABLE ONLY public."UserRole"
 
 
 --
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: saranneralla
+--
+
+REVOKE USAGE ON SCHEMA public FROM PUBLIC;
+
+
+--
 -- PostgreSQL database dump complete
 --
 
-\unrestrict LbUs0HeYaPULOIDMgzBs5KFw2ZZ3MRrTuBsmtQ1Ql1xhwCFsi5MFecQqDz2ENZs
+\unrestrict H7k1Oivndv2WjDeePALFsblfPIoCo3fUQHpm5azvyccJKgJ88WvaIDWt5mOfe4f
 

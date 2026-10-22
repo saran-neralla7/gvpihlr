@@ -100,6 +100,15 @@ export default async function AdminHubPage() {
       officeAllowed: true,
     },
     {
+      title: "LMS & Syllabus Speedometer",
+      description: "Institutional syllabus completion rate, unit lecture progress, study materials, and student audit telemetry.",
+      icon: BookOpen,
+      iconColor: "text-indigo-600 bg-indigo-50",
+      link: "/admin/lms",
+      officeAllowed: true,
+      badge: "HOD Speedometer",
+    },
+    {
       title: "Academic Years & Sections",
       description: "Manage university terms, class sections, capacity, and semester offerings.",
       icon: Calendar,

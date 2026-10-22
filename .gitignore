@@ -38,3 +38,7 @@ scratch/
 scratch*
 ~$*
 *.tsbuildinfo
+
+# Uploaded LMS course materials & files
+public/uploads/
+!public/uploads/.gitkeep

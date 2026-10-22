@@ -18,6 +18,7 @@ export interface SessionPayload {
   departmentId?: string | null;
   schoolId?: string | null;
   allowedSchoolIds?: string[];
+  sessionId?: string;
   exp: number;
 }
 
@@ -164,6 +165,24 @@ export async function getCurrentUser() {
       },
     },
   });
+
+  if (!user) return null;
+
+  // Single-device student session enforcement:
+  // If another device initiated a takeover, invalidate this session
+  if (user.studentProfile && session.sessionId && user.activeSessionId && user.activeSessionId !== session.sessionId) {
+    return null;
+  }
+
+  // Record lightweight heartbeat asynchronously
+  if (user.studentProfile && session.sessionId) {
+    prisma.user
+      .update({
+        where: { id: user.id },
+        data: { lastHeartbeatAt: new Date() },
+      })
+      .catch(() => {});
+  }
 
   return user;
 }

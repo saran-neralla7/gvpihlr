@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   User,
   CheckCircle2,
@@ -15,6 +16,9 @@ import {
   FileSpreadsheet,
   Lock,
   Unlock,
+  BookOpen,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
 import StudentAttendanceLineChart from "./StudentAttendanceLineChart";
 import StudentAttendanceTranscript from "./StudentAttendanceTranscript";
@@ -160,6 +164,19 @@ export default function StudentDashboardView({
                 </span>
               )}
             </button>
+
+            <Link
+              href="/student/lms"
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl transition text-slate-300 hover:bg-indigo-950/80 hover:text-white border border-indigo-500/30 bg-indigo-950/40 group"
+            >
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
+                <span>LMS Courseware</span>
+              </div>
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-indigo-500 text-white font-extrabold uppercase shadow-xs">
+                LMS
+              </span>
+            </Link>
           </nav>
         </div>
 
@@ -258,6 +275,39 @@ export default function StudentDashboardView({
                 <Printer className="w-3.5 h-3.5" />
                 <span>Print Official Dossier</span>
               </button>
+            </div>
+
+            {/* Quick LMS Learning Room Card */}
+            <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-3xl p-5 px-6 text-white shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center flex-shrink-0 text-indigo-300">
+                  <BookOpen className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
+                      LMS Studio
+                    </span>
+                    <span className="text-xs text-indigo-200 font-semibold">
+                      Digital Courseware Active
+                    </span>
+                  </div>
+                  <h4 className="text-base font-bold text-white mt-0.5">
+                    Course Materials, Question Bank &amp; CBT Quizzes
+                  </h4>
+                  <p className="text-xs text-slate-300 mt-0.5">
+                    Read Unit 1–5 lecture notes, self-practice questions with difficulty tags, and take section quizzes.
+                  </p>
+                </div>
+              </div>
+
+              <Link
+                href="/student/lms"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-indigo-900 font-bold text-xs hover:bg-indigo-50 transition shadow-xs flex-shrink-0"
+              >
+                <span>Enter LMS Room</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
 
             {/* Attendance Trajectory Graph (Visual Sparkle) */}

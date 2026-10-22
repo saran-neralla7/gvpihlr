@@ -77,6 +77,13 @@ model User {
   failedAttempts      Int         @default(0)
   lockedUntil         DateTime?
 
+  // Single Device Enforcement Fields:
+  activeSessionId     String?          // Unique UUID for current active session
+  activeDeviceSummary String?          // "Windows 11 (Chrome 128)" or "iPhone (Safari)"
+  activeDeviceIp      String?          // Client IP address
+  lastHeartbeatAt     DateTime?        // Last activity timestamp for idle detection
+  sessionExpiresAt    DateTime?        // Session expiry timestamp
+
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
   deletedAt           DateTime?
@@ -88,6 +95,7 @@ model User {
   auditLogs           AuditLog[]
   attendanceSessionsRecorded AttendanceSession[] @relation("RecordedBy")
   attendanceAuditLogs        AttendanceAuditLog[]
+  activityLogs               StudentActivityLog[]
 }
 
 model Role {
@@ -409,6 +417,8 @@ model Student {
   enrollments         StudentEnrollment[]
   labBatchMemberships LabBatchStudent[]
   attendanceRecords   AttendanceRecord[]
+  activityLogs        StudentActivityLog[]
+  quizAttempts        QuizStudentAttempt[]
 
   @@index([rollNumber])
   @@index([status])
@@ -466,6 +476,7 @@ model Subject {
   deletedAt     DateTime?
 
   offerings     SubjectOffering[]
+  questionBankItems QuestionBankItem[]
 
   @@index([departmentId])
   @@index([code])
@@ -523,6 +534,9 @@ model FacultySubjectAssignment {
 
   attendanceSessions AttendanceSession[]
   timetableEntries   TimetableEntry[]
+  lecturePlanTopics  LecturePlanTopic[]
+  courseMaterials    CourseMaterial[]
+  courseQuizzes      CourseQuiz[]
 
   @@unique([academicYearId, facultyId, subjectOfferingId, sectionId])
   @@index([academicYearId])
@@ -672,4 +686,175 @@ model AuditLog {
   @@index([action])
   @@index([resource, resourceId])
   @@index([timestamp])
+}
+
+// =========================================================================
+// 10. LEARNING MANAGEMENT SYSTEM (LMS), TELEMETRY & COURSEWARE
+// =========================================================================
+
+enum ActivityCategory {
+  AUTH
+  NAVIGATION
+  MATERIAL_VIEW
+  MATERIAL_DOWNLOAD
+  QUIZ_INTERACTION
+  PROFILE_UPDATE
+}
+
+enum DeliveryStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  RESCHEDULED
+}
+
+enum MaterialType {
+  LECTURE_NOTES_PDF
+  SLIDES_PPT
+  SYLLABUS_COPY
+  FORMULA_SHEET
+  REFERENCE_LINK
+  VIDEO_LECTURE
+}
+
+enum QuestionDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum QuestionType {
+  MCQ
+  SHORT_ANSWER
+  DESCRIPTIVE
+}
+
+model StudentActivityLog {
+  id              String           @id @default(cuid())
+  studentId       String
+  student         Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  category        ActivityCategory
+  action          String           // "AUTH_LOGIN", "PDF_DOWNLOAD", "SESSION_TAKEOVER", "TAB_SWITCH"
+  targetResource  String?          // e.g. "26MA101", "material_cuid123", "quiz_cuid456"
+  description     String           // Human readable e.g. "Downloaded Unit 2 Formula Sheet PDF"
+  ipAddress       String?
+  deviceType      String?          // "Mobile", "Desktop", "Tablet"
+  deviceModel     String?          // "iPhone", "Samsung Galaxy S23", "Windows PC"
+  os              String?          // "Windows 11", "Android 14", "iOS 17"
+  browser         String?          // "Chrome 128", "Safari 17", "Edge 128"
+  userAgent       String?          @db.Text
+  metadata        Json?            // Stores dwell time, page number, quiz switch count
+  createdAt       DateTime         @default(now())
+
+  @@index([studentId, createdAt])
+  @@index([category, createdAt])
+  @@index([targetResource])
+}
+
+model LecturePlanTopic {
+  id              String                   @id @default(cuid())
+  assignmentId    String
+  assignment      FacultySubjectAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  unitNumber      Int                      // 1, 2, 3, 4, 5
+  topicSequence   Int                      // Order within unit
+  topicTitle      String
+  subTopics       String?                  @db.Text
+  plannedDate     DateTime
+  actualDate      DateTime?
+  status          DeliveryStatus           @default(PLANNED)
+  deliveryMode    String?                  // "Chalk & Talk", "Presentation", "Lab Demo"
+  remarks         String?
+  createdAt       DateTime                 @default(now())
+
+  @@index([assignmentId, unitNumber])
+}
+
+model CourseMaterial {
+  id              String                   @id @default(cuid())
+  assignmentId    String
+  assignment      FacultySubjectAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  unitNumber      Int                      // 1 to 5
+  title           String
+  description     String?
+  type            MaterialType             @default(LECTURE_NOTES_PDF)
+  fileUrl         String                   // e.g. /uploads/materials/26MA101/unit-1/notes.pdf
+  fileName        String
+  fileSize        Int?                     // Bytes
+  viewCount       Int                      @default(0)
+  downloadCount   Int                      @default(0)
+  createdAt       DateTime                 @default(now())
+
+  @@index([assignmentId, unitNumber])
+}
+
+model QuestionBankItem {
+  id              String                   @id @default(cuid())
+  subjectId       String
+  subject         Subject                  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  assignmentId    String?                  // Optional: section-bound or subject-pooled
+  unitNumber      Int                      // 1 to 5
+  difficulty      QuestionDifficulty       @default(MEDIUM)
+  type            QuestionType             @default(MCQ)
+  questionText    String                   @db.Text
+  options         Json?                    // Array of choices for MCQ: ["Opt A", "Opt B", "Opt C", "Opt D"]
+  correctOption   Int?                     // Index 0, 1, 2, 3
+  explanation     String?                  @db.Text
+  bloomsLevel     String?                  // "Remember", "Understand", "Apply", "Analyze"
+  marks           Float                    @default(1.0)
+  createdAt       DateTime                 @default(now())
+
+  quizMappings    QuizQuestionMapping[]
+
+  @@index([subjectId, unitNumber, difficulty])
+}
+
+model CourseQuiz {
+  id              String                   @id @default(cuid())
+  assignmentId    String
+  assignment      FacultySubjectAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  title           String
+  unitNumber      Int?
+  durationMinutes Int                      @default(20)
+  totalMarks      Float                    @default(20.0)
+  startTime       DateTime
+  endTime         DateTime
+  isPublished     Boolean                  @default(false)
+  allowReview     Boolean                  @default(true)
+  createdAt       DateTime                 @default(now())
+
+  questions       QuizQuestionMapping[]
+  attempts        QuizStudentAttempt[]
+
+  @@index([assignmentId])
+}
+
+model QuizQuestionMapping {
+  id              String                   @id @default(cuid())
+  quizId          String
+  quiz            CourseQuiz               @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  questionBankId  String
+  questionBank    QuestionBankItem         @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+  marks           Float                    @default(1.0)
+  order           Int                      @default(1)
+
+  @@index([quizId])
+  @@index([questionBankId])
+}
+
+model QuizStudentAttempt {
+  id              String                   @id @default(cuid())
+  quizId          String
+  quiz            CourseQuiz               @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         Student                  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  score           Float
+  submittedAnswers Json                    // Stores selected options per question
+  tabSwitchCount  Int                      @default(0) // Anti-cheat proctoring
+  startedAt       DateTime                 @default(now())
+  completedAt     DateTime?
+
+  @@unique([quizId, studentId])
+  @@index([studentId])
 }

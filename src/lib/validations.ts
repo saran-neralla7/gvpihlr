@@ -9,6 +9,7 @@ export const LoginSchema = z.object({
   username: z.string().min(2, "Username or Roll Number is required"),
   password: z.string().min(4, "Password must be at least 4 characters"),
   loginType: z.enum(["FACULTY", "STUDENT"]).default("FACULTY"),
+  forceTakeover: z.boolean().optional(),
 });
 
 // =========================================================================

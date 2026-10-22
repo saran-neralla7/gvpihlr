@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import prisma from "@/lib/prisma";
 import { verifyPassword, setSessionCookie, SessionPayload } from "@/lib/auth";
 import { recordAuditLog, extractClientInfo } from "@/lib/audit";
@@ -89,6 +90,31 @@ export async function POST(req: Request) {
       );
     }
 
+    // Check Single-Device Concurrency for Students
+    const isStudent = !!user.studentProfile;
+    const forceTakeover = Boolean(body.forceTakeover);
+
+    if (isStudent && user.activeSessionId && user.lastHeartbeatAt) {
+      const twentyMinsAgo = new Date(Date.now() - 20 * 60 * 1000);
+      const isSessionActive = user.lastHeartbeatAt > twentyMinsAgo;
+
+      if (isSessionActive && !forceTakeover) {
+        return NextResponse.json(
+          {
+            success: false,
+            requiresTakeover: true,
+            activeDevice: user.activeDeviceSummary || "Another Device",
+            activeSince: user.lastHeartbeatAt.toLocaleTimeString("en-IN", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            error: `Active session detected on ${user.activeDeviceSummary || "another device"}.`,
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     const isMatch = await verifyPassword(password, user.passwordHash);
 
     if (!isMatch) {
@@ -121,15 +147,47 @@ export async function POST(req: Request) {
       );
     }
 
-    // Reset failed attempts upon successful login
+    const newSessionId = crypto.randomUUID();
+
+    // Reset failed attempts upon successful login & update active device
     await prisma.user.update({
       where: { id: user.id },
       data: {
         failedAttempts: 0,
         lockedUntil: null,
         lastLoginAt: new Date(),
+        activeSessionId: isStudent ? newSessionId : undefined,
+        activeDeviceSummary: isStudent ? deviceSummary : undefined,
+        activeDeviceIp: isStudent ? ipAddress : undefined,
+        lastHeartbeatAt: isStudent ? new Date() : undefined,
+        sessionExpiresAt: isStudent ? new Date(Date.now() + 12 * 3600 * 1000) : undefined,
       },
     });
+
+    // Record student activity telemetry
+    if (isStudent && user.studentProfile) {
+      await prisma.studentActivityLog
+        .create({
+          data: {
+            studentId: user.studentProfile.id,
+            userId: user.id,
+            category: "AUTH",
+            action: forceTakeover ? "SESSION_TAKEOVER" : "AUTH_LOGIN",
+            description: forceTakeover
+              ? `Terminated previous session on ${user.activeDeviceSummary || "another device"} and logged in on ${deviceSummary}`
+              : `Logged in from ${deviceSummary}`,
+            ipAddress,
+            userAgent,
+            deviceType: deviceSummary.includes("Mobile") ? "Mobile" : "Desktop",
+            deviceModel: deviceSummary,
+            metadata: {
+              previousDevice: forceTakeover ? user.activeDeviceSummary : null,
+              ip: ipAddress,
+            },
+          },
+        })
+        .catch((e) => console.error("Telemetry error:", e));
+    }
 
     const roleNames = user.userRoles.map((ur) => ur.role.name);
     const allowedSchoolIds = Array.from(
@@ -144,6 +202,7 @@ export async function POST(req: Request) {
       facultyId: user.facultyProfile?.id || null,
       studentId: user.studentProfile?.id || null,
       allowedSchoolIds: allowedSchoolIds.length > 0 ? allowedSchoolIds : undefined,
+      sessionId: isStudent ? newSessionId : undefined,
       exp: Math.floor(Date.now() / 1000) + 12 * 3600, // 12 hours
     };
 

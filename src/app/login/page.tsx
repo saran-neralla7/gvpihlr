@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Users, GraduationCap, ArrowRight, Lock, User, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
+import { Users, GraduationCap, ArrowRight, Lock, User, AlertCircle, Loader2, Eye, EyeOff, Smartphone } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,6 +13,10 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [takeoverInfo, setTakeoverInfo] = useState<{
+    activeDevice: string;
+    activeSince: string;
+  } | null>(null);
 
   useEffect(() => {
     try {
@@ -34,8 +38,8 @@ export default function LoginPage() {
     setPassword("");
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (e?: React.FormEvent, forceTakeover: boolean = false) => {
+    if (e) e.preventDefault();
     if (!username.trim() || !password.trim()) {
       setErrorMessage("Please enter both username and password");
       return;
@@ -52,16 +56,28 @@ export default function LoginPage() {
           username: username.trim(),
           password,
           loginType: selectedPortal || "FACULTY",
+          forceTakeover,
         }),
       });
 
       const data = await res.json();
+
+      if (res.status === 409 && data.requiresTakeover) {
+        setTakeoverInfo({
+          activeDevice: data.activeDevice || "Another Device",
+          activeSince: data.activeSince || "recently",
+        });
+        setIsLoading(false);
+        return;
+      }
 
       if (!res.ok || !data.success) {
         setErrorMessage(data.error || "Authentication failed. Please check your credentials.");
         setIsLoading(false);
         return;
       }
+
+      setTakeoverInfo(null);
 
       if (rememberMe) {
         try {
@@ -267,6 +283,45 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+        </div>
+      )}
+
+      {/* Single Device Session Takeover Modal */}
+      {takeoverInfo && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full border border-slate-200 shadow-2xl space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <Smartphone className="w-6 h-6" />
+            </div>
+            <div>
+              <h4 className="text-lg font-black text-slate-900">Active Session Detected</h4>
+              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                You are currently logged in from <strong className="text-slate-900">{takeoverInfo.activeDevice}</strong> (active since {takeoverInfo.activeSince}).
+              </p>
+              <p className="text-xs text-slate-500 mt-2 bg-amber-50/70 border border-amber-200/60 p-2.5 rounded-xl">
+                University security policy restricts student logins to <strong>one active device</strong> at a time. Logging in here will immediately disconnect the other device.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setTakeoverInfo(null);
+                  setIsLoading(false);
+                }}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleLogin(undefined, true)}
+                className="flex-1 py-2.5 rounded-xl bg-[#0B2545] hover:bg-[#132E5C] text-white text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5"
+              >
+                <span>End &amp; Log In Here</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -12,6 +12,7 @@ import {
   Shield,
   CreditCard,
   BarChart3,
+  BookOpen,
 } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -94,6 +95,14 @@ export default async function DashboardPage() {
         badgeColor: "bg-pink-600",
         icon: Bookmark,
         link: "/admin/subjects",
+        officeAllowed: true,
+      },
+      {
+        title: "LMS & Syllabus Speedometer",
+        description: "Monitor university syllabus completion rate, unit lecture progress, and student dwell telemetry.",
+        badgeColor: "bg-indigo-600",
+        icon: BookOpen,
+        link: "/admin/lms",
         officeAllowed: true,
       },
       {
@@ -210,7 +219,31 @@ export default async function DashboardPage() {
       </div>
 
       {/* Pure Attendance Cards for Faculty */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Link
+          href="/faculty/lms"
+          className="group bg-white rounded-2xl border border-slate-200/80 p-7 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex items-start justify-between">
+              <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                <BookOpen className="w-5 h-5" />
+              </div>
+              <BookOpen className="w-8 h-8 text-slate-200/60" />
+            </div>
+            <h4 className="text-lg font-bold text-slate-900 mt-5 group-hover:text-indigo-700 transition-colors">
+              LMS Course Studio
+            </h4>
+            <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+              Curate Unit 1–5 lecture plans, upload course materials, author question banks with difficulty tiers, and conduct CBT quizzes.
+            </p>
+          </div>
+
+          <div className="mt-6 pt-4 border-t border-slate-100 flex items-center text-xs font-bold text-indigo-600 group-hover:translate-x-1 transition-transform">
+            <span>Open LMS Studio →</span>
+          </div>
+        </Link>
+
         <Link
           href="/attendance"
           className="group bg-white rounded-2xl border border-slate-200/80 p-7 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"

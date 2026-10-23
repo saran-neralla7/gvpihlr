@@ -47,25 +47,53 @@ export default async function FacultyLmsPage() {
     ],
   });
 
+  // Fetch all co-faculty mapped to the same subject offering & section
+  const coAssignments =
+    assignments.length > 0
+      ? await prisma.facultySubjectAssignment.findMany({
+          where: {
+            isActive: true,
+            OR: assignments.map((a) => ({
+              subjectOfferingId: a.subjectOfferingId,
+              sectionId: a.sectionId,
+            })),
+          },
+          include: {
+            faculty: {
+              include: {
+                user: { select: { fullName: true, username: true } },
+              },
+            },
+          },
+        })
+      : [];
+
   return (
     <div className="space-y-6">
       <FacultyLmsClient
-        assignments={assignments.map((a) => ({
-          id: a.id,
-          subjectId: a.subjectOffering.subject.id,
-          subjectCode: a.subjectOffering.subject.code,
-          subjectName: a.subjectOffering.subject.name,
-          subjectShortName: a.subjectOffering.subject.shortName,
-          credits: a.subjectOffering.subject.credits,
-          type: a.subjectOffering.subject.type,
-          syllabus: a.subjectOffering.subject.syllabus,
-          sectionId: a.section.id,
-          sectionName: a.section.name,
-          programName: a.subjectOffering.program.name,
-          year: a.section.year,
-          semester: a.section.semester,
-          facultyName: a.faculty.user.fullName,
-        }))}
+        assignments={assignments.map((a) => {
+          const matchedCo = coAssignments
+            .filter((c) => c.subjectOfferingId === a.subjectOfferingId && c.sectionId === a.sectionId)
+            .map((c) => `${c.faculty.user.fullName}${c.isPrimary ? " (Lead)" : ""}`);
+
+          return {
+            id: a.id,
+            subjectId: a.subjectOffering.subject.id,
+            subjectCode: a.subjectOffering.subject.code,
+            subjectName: a.subjectOffering.subject.name,
+            subjectShortName: a.subjectOffering.subject.shortName,
+            credits: a.subjectOffering.subject.credits,
+            type: a.subjectOffering.subject.type,
+            syllabus: a.subjectOffering.subject.syllabus,
+            sectionId: a.section.id,
+            sectionName: a.section.name,
+            programName: a.subjectOffering.program.name,
+            year: a.section.year,
+            semester: a.section.semester,
+            facultyName: a.faculty.user.fullName,
+            coFaculty: matchedCo.length > 0 ? matchedCo : [a.faculty.user.fullName],
+          };
+        })}
       />
     </div>
   );

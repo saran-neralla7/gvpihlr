@@ -32,6 +32,7 @@ import {
   BarChart3,
   Calendar,
   Users,
+  FileSpreadsheet,
 } from "lucide-react";
 import CustomModal from "@/components/ui/CustomModal";
 
@@ -50,6 +51,7 @@ interface AssignmentOption {
   year: number;
   semester: number;
   facultyName: string;
+  coFaculty?: string[];
 }
 
 export default function FacultyLmsClient({ assignments }: { assignments: AssignmentOption[] }) {
@@ -127,6 +129,11 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
   const [qBlooms, setQBlooms] = useState("Understand");
   const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false);
 
+  // Excel Question Bank Import State
+  const [isImportExcelModalOpen, setIsImportExcelModalOpen] = useState(false);
+  const [importExcelFile, setImportExcelFile] = useState<File | null>(null);
+  const [isImportingExcel, setIsImportingExcel] = useState(false);
+
   // 4. QUIZZES STATE (Many quizzes allowed per course, customizable marks and duration)
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [isLoadingQuizzes, setIsLoadingQuizzes] = useState(false);
@@ -183,8 +190,7 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
       .finally(() => setIsLoadingQuizzes(false));
   }, [selectedAssignmentId]);
 
-  // Load questions when assignment subject changes
-  useEffect(() => {
+  const reloadQuestions = () => {
     if (!selectedAssignment?.subjectId) return;
     setIsLoadingQuestions(true);
     fetch(`/api/lms/questions?subjectId=${selectedAssignment.subjectId}`)
@@ -193,6 +199,11 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
         if (data.success) setQuestions(data.questions);
       })
       .finally(() => setIsLoadingQuestions(false));
+  };
+
+  // Load questions when assignment subject changes
+  useEffect(() => {
+    reloadQuestions();
   }, [selectedAssignment?.subjectId]);
 
   // --- TOPIC ACTIONS ---
@@ -391,6 +402,42 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
     }
   };
 
+  const handleImportExcel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!importExcelFile || !selectedAssignment) {
+      showNotify("error", "Please select an Excel file (.xlsx)");
+      return;
+    }
+    setIsImportingExcel(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", importExcelFile);
+      formData.append("subjectId", selectedAssignment.subjectId);
+      if (selectedAssignmentId) {
+        formData.append("assignmentId", selectedAssignmentId);
+      }
+
+      const res = await fetch("/api/lms/questions/import", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        showNotify("success", data.message || `Imported ${data.count} questions!`);
+        setIsImportExcelModalOpen(false);
+        setImportExcelFile(null);
+        reloadQuestions();
+      } else {
+        showNotify("error", data.error || "Failed to import questions");
+      }
+    } catch {
+      showNotify("error", "Error uploading Excel file");
+    } finally {
+      setIsImportingExcel(false);
+    }
+  };
+
   // --- QUIZ ACTIONS (MANY NUMBER OF QUIZZES ALLOWED) ---
   const handleCreateQuiz = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -582,6 +629,11 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
                         Section {c.sectionName} (Year {c.year}, Sem {c.semester})
                       </span>
                     </p>
+                    {c.coFaculty && c.coFaculty.length > 1 && (
+                      <p className="text-[11px] font-semibold text-indigo-700 bg-indigo-50/70 px-2 py-0.5 rounded-md inline-block truncate max-w-full" title={c.coFaculty.join(", ")}>
+                        👥 {c.coFaculty.length} Instructors Mapped
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -626,6 +678,12 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
                 <h2 className="text-xl font-black text-slate-900 mt-0.5">
                   {selectedAssignment?.subjectName}
                 </h2>
+                {selectedAssignment?.coFaculty && selectedAssignment.coFaculty.length > 1 && (
+                  <p className="text-[11px] text-slate-500 font-medium mt-1">
+                    <strong className="text-slate-700">Course Instructors ({selectedAssignment.coFaculty.length}):</strong>{" "}
+                    {selectedAssignment.coFaculty.join(" • ")}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -1041,13 +1099,52 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
                       </p>
                     </div>
 
-                    <button
-                      onClick={() => setIsAddQuestionModalOpen(true)}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition shadow-xs"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Add New Question</span>
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* 1. Download Sample Excel Template */}
+                      <a
+                        href="/api/lms/questions/template"
+                        download="GVPIHLR_Question_Bank_Template.xlsx"
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition shadow-2xs"
+                        title="Download official sample Excel template with guidelines"
+                      >
+                        <Download className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Sample Excel</span>
+                      </a>
+
+                      {/* 2. Export Question Bank to Excel */}
+                      <a
+                        href={`/api/lms/questions/export?subjectId=${selectedAssignment?.subjectId}`}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50 text-slate-700 text-xs font-bold transition shadow-2xs"
+                        title="Export current course Question Bank to Excel (.xlsx)"
+                      >
+                        <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Download Excel</span>
+                      </a>
+
+                      {/* 3. Upload Questions from Excel */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImportExcelFile(null);
+                          setIsImportExcelModalOpen(true);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-xs"
+                        title="Upload questions in bulk from Excel (.xlsx)"
+                      >
+                        <UploadCloud className="w-3.5 h-3.5" />
+                        <span>Upload Excel</span>
+                      </button>
+
+                      {/* 4. Single Add Question Button */}
+                      <button
+                        type="button"
+                        onClick={() => setIsAddQuestionModalOpen(true)}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition shadow-xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add Question</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Filters Bar */}
@@ -1822,6 +1919,116 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
               </div>
             )}
           </div>
+        </CustomModal>
+      )}
+
+      {/* 6. Import Questions from Excel Modal */}
+      {isImportExcelModalOpen && (
+        <CustomModal
+          title="Upload Question Bank from Excel"
+          isOpen={isImportExcelModalOpen}
+          onClose={() => {
+            if (!isImportingExcel) {
+              setIsImportExcelModalOpen(false);
+              setImportExcelFile(null);
+            }
+          }}
+        >
+          <form onSubmit={handleImportExcel} className="p-6 space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div>
+                <h3 className="font-bold text-sm text-slate-900">Upload Question Bank (.xlsx)</h3>
+                <p className="text-xs text-slate-500">
+                  Bulk import MCQs, Short Answers, and Descriptive questions for {selectedAssignment?.subjectCode}.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isImportingExcel) {
+                    setIsImportExcelModalOpen(false);
+                    setImportExcelFile(null);
+                  }
+                }}
+              >
+                <X className="w-4 h-4 text-slate-400 hover:text-slate-600" />
+              </button>
+            </div>
+
+            {/* Template Download Hint */}
+            <div className="bg-indigo-50/70 border border-indigo-100 rounded-2xl p-4 flex items-start gap-3">
+              <Download className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+              <div className="text-xs text-indigo-900 space-y-1">
+                <p className="font-bold">Need the Excel column structure?</p>
+                <p className="text-indigo-700">
+                  Download our pre-formatted sample Excel file with columns for Unit Number, Type, Difficulty, Marks, Options, and Answers.
+                </p>
+                <a
+                  href="/api/lms/questions/template"
+                  download="GVPIHLR_Question_Bank_Template.xlsx"
+                  className="inline-flex items-center gap-1 font-bold text-indigo-600 hover:text-indigo-800 underline mt-1"
+                >
+                  Download GVPIHLR_Question_Bank_Template.xlsx
+                </a>
+              </div>
+            </div>
+
+            {/* File Input Dropzone */}
+            <div className="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center hover:border-indigo-400 transition bg-slate-50/50">
+              <FileSpreadsheet className="w-10 h-10 text-emerald-600 mx-auto mb-2" />
+              <label className="block cursor-pointer">
+                <span className="text-xs font-bold text-indigo-600 hover:underline">Choose .xlsx or .xls file</span>
+                <input
+                  type="file"
+                  accept=".xlsx, .xls"
+                  onChange={(e) => setImportExcelFile(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+              </label>
+              {importExcelFile ? (
+                <div className="mt-3 p-2 px-3 bg-white border border-slate-200 rounded-xl inline-flex items-center gap-2 text-xs font-mono font-bold text-slate-800">
+                  <CheckCircle className="w-4 h-4 text-emerald-600" />
+                  <span>{importExcelFile.name}</span>
+                  <span className="text-slate-400 font-normal">
+                    ({(importExcelFile.size / 1024).toFixed(1)} KB)
+                  </span>
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-400 mt-1">Supports standard Microsoft Excel spreadsheets (.xlsx, .xls)</p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t">
+              <button
+                type="button"
+                disabled={isImportingExcel}
+                onClick={() => {
+                  setIsImportExcelModalOpen(false);
+                  setImportExcelFile(null);
+                }}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isImportingExcel || !importExcelFile}
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 disabled:opacity-50 shadow-xs"
+              >
+                {isImportingExcel ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Parsing & Importing...</span>
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud className="w-3.5 h-3.5" />
+                    <span>Import Questions</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
         </CustomModal>
       )}
     </div>

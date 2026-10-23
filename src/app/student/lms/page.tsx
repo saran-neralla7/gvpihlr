@@ -120,6 +120,53 @@ export default async function StudentLmsPage() {
       })
     : [];
 
+  // 3. Fetch all co-faculty assigned to these course offerings & sections
+  const coAssignments =
+    assignments.length > 0
+      ? await prisma.facultySubjectAssignment.findMany({
+          where: {
+            isActive: true,
+            OR: assignments.map((a) => ({
+              subjectOfferingId: a.subjectOfferingId,
+              sectionId: a.sectionId,
+            })),
+          },
+          include: {
+            faculty: {
+              include: {
+                user: { select: { fullName: true, email: true } },
+              },
+            },
+          },
+        })
+      : [];
+
+  const enrichedAssignments = assignments.map((a) => {
+    const matchedCo = coAssignments
+      .filter((c) => c.subjectOfferingId === a.subjectOfferingId && c.sectionId === a.sectionId)
+      .map((c) => ({
+        id: c.facultyId,
+        fullName: c.faculty.user.fullName,
+        email: c.faculty.user.email,
+        isPrimary: c.isPrimary,
+      }));
+
+    return {
+      ...a,
+      allFaculty:
+        matchedCo.length > 0
+          ? matchedCo
+          : [
+              {
+                id: a.facultyId,
+                fullName: a.faculty.user.fullName,
+                email: a.faculty.user.email,
+                isPrimary: true,
+              },
+            ],
+    };
+  });
+
   return (
     <div className="min-h-screen bg-slate-50/70 p-4 sm:p-6 lg:p-8">
       <StudentLmsClient
@@ -133,7 +180,7 @@ export default async function StudentLmsPage() {
           semester: enrollment?.semester || 1,
           academicYear: enrollment?.academicYear.code || "2026-27",
         }}
-        assignments={JSON.parse(JSON.stringify(assignments))}
+        assignments={JSON.parse(JSON.stringify(enrichedAssignments))}
       />
     </div>
   );

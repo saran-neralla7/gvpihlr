@@ -103,6 +103,7 @@ interface LecturePlanTopic {
 
 interface Assignment {
   id: string;
+  allFaculty?: { id: string; fullName: string; email?: string | null; isPrimary: boolean }[];
   faculty: {
     user: { fullName: string; email?: string | null };
     department?: { name: string; code: string } | null;
@@ -514,7 +515,12 @@ export default function StudentLmsClient({
 
                       <div className="flex items-center gap-1.5 text-xs text-slate-600 mt-2">
                         <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate">Faculty: {assignment.faculty.user.fullName}</span>
+                        <span className="truncate" title={assignment.allFaculty?.map((f) => f.fullName).join(", ") || assignment.faculty.user.fullName}>
+                          Faculty:{" "}
+                          {assignment.allFaculty && assignment.allFaculty.length > 1
+                            ? `${assignment.allFaculty[0].fullName} +${assignment.allFaculty.length - 1} co-faculty`
+                            : assignment.faculty.user.fullName}
+                        </span>
                       </div>
 
                       {/* Content Badges */}
@@ -637,9 +643,24 @@ export default function StudentLmsClient({
                   <h2 className="text-xl sm:text-2xl font-black mt-2">
                     {currentAssignment.subjectOffering.subject.name}
                 </h2>
-                <p className="text-xs text-slate-300 mt-1">
-                  Course In-Charge: <strong className="text-white">{currentAssignment.faculty.user.fullName}</strong>
-                </p>
+                  <div className="text-xs text-slate-300 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span>Course Instructors:</span>
+                    {currentAssignment.allFaculty && currentAssignment.allFaculty.length > 1 ? (
+                      currentAssignment.allFaculty.map((f, i) => (
+                        <span key={f.id || i} className="inline-flex items-center gap-1">
+                          <strong className="text-white">{f.fullName}</strong>
+                          {f.isPrimary && (
+                            <span className="px-1.5 py-0.5 rounded bg-indigo-500/30 text-[10px] text-indigo-200 font-bold">
+                              Lead
+                            </span>
+                          )}
+                          {i < currentAssignment.allFaculty!.length - 1 && <span className="text-slate-400">•</span>}
+                        </span>
+                      ))
+                    ) : (
+                      <strong className="text-white">{currentAssignment.faculty.user.fullName}</strong>
+                    )}
+                  </div>
               </div>
 
               {/* Syllabus Speedometer Pill */}

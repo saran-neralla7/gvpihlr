@@ -32,19 +32,44 @@ export default async function StudentLmsPage() {
 
   const enrollment = student.enrollments[0];
 
-  // Fetch all active course assignments for this student's section (strictly subjects they attend)
-  const assignments = enrollment
-    ? await prisma.facultySubjectAssignment.findMany({
+  // 1. Retrieve all subject assignments scheduled in the timetable for this student's section & program
+  let assignmentIds: string[] = [];
+
+  if (enrollment) {
+    const timetableEntries = await prisma.timetableEntry.findMany({
+      where: {
+        sectionId: enrollment.sectionId,
+        isActive: true,
+      },
+      select: { assignmentId: true },
+    });
+
+    assignmentIds = Array.from(new Set(timetableEntries.map((t) => t.assignmentId)));
+
+    // Fallback: If section timetable is not yet configured, load all assignments for this program, year & sem
+    if (assignmentIds.length === 0) {
+      const fallbackOfferings = await prisma.facultySubjectAssignment.findMany({
         where: {
           sectionId: enrollment.sectionId,
           isActive: true,
-          OR: [
-            { timetableEntries: { some: {} } },
-            { attendanceSessions: { some: {} } },
-            { lecturePlanTopics: { some: {} } },
-            { courseMaterials: { some: {} } },
-            { courseQuizzes: { some: {} } },
-          ],
+          subjectOffering: {
+            programId: enrollment.programId,
+            year: enrollment.year,
+            semester: enrollment.semester,
+          },
+        },
+        select: { id: true },
+      });
+      assignmentIds = fallbackOfferings.map((f) => f.id);
+    }
+  }
+
+  // 2. Fetch the full courseware details for those exact assigned timetable courses
+  const assignments = assignmentIds.length > 0
+    ? await prisma.facultySubjectAssignment.findMany({
+        where: {
+          id: { in: assignmentIds },
+          isActive: true,
         },
         include: {
           faculty: {
@@ -87,6 +112,11 @@ export default async function StudentLmsPage() {
             orderBy: { createdAt: "desc" },
           },
         },
+        orderBy: {
+          subjectOffering: {
+            subject: { code: "asc" },
+          },
+        },
       })
     : [];
 
@@ -98,7 +128,7 @@ export default async function StudentLmsPage() {
           rollNumber: student.rollNumber,
           fullName: student.user.fullName,
           programName: enrollment?.program.name || "Engineering",
-          sectionName: enrollment?.section.name || "A",
+          sectionName: enrollment?.section.name || "1",
           year: enrollment?.year || 1,
           semester: enrollment?.semester || 1,
           academicYear: enrollment?.academicYear.code || "2026-27",

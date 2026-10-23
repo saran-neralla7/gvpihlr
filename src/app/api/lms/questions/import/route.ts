@@ -3,9 +3,17 @@ import prisma from "@/lib/prisma";
 import { getCurrentSession } from "@/lib/auth";
 import { QuestionDifficulty, QuestionType } from "@prisma/client";
 import * as XLSX from "xlsx";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 export async function POST(req: Request) {
   try {
+    const rateLimitError = enforceRateLimit(req, "lms:questions:import", {
+      maxRequests: 10,
+      windowMs: 60 * 1000,
+      message: "Too many Excel import requests. Please wait a moment before trying again.",
+    });
+    if (rateLimitError) return rateLimitError;
+
     const session = await getCurrentSession();
     if (!session || (!session.roles.includes("FACULTY") && !session.roles.includes("SUPER_ADMIN"))) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });

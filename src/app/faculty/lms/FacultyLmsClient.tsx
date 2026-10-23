@@ -112,11 +112,28 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploadingMaterial, setIsUploadingMaterial] = useState(false);
 
-  // Syllabus PDF Upload State (strict 5MB limit)
+  // Syllabus / Lecture Plan PDF Upload State (strict 5MB limit)
   const [isUploadSyllabusModalOpen, setIsUploadSyllabusModalOpen] = useState(false);
+  const [syllabusCategory, setSyllabusCategory] = useState<"COMBINED" | "LECTURE_PLAN" | "SYLLABUS_COPY">("COMBINED");
   const [syllabusFile, setSyllabusFile] = useState<File | null>(null);
   const [syllabusTitle, setSyllabusTitle] = useState("Official Course Syllabus & Lecture Plan");
   const [isUploadingSyllabus, setIsUploadingSyllabus] = useState(false);
+
+  // Styled In-App Confirmation Dialog State (Replaces native browser popups)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    confirmText?: string;
+    type?: "danger" | "warning" | "info";
+    onConfirm: () => void | Promise<void>;
+    isLoading?: boolean;
+  }>({
+    isOpen: false,
+    title: "",
+    description: "",
+    onConfirm: () => {},
+  });
 
   // 3. QUESTION BANK STATE (Difficulty levels Easy/Medium/Hard, types, marks)
   const [questions, setQuestions] = useState<any[]>([]);
@@ -266,18 +283,31 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
     }
   };
 
-  const handleDeleteTopic = async (id: string) => {
-    if (!confirm("Are you sure you want to remove this lecture topic?")) return;
-    try {
-      const res = await fetch(`/api/lms/lecture-plan?id=${id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (data.success) {
-        setTopics((prev) => prev.filter((t) => t.id !== id));
-        showNotify("success", "Topic removed");
-      }
-    } catch {
-      showNotify("error", "Failed to delete topic");
-    }
+  const handleDeleteTopic = (id: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Remove Lecture Topic?",
+      description: "Are you sure you want to remove this topic from the lecture schedule? This action cannot be undone.",
+      confirmText: "Delete Topic",
+      type: "danger",
+      onConfirm: async () => {
+        try {
+          setConfirmDialog((prev) => ({ ...prev, isLoading: true }));
+          const res = await fetch(`/api/lms/lecture-plan?id=${id}`, { method: "DELETE" });
+          const data = await res.json();
+          if (data.success) {
+            setTopics((prev) => prev.filter((t) => t.id !== id));
+            showNotify("success", "Topic removed from lecture schedule");
+          } else {
+            showNotify("error", data.error || "Failed to remove topic");
+          }
+        } catch {
+          showNotify("error", "Failed to delete topic");
+        } finally {
+          setConfirmDialog((prev) => ({ ...prev, isOpen: false, isLoading: false }));
+        }
+      },
+    });
   };
 
   // Open Add Material for a specific Topic or Unit
@@ -359,7 +389,7 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
     }
   };
 
-  // --- OFFICIAL SYLLABUS PDF UPLOAD (STRICT 5MB) ---
+  // --- OFFICIAL SYLLABUS & LECTURE PLAN PDF UPLOAD (STRICT 5MB) ---
   const handleUploadSyllabus = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!syllabusFile || !selectedAssignmentId) {
@@ -367,7 +397,7 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
       return;
     }
     if (syllabusFile.size > 5 * 1024 * 1024) {
-      showNotify("error", `Syllabus file exceeds 5MB limit (${(syllabusFile.size / (1024 * 1024)).toFixed(2)} MB)`);
+      showNotify("error", `File exceeds 5MB limit (${(syllabusFile.size / (1024 * 1024)).toFixed(2)} MB)`);
       return;
     }
 
@@ -376,9 +406,16 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
       const fd = new FormData();
       fd.append("assignmentId", selectedAssignmentId);
       fd.append("unitNumber", "1");
-      fd.append("title", syllabusTitle.trim() || "Official Course Syllabus & Lecture Plan");
+      const computedTitle =
+        syllabusTitle.trim() ||
+        (syllabusCategory === "LECTURE_PLAN"
+          ? "Institutional Course Lecture Plan"
+          : syllabusCategory === "SYLLABUS_COPY"
+          ? "Official Course Syllabus Copy"
+          : "Official Course Syllabus & Lecture Plan");
+      fd.append("title", computedTitle);
       fd.append("type", "SYLLABUS_COPY");
-      fd.append("description", "Institutional syllabus copy and lecture schedule");
+      fd.append("description", `Institutional ${computedTitle} for student reference`);
       fd.append("file", syllabusFile);
 
       const res = await fetch("/api/lms/materials", {
@@ -390,29 +427,42 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
         setMaterials((prev) => [data.material, ...prev]);
         setIsUploadSyllabusModalOpen(false);
         setSyllabusFile(null);
-        showNotify("success", "Official syllabus document uploaded successfully!");
+        showNotify("success", "Institutional document uploaded successfully!");
       } else {
-        showNotify("error", data.error || "Failed to upload syllabus PDF");
+        showNotify("error", data.error || "Failed to upload document");
       }
     } catch {
-      showNotify("error", "Error uploading syllabus PDF");
+      showNotify("error", "Error uploading document");
     } finally {
       setIsUploadingSyllabus(false);
     }
   };
 
-  const handleDeleteMaterial = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this file from storage?")) return;
-    try {
-      const res = await fetch(`/api/lms/materials?id=${id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (data.success) {
-        setMaterials((prev) => prev.filter((m) => m.id !== id));
-        showNotify("success", "Material deleted from disk");
-      }
-    } catch {
-      showNotify("error", "Failed to delete material");
-    }
+  const handleDeleteMaterial = (id: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete Course Material?",
+      description: "Are you sure you want to delete this file/link from server storage? This cannot be undone.",
+      confirmText: "Delete File",
+      type: "danger",
+      onConfirm: async () => {
+        try {
+          setConfirmDialog((prev) => ({ ...prev, isLoading: true }));
+          const res = await fetch(`/api/lms/materials?id=${id}`, { method: "DELETE" });
+          const data = await res.json();
+          if (data.success) {
+            setMaterials((prev) => prev.filter((m) => m.id !== id));
+            showNotify("success", "Material removed successfully");
+          } else {
+            showNotify("error", data.error || "Failed to delete material");
+          }
+        } catch {
+          showNotify("error", "Failed to delete material");
+        } finally {
+          setConfirmDialog((prev) => ({ ...prev, isOpen: false, isLoading: false }));
+        }
+      },
+    });
   };
 
   // --- QUESTION BANK ACTIONS ---
@@ -464,18 +514,31 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
     }
   };
 
-  const handleDeleteQuestion = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this question?")) return;
-    try {
-      const res = await fetch(`/api/lms/questions?id=${id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (data.success) {
-        setQuestions((prev) => prev.filter((q) => q.id !== id));
-        showNotify("success", "Question removed");
-      }
-    } catch {
-      showNotify("error", "Failed to delete question");
-    }
+  const handleDeleteQuestion = (id: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete Question from Bank?",
+      description: "Are you sure you want to permanently delete this question from the course Question Bank?",
+      confirmText: "Delete Question",
+      type: "danger",
+      onConfirm: async () => {
+        try {
+          setConfirmDialog((prev) => ({ ...prev, isLoading: true }));
+          const res = await fetch(`/api/lms/questions?id=${id}`, { method: "DELETE" });
+          const data = await res.json();
+          if (data.success) {
+            setQuestions((prev) => prev.filter((q) => q.id !== id));
+            showNotify("success", "Question removed from Question Bank");
+          } else {
+            showNotify("error", data.error || "Failed to delete question");
+          }
+        } catch {
+          showNotify("error", "Failed to delete question");
+        } finally {
+          setConfirmDialog((prev) => ({ ...prev, isOpen: false, isLoading: false }));
+        }
+      },
+    });
   };
 
   const handleImportExcel = async (e: React.FormEvent) => {
@@ -920,7 +983,7 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
                         className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50/70 text-indigo-700 hover:bg-indigo-100 text-xs font-bold transition shadow-2xs"
                       >
                         <UploadCloud className="w-3.5 h-3.5" />
-                        <span>Upload Syllabus PDF (≤5MB)</span>
+                        <span>Upload Syllabus / Lecture Plan (≤5MB)</span>
                       </button>
 
                       <button
@@ -937,31 +1000,44 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
                     </div>
                   </div>
 
-                  {/* Official Syllabus Copy Banner if Uploaded */}
+                  {/* Official Syllabus / Lecture Plan Copy Banner if Uploaded */}
                   {materials
                     .filter((m) => m.type === "SYLLABUS_COPY")
-                    .map((syl) => (
-                      <div
-                        key={syl.id}
-                        className="bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 rounded-2xl p-4 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md border border-white/10"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                            <FileText className="w-5 h-5 text-indigo-300" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-indigo-500/30 text-indigo-200 font-mono">
-                                Official Syllabus Copy (PDF)
-                              </span>
-                              <span className="text-[11px] text-slate-300">
-                                {syl.fileSize ? `${(syl.fileSize / (1024 * 1024)).toFixed(2)} MB` : "PDF"}
-                              </span>
+                    .map((syl) => {
+                      const isPlanOnly =
+                        syl.title.toLowerCase().includes("lecture plan") &&
+                        !syl.title.toLowerCase().includes("syllabus");
+                      const isCombined =
+                        syl.title.toLowerCase().includes("lecture plan") &&
+                        syl.title.toLowerCase().includes("syllabus");
+                      const badgeLabel = isPlanOnly
+                        ? "Institutional Lecture Plan (PDF)"
+                        : isCombined
+                        ? "Syllabus & Lecture Plan (PDF)"
+                        : "Official Syllabus Copy (PDF)";
+
+                      return (
+                        <div
+                          key={syl.id}
+                          className="bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 rounded-2xl p-4 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md border border-white/10"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                              <FileText className="w-5 h-5 text-indigo-300" />
                             </div>
-                            <h4 className="font-extrabold text-sm text-white mt-0.5">{syl.title}</h4>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-indigo-500/30 text-indigo-200 font-mono">
+                                  {badgeLabel}
+                                </span>
+                                <span className="text-[11px] text-slate-300">
+                                  {syl.fileSize ? `${(syl.fileSize / (1024 * 1024)).toFixed(2)} MB` : "PDF"}
+                                </span>
+                              </div>
+                              <h4 className="font-extrabold text-sm text-white mt-0.5">{syl.title}</h4>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2">
                           <a
                             href={syl.fileUrl}
                             target="_blank"
@@ -989,7 +1065,8 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
                           </button>
                         </div>
                       </div>
-                    ))}
+                    );
+                  })}
 
                   {isLoadingTopics ? (
                     <div className="py-12 text-center text-slate-400">
@@ -1531,6 +1608,7 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
         <CustomModal
           title="Add New Lecture Topic"
           isOpen={isAddTopicModalOpen}
+          hideFooter={true}
           onClose={() => setIsAddTopicModalOpen(false)}
         >
           <div className="p-6 space-y-4">
@@ -1622,6 +1700,7 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
         <CustomModal
           title="Upload Course Material (Option A)"
           isOpen={isAddMaterialModalOpen}
+          hideFooter={true}
           onClose={() => setIsAddMaterialModalOpen(false)}
         >
           <div className="p-6 space-y-4">
@@ -1761,6 +1840,7 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
         <CustomModal
           title="Add Question to Bank"
           isOpen={isAddQuestionModalOpen}
+          hideFooter={true}
           onClose={() => setIsAddQuestionModalOpen(false)}
         >
           <div className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
@@ -1906,6 +1986,7 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
         <CustomModal
           title="Create Section CBT Quiz"
           isOpen={isCreateQuizModalOpen}
+          hideFooter={true}
           onClose={() => setIsCreateQuizModalOpen(false)}
         >
           <div className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
@@ -2053,6 +2134,7 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
         <CustomModal
           title={viewingQuizAttempts.title || "Quiz Submissions"}
           isOpen={!!viewingQuizAttempts}
+          hideFooter={true}
           onClose={() => setViewingQuizAttempts(null)}
         >
           <div className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
@@ -2119,6 +2201,7 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
         <CustomModal
           title="Upload Question Bank from Excel"
           isOpen={isImportExcelModalOpen}
+          hideFooter={true}
           onClose={() => {
             if (!isImportingExcel) {
               setIsImportExcelModalOpen(false);
@@ -2224,11 +2307,13 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
         </CustomModal>
       )}
 
-      {/* 7. Upload Official Syllabus PDF Modal (Strict 5MB limit) */}
+      {/* 7. Upload Official Syllabus & Lecture Plan PDF Modal (Strict 5MB limit) */}
       {isUploadSyllabusModalOpen && (
         <CustomModal
           title="Upload Course Syllabus & Lecture Plan (PDF)"
           isOpen={isUploadSyllabusModalOpen}
+          hideFooter={true}
+          maxWidth="max-w-lg"
           onClose={() => {
             if (!isUploadingSyllabus) {
               setIsUploadSyllabusModalOpen(false);
@@ -2236,12 +2321,12 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
             }
           }}
         >
-          <form onSubmit={handleUploadSyllabus} className="p-6 space-y-4">
+          <form onSubmit={handleUploadSyllabus} className="p-1 space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
               <div>
-                <h3 className="font-bold text-sm text-slate-900">Upload Course Syllabus Document</h3>
+                <h3 className="font-bold text-sm text-slate-900">Upload Course Syllabus or Lecture Plan</h3>
                 <p className="text-xs text-slate-500">
-                  Upload official syllabus copy for {selectedAssignment?.subjectCode} (Strict 5MB limit).
+                  Upload official syllabus copy or institutional lecture schedule for {selectedAssignment?.subjectCode} (Strict 5MB limit).
                 </p>
               </div>
               <button
@@ -2257,49 +2342,104 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
               </button>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Document Title</label>
-              <input
-                type="text"
-                value={syllabusTitle}
-                onChange={(e) => setSyllabusTitle(e.target.value)}
-                placeholder="e.g. Official Course Syllabus & Lecture Plan 2026-27"
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                required
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Document Category</label>
+                <select
+                  value={syllabusCategory}
+                  onChange={(e) => {
+                    const val = e.target.value as "COMBINED" | "LECTURE_PLAN" | "SYLLABUS_COPY";
+                    setSyllabusCategory(val);
+                    if (val === "LECTURE_PLAN") {
+                      setSyllabusTitle("Institutional Course Lecture Plan");
+                    } else if (val === "SYLLABUS_COPY") {
+                      setSyllabusTitle("Official Course Syllabus Copy");
+                    } else {
+                      setSyllabusTitle("Official Course Syllabus & Lecture Plan");
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none"
+                >
+                  <option value="COMBINED">Syllabus &amp; Lecture Plan (Combined)</option>
+                  <option value="LECTURE_PLAN">Institutional Lecture Plan (PDF)</option>
+                  <option value="SYLLABUS_COPY">Official Syllabus Copy (PDF)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Document Title</label>
+                <input
+                  type="text"
+                  value={syllabusTitle}
+                  onChange={(e) => setSyllabusTitle(e.target.value)}
+                  placeholder="e.g. Official Course Syllabus & Lecture Plan"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  required
+                />
+              </div>
             </div>
 
-            {/* File Dropzone */}
-            <div className="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center hover:border-indigo-400 transition bg-slate-50/50">
-              <FileText className="w-10 h-10 text-indigo-600 mx-auto mb-2" />
-              <label className="block cursor-pointer">
-                <span className="text-xs font-bold text-indigo-600 hover:underline">Choose PDF Document</span>
-                <input
-                  type="file"
-                  accept="application/pdf,.pdf"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0] || null;
-                    if (f && f.size > 5 * 1024 * 1024) {
-                      showNotify("error", `File exceeds 5MB limit (${(f.size / (1024 * 1024)).toFixed(2)} MB)`);
-                      return;
-                    }
-                    setSyllabusFile(f);
-                  }}
-                  className="hidden"
-                />
-              </label>
-              {syllabusFile ? (
-                <div className="mt-3 p-2 px-3 bg-white border border-slate-200 rounded-xl inline-flex items-center gap-2 text-xs font-mono font-bold text-slate-800">
-                  <CheckCircle className="w-4 h-4 text-emerald-600" />
-                  <span>{syllabusFile.name}</span>
-                  <span className="text-slate-400 font-normal">
-                    ({(syllabusFile.size / (1024 * 1024)).toFixed(2)} MB)
-                  </span>
+            {/* Entire Dashed Box is Clickable Anywhere (as requested) */}
+            <label className="relative flex flex-col items-center justify-center border-2 border-dashed border-indigo-200 hover:border-indigo-500 rounded-2xl p-6 text-center cursor-pointer transition bg-indigo-50/20 hover:bg-indigo-50/40 group">
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] || null;
+                  if (f && f.size > 5 * 1024 * 1024) {
+                    showNotify("error", `File exceeds 5MB limit (${(f.size / (1024 * 1024)).toFixed(2)} MB)`);
+                    return;
+                  }
+                  setSyllabusFile(f);
+                }}
+                className="sr-only"
+              />
+
+              <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center mb-2.5 group-hover:scale-105 transition">
+                <FileText className="w-6 h-6" />
+              </div>
+
+              <p className="text-xs font-extrabold text-indigo-600 group-hover:text-indigo-700">
+                {syllabusFile ? "Click anywhere in this box to change PDF" : "Click anywhere in this box to choose PDF"}
+              </p>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Strict maximum size: 5 MB (PDF format only)
+              </p>
+
+              {/* Beautiful, aligned selected file preview card (matches screenshot 2 request) */}
+              {syllabusFile && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="mt-4 w-full bg-white border border-slate-200 rounded-xl p-3 shadow-xs flex items-center justify-between gap-3 text-left"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-slate-800 truncate" title={syllabusFile.name}>
+                        {syllabusFile.name}
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-mono">
+                        {(syllabusFile.size / (1024 * 1024)).toFixed(2)} MB • PDF Document
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setSyllabusFile(null);
+                    }}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition shrink-0"
+                    title="Remove selected file"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-              ) : (
-                <p className="text-[11px] text-slate-400 mt-1">Strict maximum size: 5 MB (PDF format only)</p>
               )}
-            </div>
+            </label>
 
             <div className="flex justify-end gap-2 pt-3 border-t">
               <button
@@ -2326,13 +2466,27 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
                 ) : (
                   <>
                     <UploadCloud className="w-3.5 h-3.5" />
-                    <span>Upload Syllabus</span>
+                    <span>Upload Document</span>
                   </>
                 )}
               </button>
             </div>
           </form>
         </CustomModal>
+      )}
+
+      {/* Styled Confirmation Dialog (Replaces native browser confirm popups everywhere) */}
+      {confirmDialog.isOpen && (
+        <CustomModal
+          isOpen={confirmDialog.isOpen}
+          onClose={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+          title={confirmDialog.title}
+          description={confirmDialog.description}
+          confirmText={confirmDialog.confirmText || "Confirm"}
+          type={confirmDialog.type || "danger"}
+          isLoading={confirmDialog.isLoading}
+          onConfirm={confirmDialog.onConfirm}
+        />
       )}
     </div>
   );

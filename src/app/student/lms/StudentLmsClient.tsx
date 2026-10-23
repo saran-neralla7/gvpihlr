@@ -27,6 +27,7 @@ import {
   GraduationCap,
   User,
 } from "lucide-react";
+import CustomModal from "@/components/ui/CustomModal";
 
 function getEmbedUrl(url: string): string | null {
   if (!url) return null;
@@ -130,6 +131,7 @@ interface LecturePlanTopic {
 
 interface Assignment {
   id: string;
+  allAssignmentIds?: string[];
   allFaculty?: { id: string; fullName: string; email?: string | null; isPrimary: boolean }[];
   faculty: {
     user: { fullName: string; email?: string | null };
@@ -199,13 +201,43 @@ export default function StudentLmsClient({
   const [isSubmittingQuiz, setIsSubmittingQuiz] = useState<boolean>(false);
   const [showTabSwitchWarning, setShowTabSwitchWarning] = useState<boolean>(false);
 
+  // Styled in-app modal popups (replaces browser confirm and alert dialogs)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    confirmText?: string;
+    type?: "danger" | "warning" | "info";
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: "",
+    description: "",
+    onConfirm: () => {},
+  });
+
+  const [errorDialog, setErrorDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+  }>({
+    isOpen: false,
+    title: "",
+    description: "",
+  });
+
   // Sync with URL query parameter so students can bookmark / link directly to a subject room
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const subjectParam = params.get("subject");
-      if (subjectParam && assignments.some((a) => a.id === subjectParam)) {
-        setSelectedAssignmentId(subjectParam);
+      if (subjectParam) {
+        const matched = assignments.find(
+          (a) => a.id === subjectParam || a.allAssignmentIds?.includes(subjectParam)
+        );
+        if (matched) {
+          setSelectedAssignmentId(matched.id);
+        }
       }
     }
   }, [assignments]);
@@ -215,9 +247,14 @@ export default function StudentLmsClient({
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
         const subjectParam = params.get("subject");
-        setSelectedAssignmentId(
-          subjectParam && assignments.some((a) => a.id === subjectParam) ? subjectParam : null
-        );
+        if (subjectParam) {
+          const matched = assignments.find(
+            (a) => a.id === subjectParam || a.allAssignmentIds?.includes(subjectParam)
+          );
+          setSelectedAssignmentId(matched ? matched.id : null);
+        } else {
+          setSelectedAssignmentId(null);
+        }
       }
     };
     window.addEventListener("popstate", handlePopState);
@@ -233,7 +270,9 @@ export default function StudentLmsClient({
     });
   }, [student.rollNumber, student.sectionName, assignments.length]);
 
-  const currentAssignment = assignments.find((a) => a.id === selectedAssignmentId);
+  const currentAssignment = assignments.find(
+    (a) => a.id === selectedAssignmentId || a.allAssignmentIds?.includes(selectedAssignmentId || "")
+  );
 
   // Handle switching subject
   const handleSelectSubject = (assignmentId: string) => {
@@ -399,10 +438,18 @@ export default function StudentLmsClient({
           tabSwitchCount: tabSwitches,
         });
       } else {
-        alert(data.error || "Failed to submit quiz. Please retry.");
+        setErrorDialog({
+          isOpen: true,
+          title: "Submission Failed",
+          description: data.error || "Failed to submit quiz. Please retry.",
+        });
       }
     } catch (e) {
-      alert("Network error while submitting quiz.");
+      setErrorDialog({
+        isOpen: true,
+        title: "Network Error",
+        description: "Network error while submitting quiz. Please check your connection and try again.",
+      });
     } finally {
       setIsSubmittingQuiz(false);
     }
@@ -960,31 +1007,44 @@ export default function StudentLmsClient({
               ===================================================================== */}
           {activeTab === "topics" && (
             <div className="p-6">
-              {/* Official Course Syllabus Document if Uploaded by Faculty */}
+              {/* Official Course Syllabus / Lecture Plan Document if Uploaded by Faculty */}
               {currentAssignment.courseMaterials
                 .filter((m) => m.type === "SYLLABUS_COPY")
-                .map((syl) => (
-                  <div
-                    key={syl.id}
-                    className="bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 rounded-2xl p-5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 shadow-md border border-white/10"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/10">
-                        <FileText className="w-6 h-6 text-indigo-300" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-indigo-500/30 text-indigo-200 font-mono">
-                            Official Course Syllabus (PDF)
-                          </span>
-                          <span className="text-[11px] text-slate-300">
-                            {syl.fileSize ? `${(syl.fileSize / (1024 * 1024)).toFixed(2)} MB` : "PDF Document"}
-                          </span>
+                .map((syl) => {
+                  const isPlanOnly =
+                    syl.title.toLowerCase().includes("lecture plan") &&
+                    !syl.title.toLowerCase().includes("syllabus");
+                  const isCombined =
+                    syl.title.toLowerCase().includes("lecture plan") &&
+                    syl.title.toLowerCase().includes("syllabus");
+                  const badgeLabel = isPlanOnly
+                    ? "Institutional Lecture Plan (PDF)"
+                    : isCombined
+                    ? "Syllabus & Lecture Plan (PDF)"
+                    : "Official Course Syllabus (PDF)";
+
+                  return (
+                    <div
+                      key={syl.id}
+                      className="bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 rounded-2xl p-5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 shadow-md border border-white/10"
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/10">
+                          <FileText className="w-6 h-6 text-indigo-300" />
                         </div>
-                        <h4 className="font-extrabold text-sm sm:text-base text-white mt-1">{syl.title}</h4>
-                        <p className="text-xs text-slate-300">Official syllabus copy and lecture schedule for this course</p>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-indigo-500/30 text-indigo-200 font-mono">
+                              {badgeLabel}
+                            </span>
+                            <span className="text-[11px] text-slate-300">
+                              {syl.fileSize ? `${(syl.fileSize / (1024 * 1024)).toFixed(2)} MB` : "PDF Document"}
+                            </span>
+                          </div>
+                          <h4 className="font-extrabold text-sm sm:text-base text-white mt-1">{syl.title}</h4>
+                          <p className="text-xs text-slate-300">Institutional syllabus and lecture plan for this course</p>
+                        </div>
                       </div>
-                    </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         onClick={() => handleViewMaterial(syl)}
@@ -1004,7 +1064,8 @@ export default function StudentLmsClient({
                       </a>
                     </div>
                   </div>
-                ))}
+                );
+              })}
 
               {currentAssignment.lecturePlanTopics.length === 0 ? (
                 <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
@@ -1694,9 +1755,17 @@ export default function StudentLmsClient({
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => {
-                      if (confirm("Are you sure you want to abandon this quiz attempt?")) {
-                        setActiveQuiz(null);
-                      }
+                      setConfirmDialog({
+                        isOpen: true,
+                        title: "Abandon Timed Quiz?",
+                        description: "Are you sure you want to exit? Your answers will not be recorded and this will count as an incomplete attempt.",
+                        confirmText: "Exit Quiz",
+                        type: "danger",
+                        onConfirm: () => {
+                          setActiveQuiz(null);
+                          setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+                        },
+                      });
                     }}
                     className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-rose-600 transition"
                   >
@@ -1714,6 +1783,31 @@ export default function StudentLmsClient({
             )}
           </div>
         </div>
+      )}
+
+      {/* Styled Confirmation Dialog (Replaces native browser confirm dialogs) */}
+      {confirmDialog.isOpen && (
+        <CustomModal
+          isOpen={confirmDialog.isOpen}
+          onClose={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+          title={confirmDialog.title}
+          description={confirmDialog.description}
+          confirmText={confirmDialog.confirmText || "Confirm"}
+          type={confirmDialog.type || "danger"}
+          onConfirm={confirmDialog.onConfirm}
+        />
+      )}
+
+      {/* Styled Error Alert Modal (Replaces native browser alert dialogs) */}
+      {errorDialog.isOpen && (
+        <CustomModal
+          isOpen={errorDialog.isOpen}
+          onClose={() => setErrorDialog((prev) => ({ ...prev, isOpen: false }))}
+          title={errorDialog.title}
+          description={errorDialog.description}
+          cancelText="Dismiss"
+          type="warning"
+        />
       )}
     </div>
   );

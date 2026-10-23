@@ -32,8 +32,8 @@ export default async function StudentLmsPage() {
 
   const enrollment = student.enrollments[0];
 
-  // 1. Retrieve all subject assignments scheduled in the timetable for this student's section & program
-  let assignmentIds: string[] = [];
+  // 1. Retrieve all course offerings scheduled in the timetable for this student's section & program
+  let offeringFilters: { subjectOfferingId: string; sectionId: string }[] = [];
 
   if (enrollment) {
     const timetableEntries = await prisma.timetableEntry.findMany({
@@ -41,14 +41,25 @@ export default async function StudentLmsPage() {
         sectionId: enrollment.sectionId,
         isActive: true,
       },
-      select: { assignmentId: true },
+      include: {
+        assignment: {
+          select: { subjectOfferingId: true, sectionId: true },
+        },
+      },
     });
 
-    assignmentIds = Array.from(new Set(timetableEntries.map((t) => t.assignmentId)));
+    const uniquePairs = Array.from(
+      new Set(timetableEntries.map((t) => `${t.assignment.subjectOfferingId}_${t.assignment.sectionId}`))
+    );
+
+    offeringFilters = uniquePairs.map((pair) => {
+      const [subjectOfferingId, sectionId] = pair.split("_");
+      return { subjectOfferingId, sectionId };
+    });
 
     // Fallback: If section timetable is not yet configured, load all assignments for this program, year & sem
-    if (assignmentIds.length === 0) {
-      const fallbackOfferings = await prisma.facultySubjectAssignment.findMany({
+    if (offeringFilters.length === 0) {
+      const fallbackAssignments = await prisma.facultySubjectAssignment.findMany({
         where: {
           sectionId: enrollment.sectionId,
           isActive: true,
@@ -58,18 +69,24 @@ export default async function StudentLmsPage() {
             semester: enrollment.semester,
           },
         },
-        select: { id: true },
+        select: { subjectOfferingId: true, sectionId: true },
       });
-      assignmentIds = fallbackOfferings.map((f) => f.id);
+      const fallbackPairs = Array.from(
+        new Set(fallbackAssignments.map((a) => `${a.subjectOfferingId}_${a.sectionId}`))
+      );
+      offeringFilters = fallbackPairs.map((p) => {
+        const [subjectOfferingId, sectionId] = p.split("_");
+        return { subjectOfferingId, sectionId };
+      });
     }
   }
 
-  // 2. Fetch the full courseware details for those exact assigned timetable courses
-  const assignments = assignmentIds.length > 0
+  // 2. Fetch the full courseware details for all faculty (lead & co-instructors) assigned to these offerings & sections
+  const assignments = offeringFilters.length > 0
     ? await prisma.facultySubjectAssignment.findMany({
         where: {
-          id: { in: assignmentIds },
           isActive: true,
+          OR: offeringFilters,
         },
         include: {
           faculty: {
@@ -200,6 +217,7 @@ export default async function StudentLmsPage() {
 
     return {
       ...base,
+      allAssignmentIds: group.map((a) => a.id),
       allFaculty:
         matchedCo.length > 0
           ? matchedCo

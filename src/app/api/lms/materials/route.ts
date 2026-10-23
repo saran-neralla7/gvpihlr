@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { getCurrentSession } from "@/lib/auth";
 import { saveCourseMaterialFile, deleteCourseMaterialFile } from "@/lib/lmsStorage";
 import { MaterialType } from "@prisma/client";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 export async function GET(req: Request) {
   try {
@@ -55,6 +56,13 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const rateLimitError = enforceRateLimit(req, "lms:materials:upload", {
+      maxRequests: 30,
+      windowMs: 60 * 1000,
+      message: "Upload rate limit reached. Please wait a moment before uploading more files.",
+    });
+    if (rateLimitError) return rateLimitError;
+
     const session = await getCurrentSession();
     if (!session || (!session.roles.includes("FACULTY") && !session.roles.includes("SUPER_ADMIN"))) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });

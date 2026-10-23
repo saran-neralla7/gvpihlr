@@ -4,9 +4,18 @@ import prisma from "@/lib/prisma";
 import { verifyPassword, setSessionCookie, SessionPayload } from "@/lib/auth";
 import { recordAuditLog, extractClientInfo } from "@/lib/audit";
 import { LoginSchema } from "@/lib/validations";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 export async function POST(req: Request) {
   try {
+    // Brute-force protection: Max 10 attempts per minute per IP
+    const rateLimitError = enforceRateLimit(req, "auth:login", {
+      maxRequests: 10,
+      windowMs: 60 * 1000,
+      message: "Too many login attempts. Please wait a minute before trying again.",
+    });
+    if (rateLimitError) return rateLimitError;
+
     const { ipAddress, userAgent, deviceSummary } = extractClientInfo(req);
     const body = await req.json();
     const parsed = LoginSchema.safeParse(body);

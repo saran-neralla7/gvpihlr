@@ -62,9 +62,12 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
   const [courseSearch, setCourseSearch] = useState("");
   const [courseFilterProgram, setCourseFilterProgram] = useState("ALL");
 
-  const [activeTab, setActiveTab] = useState<"lecture_plan" | "materials" | "questions" | "quizzes">(
+  const [activeTab, setActiveTab] = useState<"lecture_plan" | "materials" | "questions" | "quizzes" | "students">(
     "lecture_plan"
   );
+  const [enrolledStudents, setEnrolledStudents] = useState<any[]>([]);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+  const [studentSearchQuery, setStudentSearchQuery] = useState("");
 
   const selectedAssignment = assignments.find((a) => a.id === selectedAssignmentId) || null;
 
@@ -215,6 +218,18 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
         if (data.success) setQuizzes(data.quizzes);
       })
       .finally(() => setIsLoadingQuizzes(false));
+
+    // Load enrolled students for this course's section
+    const currentAsst = assignments.find((a) => a.id === selectedAssignmentId);
+    if (currentAsst?.sectionId) {
+      setIsLoadingStudents(true);
+      fetch(`/api/lms/students?sectionId=${currentAsst.sectionId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) setEnrolledStudents(data.students);
+        })
+        .finally(() => setIsLoadingStudents(false));
+    }
   }, [selectedAssignmentId]);
 
   const reloadQuestions = () => {
@@ -1272,6 +1287,23 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
                       {quizzes.length}
                     </span>
                   </button>
+
+                  <button
+                    onClick={() => setActiveTab("students")}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition ${
+                      activeTab === "students"
+                        ? "bg-blue-600 text-white shadow-md font-extrabold"
+                        : "text-slate-300 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <GraduationCap className="w-4 h-4 text-sky-400" />
+                      <span>Enrolled Students</span>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20 text-white font-mono">
+                      {enrolledStudents.length}
+                    </span>
+                  </button>
                 </nav>
               </div>
 
@@ -1920,6 +1952,125 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
                           </div>
                         </div>
                       ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* =====================================================================
+                  TAB CONTENT 5: ENROLLED STUDENTS (SECTION ROSTER)
+                  ===================================================================== */}
+              {activeTab === "students" && (
+                <div className="p-6 space-y-6">
+                  {/* Header & Search */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-md bg-sky-50 text-sky-700 font-mono text-xs font-bold uppercase">
+                          Section Roster
+                        </span>
+                        <span className="text-xs text-slate-400 font-medium">
+                          Section {selectedAssignment?.sectionName} • {selectedAssignment?.programName}
+                        </span>
+                      </div>
+                      <h3 className="font-extrabold text-lg text-slate-900 mt-1">
+                        Enrolled Students ({enrolledStudents.length})
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Official student roster attending {selectedAssignment?.subjectCode} ({selectedAssignment?.subjectName}). Click any roll number to open their dedicated student profile page.
+                      </p>
+                    </div>
+
+                    <div className="relative w-full sm:w-72">
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                      <input
+                        type="text"
+                        placeholder="Search roll number or name..."
+                        value={studentSearchQuery}
+                        onChange={(e) => setStudentSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                      />
+                    </div>
+                  </div>
+
+                  {isLoadingStudents ? (
+                    <div className="text-center py-12 text-slate-400 text-xs">
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-600" />
+                      <span>Loading enrolled students...</span>
+                    </div>
+                  ) : enrolledStudents.length === 0 ? (
+                    <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                      <Users className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                      <p className="font-bold text-sm text-slate-700">No Students Found</p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        No students are currently enrolled in Section {selectedAssignment?.sectionName}.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="border-b bg-slate-50/80 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
+                            <th className="p-3 pl-4">#</th>
+                            <th className="p-3">Roll Number</th>
+                            <th className="p-3">Student Name</th>
+                            <th className="p-3">Email Address</th>
+                            <th className="p-3">Contact</th>
+                            <th className="p-3 text-right pr-4">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {enrolledStudents
+                            .filter((st) => {
+                              if (!studentSearchQuery.trim()) return true;
+                              const q = studentSearchQuery.toLowerCase();
+                              return (
+                                st.rollNumber?.toLowerCase().includes(q) ||
+                                st.fullName?.toLowerCase().includes(q) ||
+                                st.email?.toLowerCase().includes(q)
+                              );
+                            })
+                            .map((st, idx) => (
+                              <tr key={st.id} className="hover:bg-slate-50/60 transition">
+                                <td className="p-3 pl-4 font-mono font-bold text-slate-400">
+                                  {idx + 1}
+                                </td>
+                                <td className="p-3">
+                                  <Link
+                                    href={`/admin/students/${st.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-mono font-black text-indigo-600 hover:text-indigo-800 hover:underline inline-flex items-center gap-1.5"
+                                    title="Open Dedicated Student Profile"
+                                  >
+                                    <span>{st.rollNumber}</span>
+                                    <ExternalLink className="w-3 h-3 text-indigo-400" />
+                                  </Link>
+                                </td>
+                                <td className="p-3 font-bold text-slate-900">
+                                  {st.fullName}
+                                </td>
+                                <td className="p-3 text-slate-600 font-mono text-[11px]">
+                                  {st.email || "—"}
+                                </td>
+                                <td className="p-3 text-slate-600 font-mono text-[11px]">
+                                  {st.phone || "—"}
+                                </td>
+                                <td className="p-3 text-right pr-4">
+                                  <Link
+                                    href={`/admin/students/${st.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] transition shadow-xs"
+                                  >
+                                    <span>View Details</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </Link>
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
                     </div>
                   )}
                 </div>

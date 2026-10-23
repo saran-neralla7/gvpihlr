@@ -17,9 +17,10 @@ export default async function StudentDetailPage({ params }: PageProps) {
 
   const isSuperAdmin = session.roles.includes("SUPER_ADMIN");
   const isOffice = session.roles.includes("OFFICE");
+  const isFaculty = session.roles.includes("FACULTY");
 
-  // Only Admin, Office, and authorized academic personnel can view student profile
-  if (!isSuperAdmin && !isOffice) {
+  // Only Admin, Office, and Faculty can view student profile
+  if (!isSuperAdmin && !isOffice && !isFaculty) {
     redirect("/dashboard");
   }
 

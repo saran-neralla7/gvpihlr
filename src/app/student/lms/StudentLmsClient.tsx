@@ -200,6 +200,7 @@ export default function StudentLmsClient({
   const [quizSubmittedResult, setQuizSubmittedResult] = useState<any | null>(null);
   const [isSubmittingQuiz, setIsSubmittingQuiz] = useState<boolean>(false);
   const [showTabSwitchWarning, setShowTabSwitchWarning] = useState<boolean>(false);
+  const [showSubmitConfirmModal, setShowSubmitConfirmModal] = useState<boolean>(false);
 
   // Styled in-app modal popups (replaces browser confirm and alert dialogs)
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -955,13 +956,16 @@ export default function StudentLmsClient({
                               <span>Watch Lecture</span>
                             </button>
                           ) : isPdf ? (
-                            <button
-                              onClick={() => handleViewMaterial(mat)}
+                            <a
+                              href={mat.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
                               className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold hover:bg-indigo-100 transition"
                             >
                               <Eye className="w-3.5 h-3.5" />
                               <span>Read in Browser</span>
-                            </button>
+                              <ExternalLink className="w-3 h-3 text-indigo-400" />
+                            </a>
                           ) : isPpt ? (
                             <button
                               onClick={() => handleViewMaterial(mat)}
@@ -1046,13 +1050,16 @@ export default function StudentLmsClient({
                         </div>
                       </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => handleViewMaterial(syl)}
+                      <a
+                        href={syl.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="px-4 py-2 rounded-xl bg-white text-slate-900 text-xs font-bold hover:bg-slate-100 transition shadow-xs flex items-center gap-1.5"
                       >
                         <Eye className="w-3.5 h-3.5 text-indigo-600" />
                         <span>View Document</span>
-                      </button>
+                        <ExternalLink className="w-3 h-3 text-slate-500" />
+                      </a>
                       <a
                         href={syl.fileUrl}
                         download={syl.fileName}
@@ -1576,18 +1583,47 @@ export default function StudentLmsClient({
               }
 
               return (
-                <div className="flex-1 bg-slate-100 relative">
-                  <object
-                    data={`${previewMaterial.fileUrl}#toolbar=1&navpanes=0`}
-                    type="application/pdf"
-                    className="w-full h-full"
-                  >
-                    <iframe
-                      src={`${previewMaterial.fileUrl}#toolbar=1&navpanes=0`}
-                      className="w-full h-full border-0"
-                      title={previewMaterial.title}
-                    />
-                  </object>
+                <div className="flex-1 bg-slate-100 flex flex-col relative overflow-hidden">
+                  <div className="bg-slate-900 border-b border-slate-800 p-3 px-6 text-white flex items-center justify-between text-xs">
+                    <span className="text-slate-300 font-medium truncate max-w-sm">
+                      Official Document: <strong className="text-white">{previewMaterial.fileName}</strong>
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={previewMaterial.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Open in Dedicated Tab</span>
+                      </a>
+                    </div>
+                  </div>
+                  <div className="flex-1 relative">
+                    <object
+                      data={`${previewMaterial.fileUrl}#toolbar=1&navpanes=0`}
+                      type="application/pdf"
+                      className="w-full h-full"
+                    >
+                      <div className="w-full h-full bg-slate-50 flex flex-col items-center justify-center p-8 text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
+                          <FileText className="w-8 h-8" />
+                        </div>
+                        <h4 className="font-extrabold text-base text-slate-900 mb-1">{previewMaterial.title}</h4>
+                        <p className="text-xs text-slate-500 mb-6">{previewMaterial.fileName}</p>
+                        <a
+                          href={previewMaterial.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="py-3 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition shadow-md flex items-center gap-2"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          <span>Click Here to Open Document</span>
+                        </a>
+                      </div>
+                    </object>
+                  </div>
                 </div>
               );
             })()}
@@ -1596,13 +1632,13 @@ export default function StudentLmsClient({
       )}
 
       {/* =========================================================================
-          ACTIVE TIMED QUIZ ROOM MODAL (WITH ANTI-CHEAT PROCTORING)
+          ACTIVE TIMED QUIZ ROOM FULL WEBPAGE (WITH ANTI-CHEAT PROCTORING)
           ========================================================================= */}
       {activeQuiz && (
-        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col p-3 sm:p-6 overflow-y-auto">
-          <div className="max-w-4xl w-full mx-auto bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden my-auto border border-slate-200">
+        <div className="fixed inset-0 z-50 bg-slate-100 flex flex-col overflow-y-auto min-h-screen">
+          <div className="flex-1 flex flex-col w-full pb-28">
             {/* Header: Quiz title, timer, and tab-switch counter */}
-            <div className="p-4 sm:p-6 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="sticky top-0 z-30 p-4 sm:p-5 px-6 sm:px-10 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md border-b border-slate-800">
               <div>
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400">
                   Online Proctored CBT Exam
@@ -1653,7 +1689,7 @@ export default function StudentLmsClient({
             )}
 
             {/* Quiz Body */}
-            <div className="p-6 sm:p-8 space-y-6 max-h-[65vh] overflow-y-auto">
+            <div className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-8 space-y-6">
               {quizSubmittedResult ? (
                 /* Result Screen */
                 <div className="text-center py-8 space-y-4">
@@ -1820,23 +1856,49 @@ export default function StudentLmsClient({
               )}
             </div>
 
-            {/* Quiz Footer */}
+            {/* Sticky Bottom Exam Dock */}
             {!quizSubmittedResult && (
-              <div className="p-4 px-6 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-                <span className="text-xs text-slate-500 font-medium">
-                  Answered:{" "}
-                  <strong className="text-slate-900">
-                    {
-                      activeQuiz.questions.filter((qq) => {
-                        const ans = quizAnswers[qq.questionBank.id];
-                        if (ans === undefined || ans === null) return false;
-                        if (typeof ans === "string") return ans.trim().length > 0;
-                        return true;
-                      }).length
+              <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-2xl px-6 sm:px-10 py-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-slate-500 font-medium">
+                    Answered:{" "}
+                    <strong className="text-emerald-700 font-mono font-bold">
+                      {
+                        activeQuiz.questions.filter((qq) => {
+                          const ans = quizAnswers[qq.questionBank.id];
+                          if (ans === undefined || ans === null) return false;
+                          if (typeof ans === "string") return ans.trim().length > 0;
+                          return true;
+                        }).length
+                      }
+                    </strong>{" "}
+                    of {activeQuiz.questions.length} Questions
+                  </span>
+
+                  {(() => {
+                    const answeredCount = activeQuiz.questions.filter((qq) => {
+                      const ans = quizAnswers[qq.questionBank.id];
+                      if (ans === undefined || ans === null) return false;
+                      if (typeof ans === "string") return ans.trim().length > 0;
+                      return true;
+                    }).length;
+                    const missedCount = activeQuiz.questions.length - answeredCount;
+                    if (missedCount > 0) {
+                      return (
+                        <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[11px]">
+                          <AlertTriangle className="w-3 h-3 text-amber-600" />
+                          <span>{missedCount} Unanswered</span>
+                        </span>
+                      );
                     }
-                  </strong>{" "}
-                  of {activeQuiz.questions.length}
-                </span>
+                    return (
+                      <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px]">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        <span>All Answered</span>
+                      </span>
+                    );
+                  })()}
+                </div>
 
                 <div className="flex items-center gap-3">
                   <button
@@ -1855,14 +1917,14 @@ export default function StudentLmsClient({
                     }}
                     className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-rose-600 transition"
                   >
-                    Cancel
+                    Cancel / Exit
                   </button>
                   <button
-                    onClick={handleSubmitQuiz}
+                    onClick={() => setShowSubmitConfirmModal(true)}
                     disabled={isSubmittingQuiz}
-                    className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 transition shadow-sm disabled:opacity-50"
+                    className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 transition shadow-md disabled:opacity-50 flex items-center gap-2"
                   >
-                    {isSubmittingQuiz ? "Submitting..." : "Submit Exam"}
+                    <span>Submit Exam</span>
                   </button>
                 </div>
               </div>
@@ -1870,6 +1932,132 @@ export default function StudentLmsClient({
           </div>
         </div>
       )}
+
+      {/* Submission Review & Missed Questions Warning Modal */}
+      {showSubmitConfirmModal && activeQuiz && (() => {
+        const total = activeQuiz.questions.length;
+        const answeredIndices: number[] = [];
+        const missedIndices: number[] = [];
+
+        activeQuiz.questions.forEach((qq, idx) => {
+          const ans = quizAnswers[qq.questionBank.id];
+          const isAnswered =
+            ans !== undefined &&
+            ans !== null &&
+            (typeof ans === "number" || String(ans).trim().length > 0);
+          if (isAnswered) answeredIndices.push(idx + 1);
+          else missedIndices.push(idx + 1);
+        });
+
+        const hasMissed = missedIndices.length > 0;
+
+        return (
+          <CustomModal
+            isOpen={showSubmitConfirmModal}
+            onClose={() => setShowSubmitConfirmModal(false)}
+            title="Submit Exam Confirmation"
+            hideFooter={true}
+          >
+            <div className="p-6 space-y-5">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                    hasMissed
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-emerald-100 text-emerald-700"
+                  }`}
+                >
+                  {hasMissed ? (
+                    <AlertTriangle className="w-6 h-6" />
+                  ) : (
+                    <CheckCircle2 className="w-6 h-6" />
+                  )}
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-base text-slate-900">
+                    {hasMissed ? "Incomplete Exam Warning" : "Ready to Submit Exam?"}
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    {hasMissed
+                      ? "You have left questions unanswered in this examination."
+                      : "You have drafted an answer for all questions."}
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Counters Grid */}
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Total</span>
+                  <span className="text-base font-black text-slate-800">{total}</span>
+                </div>
+                <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+                  <span className="text-[10px] uppercase font-bold text-emerald-600 block">Answered</span>
+                  <span className="text-base font-black text-emerald-700">{answeredIndices.length}</span>
+                </div>
+                <div
+                  className={`p-3 rounded-xl border ${
+                    hasMissed
+                      ? "bg-rose-50 border-rose-200 text-rose-700"
+                      : "bg-slate-50 border-slate-200 text-slate-400"
+                  }`}
+                >
+                  <span className="text-[10px] uppercase font-bold block">Missed</span>
+                  <span className="text-base font-black">{missedIndices.length}</span>
+                </div>
+              </div>
+
+              {/* Missed Questions Warning & Chips */}
+              {hasMissed ? (
+                <div className="p-4 bg-amber-50/70 rounded-2xl border border-amber-200 space-y-2 text-xs">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                    <span>⚠️ Unanswered Questions:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {missedIndices.map((qNum) => (
+                      <span
+                        key={qNum}
+                        className="px-2.5 py-1 rounded-lg bg-amber-200/60 text-amber-900 font-mono font-bold text-xs"
+                      >
+                        Question {qNum}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-amber-800 pt-1 leading-relaxed">
+                    Any missed questions will receive <strong>0 marks</strong>. You can go back now and complete them before submitting.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200 text-xs text-emerald-800">
+                  ✓ All questions have been answered. Once submitted, your answers will be recorded and cannot be modified.
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowSubmitConfirmModal(false)}
+                  className="w-full sm:flex-1 py-2.5 px-4 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition"
+                >
+                  Review Unanswered Questions
+                </button>
+                <button
+                  type="button"
+                  disabled={isSubmittingQuiz}
+                  onClick={() => {
+                    setShowSubmitConfirmModal(false);
+                    handleSubmitQuiz();
+                  }}
+                  className="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition shadow-md disabled:opacity-50"
+                >
+                  {isSubmittingQuiz ? "Submitting..." : "Confirm Final Submission"}
+                </button>
+              </div>
+            </div>
+          </CustomModal>
+        );
+      })()}
 
       {/* Styled Confirmation Dialog (Replaces native browser confirm dialogs) */}
       {confirmDialog.isOpen && (

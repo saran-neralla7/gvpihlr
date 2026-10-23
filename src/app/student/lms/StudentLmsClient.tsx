@@ -94,6 +94,7 @@ interface LecturePlanTopic {
   status: "PLANNED" | "IN_PROGRESS" | "COMPLETED";
   deliveryMode?: string | null;
   remarks?: string | null;
+  materials?: CourseMaterial[];
 }
 
 interface Assignment {
@@ -786,6 +787,22 @@ export default function StudentLmsClient({
                                         <span>• Completed on {new Date(topic.actualDate).toLocaleDateString()}</span>
                                       )}
                                     </div>
+
+                                    {/* Topic Materials Attachments */}
+                                    {topic.materials && topic.materials.length > 0 && (
+                                      <div className="mt-2 flex flex-wrap gap-1.5">
+                                        {topic.materials.map((tm) => (
+                                          <button
+                                            key={tm.id}
+                                            onClick={() => handleViewMaterial(tm)}
+                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-bold hover:bg-indigo-100 transition"
+                                          >
+                                            <Eye className="w-3 h-3" />
+                                            <span>{tm.title}</span>
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
 

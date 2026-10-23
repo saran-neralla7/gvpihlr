@@ -32,12 +32,19 @@ export default async function StudentLmsPage() {
 
   const enrollment = student.enrollments[0];
 
-  // Fetch all active course assignments for this student's section
+  // Fetch all active course assignments for this student's section (strictly subjects they attend)
   const assignments = enrollment
     ? await prisma.facultySubjectAssignment.findMany({
         where: {
           sectionId: enrollment.sectionId,
           isActive: true,
+          OR: [
+            { timetableEntries: { some: {} } },
+            { attendanceSessions: { some: {} } },
+            { lecturePlanTopics: { some: {} } },
+            { courseMaterials: { some: {} } },
+            { courseQuizzes: { some: {} } },
+          ],
         },
         include: {
           faculty: {
@@ -58,6 +65,7 @@ export default async function StudentLmsPage() {
             },
           },
           lecturePlanTopics: {
+            include: { materials: true },
             orderBy: [{ unitNumber: "asc" }, { topicSequence: "asc" }],
           },
           courseMaterials: {

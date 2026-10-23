@@ -768,6 +768,8 @@ model LecturePlanTopic {
   remarks         String?
   createdAt       DateTime                 @default(now())
 
+  materials       CourseMaterial[]
+
   @@index([assignmentId, unitNumber])
 }
 
@@ -776,6 +778,8 @@ model CourseMaterial {
   assignmentId    String
   assignment      FacultySubjectAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   unitNumber      Int                      // 1 to 5
+  topicId         String?
+  topic           LecturePlanTopic?        @relation(fields: [topicId], references: [id], onDelete: SetNull)
   title           String
   description     String?
   type            MaterialType             @default(LECTURE_NOTES_PDF)
@@ -787,6 +791,7 @@ model CourseMaterial {
   createdAt       DateTime                 @default(now())
 
   @@index([assignmentId, unitNumber])
+  @@index([topicId])
 }
 
 model QuestionBankItem {

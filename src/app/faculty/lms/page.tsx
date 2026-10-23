@@ -18,8 +18,17 @@ export default async function FacultyLmsPage() {
     redirect("/dashboard");
   }
 
-  // Fetch assignments
-  const whereClause: any = { isActive: true };
+  // Fetch assignments (strictly courses actively scheduled, taught, or with LMS content)
+  const whereClause: any = {
+    isActive: true,
+    OR: [
+      { timetableEntries: { some: {} } },
+      { attendanceSessions: { some: {} } },
+      { lecturePlanTopics: { some: {} } },
+      { courseMaterials: { some: {} } },
+      { courseQuizzes: { some: {} } },
+    ],
+  };
   if (!isSuperAdmin && session.facultyId) {
     whereClause.facultyId = session.facultyId;
   }

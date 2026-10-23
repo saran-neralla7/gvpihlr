@@ -41,6 +41,7 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     const assignmentId = formData.get("assignmentId") as string;
     const unitNumberStr = formData.get("unitNumber") as string;
+    const topicId = (formData.get("topicId") as string) || null;
     const title = formData.get("title") as string;
     const description = (formData.get("description") as string) || "";
     const typeStr = (formData.get("type") as string) || "LECTURE_NOTES_PDF";
@@ -85,6 +86,7 @@ export async function POST(req: Request) {
       data: {
         assignmentId,
         unitNumber,
+        topicId: topicId || null,
         title,
         description,
         type: (typeStr in MaterialType ? typeStr : "LECTURE_NOTES_PDF") as MaterialType,

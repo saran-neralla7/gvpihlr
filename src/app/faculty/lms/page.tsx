@@ -18,20 +18,10 @@ export default async function FacultyLmsPage() {
     redirect("/dashboard");
   }
 
-  // 1. Get all assigned course IDs actively present in the master timetable
-  const timetableEntries = await prisma.timetableEntry.findMany({
-    where: { isActive: true },
-    select: { assignmentId: true },
-  });
-  const timetableAssignmentIds = Array.from(new Set(timetableEntries.map((t) => t.assignmentId)));
-
-  // 2. Build where clause
+  // Build where clause: Faculty members see all their assigned subjects
   const whereClause: any = { isActive: true };
   if (!isSuperAdmin && session.facultyId) {
     whereClause.facultyId = session.facultyId;
-  }
-  if (timetableAssignmentIds.length > 0) {
-    whereClause.id = { in: timetableAssignmentIds };
   }
 
   const assignments = await prisma.facultySubjectAssignment.findMany({

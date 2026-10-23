@@ -20,6 +20,10 @@ import {
   Layers,
   ShieldAlert,
   X,
+  Search,
+  ChevronRight,
+  GraduationCap,
+  User,
 } from "lucide-react";
 
 interface StudentProps {
@@ -144,9 +148,8 @@ export default function StudentLmsClient({
   student: StudentProps;
   assignments: Assignment[];
 }) {
-  const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(
-    assignments[0]?.id || null
-  );
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
+  const [courseSearch, setCourseSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"topics" | "materials" | "questions" | "quizzes">(
     "materials"
   );
@@ -168,6 +171,31 @@ export default function StudentLmsClient({
   const [isSubmittingQuiz, setIsSubmittingQuiz] = useState<boolean>(false);
   const [showTabSwitchWarning, setShowTabSwitchWarning] = useState<boolean>(false);
 
+  // Sync with URL query parameter so students can bookmark / link directly to a subject room
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const subjectParam = params.get("subject");
+      if (subjectParam && assignments.some((a) => a.id === subjectParam)) {
+        setSelectedAssignmentId(subjectParam);
+      }
+    }
+  }, [assignments]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        const subjectParam = params.get("subject");
+        setSelectedAssignmentId(
+          subjectParam && assignments.some((a) => a.id === subjectParam) ? subjectParam : null
+        );
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [assignments]);
+
   // Initial page load telemetry
   useEffect(() => {
     sendStudentTelemetry("NAVIGATION", "VIEW_LMS_HOME", {
@@ -182,6 +210,11 @@ export default function StudentLmsClient({
   // Handle switching subject
   const handleSelectSubject = (assignmentId: string) => {
     setSelectedAssignmentId(assignmentId);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("subject", assignmentId);
+      window.history.pushState({}, "", url.toString());
+    }
     const chosen = assignments.find((a) => a.id === assignmentId);
     if (chosen) {
       sendStudentTelemetry("SUBJECT_ROOM", "OPEN_SUBJECT_ROOM", {
@@ -189,6 +222,15 @@ export default function StudentLmsClient({
         subjectName: chosen.subjectOffering.subject.name,
         facultyName: chosen.faculty.user.fullName,
       });
+    }
+  };
+
+  const handleBackToAllSubjects = () => {
+    setSelectedAssignmentId(null);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("subject");
+      window.history.pushState({}, "", url.toString());
     }
   };
 
@@ -358,144 +400,242 @@ export default function StudentLmsClient({
       return matchUnit && matchDiff;
     }) || [];
 
+  // Filtered assignments for search in shelf view
+  const filteredAssignments = assignments.filter((a) => {
+    if (!courseSearch.trim()) return true;
+    const q = courseSearch.toLowerCase();
+    const sub = a.subjectOffering.subject;
+    const fac = a.faculty.user.fullName;
+    return (
+      sub.name.toLowerCase().includes(q) ||
+      sub.code.toLowerCase().includes(q) ||
+      fac.toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* =========================================================================
-          TOP BANNER & BREADCRUMBS
-          ========================================================================= */}
-      <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-600 mb-1">
-            <Sparkles className="w-4 h-4" />
-            <span>GVPIHLR Digital Courseware &amp; LMS Portal</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Academic Course Room
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-            Enrolled in {student.programName} • Section {student.sectionName} (Year {student.year}, Sem {student.semester})
-          </p>
-        </div>
+      {!currentAssignment ? (
+        /* =========================================================================
+           VIEW A: ALL ASSIGNED COURSES SHELF (CARDS VIEW)
+           ========================================================================= */
+        <div className="space-y-6">
+          {/* Top Banner */}
+          <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-600 mb-1">
+                <Sparkles className="w-4 h-4" />
+                <span>GVPIHLR Digital Courseware &amp; LMS Portal</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                Academic Course Room
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+                Enrolled in {student.programName} • Section {student.sectionName} (Year {student.year}, Sem {student.semester})
+              </p>
+            </div>
 
-        <div className="flex items-center gap-3">
-          <Link
-            href="/student"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Attendance Portal</span>
-          </Link>
-          <div className="hidden sm:flex flex-col text-right">
-            <span className="text-[10px] font-bold uppercase text-slate-400">Authenticated Student</span>
-            <span className="text-xs font-black text-slate-900 font-mono">{student.rollNumber}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* =========================================================================
-          COURSE SHELF (SUBJECT SELECTOR)
-          ========================================================================= */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            Active Semester Subjects ({assignments.length})
-          </h2>
-          <span className="text-[11px] text-slate-400 font-semibold">Select a course to view materials &amp; study bank</span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {assignments.map((assignment) => {
-            const sub = assignment.subjectOffering.subject;
-            const isSelected = assignment.id === selectedAssignmentId;
-            const cTopics = assignment.lecturePlanTopics.filter(
-              (t) => t.status === "COMPLETED"
-            ).length;
-            const tTopics = assignment.lecturePlanTopics.length;
-            const pct = tTopics > 0 ? Math.round((cTopics / tTopics) * 100) : 0;
-
-            return (
-              <button
-                key={assignment.id}
-                onClick={() => handleSelectSubject(assignment.id)}
-                className={`text-left p-4 rounded-2xl border transition-all flex flex-col justify-between ${
-                  isSelected
-                    ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20"
-                    : "bg-white text-slate-800 border-slate-200/80 hover:border-indigo-300 hover:shadow-xs"
-                }`}
+            <div className="flex items-center gap-3">
+              <Link
+                href="/student"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
               >
-                <div>
-                  <div className="flex items-start justify-between">
-                    <span
-                      className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md font-mono ${
-                        isSelected ? "bg-white/20 text-white" : "bg-indigo-50 text-indigo-700"
-                      }`}
-                    >
-                      {sub.code}
-                    </span>
-                    <span
-                      className={`text-[10px] font-bold ${
-                        isSelected ? "text-indigo-200" : "text-slate-400"
-                      }`}
-                    >
-                      {sub.credits} Credits
-                    </span>
-                  </div>
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Attendance Portal</span>
+              </Link>
+              <div className="hidden sm:flex flex-col text-right">
+                <span className="text-[10px] font-bold uppercase text-slate-400">Authenticated Student</span>
+                <span className="text-xs font-black text-slate-900 font-mono">{student.rollNumber}</span>
+              </div>
+            </div>
+          </div>
 
-                  <h3 className="font-bold text-sm mt-2 line-clamp-1">{sub.name}</h3>
-                  <p
-                    className={`text-xs mt-1 truncate ${
-                      isSelected ? "text-indigo-100" : "text-slate-500"
-                    }`}
-                  >
-                    Faculty: {assignment.faculty.user.fullName}
-                  </p>
-                </div>
+          {/* Search and Summary Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+            <div className="relative flex-1 max-w-md">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search subjects by code, name, or faculty..."
+                value={courseSearch}
+                onChange={(e) => setCourseSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+              />
+            </div>
+            <div className="text-xs font-bold text-slate-500 flex items-center gap-2">
+              <span className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-mono">
+                {filteredAssignments.length} Subjects
+              </span>
+              <span>assigned for your current semester</span>
+            </div>
+          </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-200/40">
-                  <div className="flex items-center justify-between text-[11px] mb-1 font-semibold">
-                    <span className={isSelected ? "text-indigo-100" : "text-slate-500"}>
-                      Syllabus Coverage
-                    </span>
-                    <span className="font-bold">{pct}%</span>
-                  </div>
+          {/* Course Cards Grid */}
+          {assignments.length === 0 ? (
+            <div className="p-12 text-center bg-white rounded-3xl border border-slate-200">
+              <BookOpen className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+              <h3 className="text-lg font-bold text-slate-800">No Course Offerings Assigned</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                There are currently no active course assignments configured for Section {student.sectionName}.
+              </p>
+            </div>
+          ) : filteredAssignments.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredAssignments.map((assignment) => {
+                const sub = assignment.subjectOffering.subject;
+                const cTopics = assignment.lecturePlanTopics.filter(
+                  (t) => t.status === "COMPLETED"
+                ).length;
+                const tTopics = assignment.lecturePlanTopics.length;
+                const pct = tTopics > 0 ? Math.round((cTopics / tTopics) * 100) : 0;
+                const materialsCount = assignment.courseMaterials.length;
+                const quizzesCount = assignment.courseQuizzes.length;
+                const questionsCount = sub.questionBankItems.length;
+
+                return (
                   <div
-                    className={`w-full h-1.5 rounded-full overflow-hidden ${
-                      isSelected ? "bg-indigo-950/40" : "bg-slate-100"
-                    }`}
+                    key={assignment.id}
+                    onClick={() => handleSelectSubject(assignment.id)}
+                    className="bg-white rounded-2xl border border-slate-200/90 hover:border-indigo-400 hover:shadow-lg transition-all duration-200 cursor-pointer p-5 flex flex-col justify-between group"
                   >
-                    <div
-                      className={`h-full rounded-full ${
-                        isSelected ? "bg-white" : "bg-emerald-500"
-                      }`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-md font-mono bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          {sub.code}
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                          {sub.credits} Credits
+                        </span>
+                      </div>
 
-      {/* =========================================================================
-          SELECTED COURSE WORKSPACE
-          ========================================================================= */}
-      {currentAssignment ? (
-        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-          {/* Header of Active Subject */}
-          <div className="p-6 border-b border-slate-200/80 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-[11px] font-mono font-bold">
-                    {currentAssignment.subjectOffering.subject.code}
-                  </span>
-                  <span className="text-xs text-slate-400 font-semibold">
-                    {currentAssignment.faculty.department?.name || "Academic Department"}
-                  </span>
-                </div>
-                <h2 className="text-xl sm:text-2xl font-black mt-2">
+                      <h3 className="font-extrabold text-sm sm:text-base text-slate-900 mt-3 group-hover:text-indigo-600 transition-colors line-clamp-2 min-h-[2.5rem]">
+                        {sub.name}
+                      </h3>
+
+                      <div className="flex items-center gap-1.5 text-xs text-slate-600 mt-2">
+                        <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">Faculty: {assignment.faculty.user.fullName}</span>
+                      </div>
+
+                      {/* Content Badges */}
+                      <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-600 font-semibold">
+                        <div className="flex items-center gap-1.5">
+                          <FileText className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                          <span>{materialsCount} Materials</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Layers className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          <span>{tTopics} Topics</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <HelpCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                          <span>{questionsCount} Questions</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Award className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                          <span>{quizzesCount} Quizzes</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-100">
+                      <div className="flex items-center justify-between text-[11px] mb-1 font-semibold">
+                        <span className="text-slate-500">Syllabus Coverage</span>
+                        <span className="font-bold text-slate-700">{pct}%</span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full overflow-hidden bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-emerald-500 transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+
+                      <div className="mt-3.5 pt-2.5 border-t border-slate-100/60 flex items-center justify-between text-xs font-bold text-indigo-600 group-hover:text-indigo-700">
+                        <span>Open Course Room</span>
+                        <ChevronRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-white rounded-3xl p-12 text-center border border-slate-200">
+              <Search className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+              <h3 className="text-sm font-bold text-slate-800">No subjects matching "{courseSearch}"</h3>
+              <p className="text-xs text-slate-500 mt-1">Try clearing the search input to see all courses.</p>
+              <button
+                onClick={() => setCourseSearch("")}
+                className="mt-3 px-4 py-1.5 rounded-xl bg-slate-100 text-xs font-bold text-slate-700 hover:bg-slate-200 transition"
+              >
+                Clear Search
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* =========================================================================
+           VIEW B: DEDICATED SUBJECT COURSE ROOM (FULL PAGE)
+           ========================================================================= */
+        <div className="space-y-6">
+          {/* Dedicated Course Top Navigation Bar */}
+          <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleBackToAllSubjects}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-xs font-bold text-slate-700 transition"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>← All Subjects</span>
+              </button>
+
+              <div className="h-5 w-px bg-slate-200 hidden sm:block" />
+
+              <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-500">
+                <span>Academic LMS</span>
+                <span>/</span>
+                <span className="font-bold text-slate-900 font-mono">
+                  {currentAssignment.subjectOffering.subject.code}
+                </span>
+                <span>-</span>
+                <span className="text-slate-700 font-medium truncate max-w-xs">
                   {currentAssignment.subjectOffering.subject.name}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-400 hidden md:inline">Jump to Course:</span>
+              <select
+                value={currentAssignment.id}
+                onChange={(e) => handleSelectSubject(e.target.value)}
+                className="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              >
+                {assignments.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.subjectOffering.subject.code} - {a.subjectOffering.subject.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Dedicated Course Workspace */}
+          <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+            {/* Header of Active Subject */}
+            <div className="p-6 border-b border-slate-200/80 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-[11px] font-mono font-bold">
+                      {currentAssignment.subjectOffering.subject.code}
+                    </span>
+                    <span className="text-xs text-slate-400 font-semibold">
+                      {currentAssignment.faculty.department?.name || "Academic Department"}
+                    </span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black mt-2">
+                    {currentAssignment.subjectOffering.subject.name}
                 </h2>
                 <p className="text-xs text-slate-300 mt-1">
                   Course In-Charge: <strong className="text-white">{currentAssignment.faculty.user.fullName}</strong>
@@ -1040,14 +1180,7 @@ export default function StudentLmsClient({
               )}
             </div>
           )}
-        </div>
-      ) : (
-        <div className="p-12 text-center bg-white rounded-3xl border border-slate-200">
-          <BookOpen className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-          <h3 className="text-lg font-bold text-slate-800">No Course Offerings Assigned</h3>
-          <p className="text-xs text-slate-500 mt-1">
-            There are currently no active course assignments configured for Section {student.sectionName}.
-          </p>
+          </div>
         </div>
       )}
 

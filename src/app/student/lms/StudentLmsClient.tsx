@@ -194,7 +194,7 @@ export default function StudentLmsClient({
 
   // Active Quiz Modal State
   const [activeQuiz, setActiveQuiz] = useState<CourseQuiz | null>(null);
-  const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
+  const [quizAnswers, setQuizAnswers] = useState<Record<string, string | number>>({});
   const [quizTimeRemaining, setQuizTimeRemaining] = useState<number>(0);
   const [tabSwitches, setTabSwitches] = useState<number>(0);
   const [quizSubmittedResult, setQuizSubmittedResult] = useState<any | null>(null);
@@ -1563,11 +1563,17 @@ export default function StudentLmsClient({
 
               return (
                 <div className="flex-1 bg-slate-100 relative">
-                  <iframe
-                    src={`${previewMaterial.fileUrl}#toolbar=1&navpanes=0`}
-                    className="w-full h-full border-0"
-                    title={previewMaterial.title}
-                  />
+                  <object
+                    data={`${previewMaterial.fileUrl}#toolbar=1&navpanes=0`}
+                    type="application/pdf"
+                    className="w-full h-full"
+                  >
+                    <iframe
+                      src={`${previewMaterial.fileUrl}#toolbar=1&navpanes=0`}
+                      className="w-full h-full border-0"
+                      title={previewMaterial.title}
+                    />
+                  </object>
                 </div>
               );
             })()}
@@ -1660,6 +1666,18 @@ export default function StudentLmsClient({
                     </div>
                   </div>
 
+                  {activeQuiz.questions.some(
+                    (qq) =>
+                      qq.questionBank.type === "SHORT_ANSWER" ||
+                      qq.questionBank.type === "LONG_ANSWER" ||
+                      !qq.questionBank.options ||
+                      (Array.isArray(qq.questionBank.options) && qq.questionBank.options.length === 0)
+                  ) && (
+                    <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 p-2.5 rounded-xl font-medium max-w-sm mx-auto">
+                      📝 <strong>Note:</strong> MCQ auto-score shown above. Your descriptive answers have been submitted securely to your faculty for grading.
+                    </p>
+                  )}
+
                   <div className="pt-4">
                     <button
                       onClick={() => {
@@ -1700,8 +1718,45 @@ export default function StudentLmsClient({
                           {q.questionText}
                         </p>
 
-                        {/* Options */}
-                        {optionsList.length > 0 && (
+                        {/* Descriptive Question vs Multiple Choice */}
+                        {optionsList.length === 0 || q.type === "SHORT_ANSWER" || q.type === "LONG_ANSWER" ? (
+                          <div className="mt-3 space-y-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <label className="font-bold text-slate-700 flex items-center gap-1.5">
+                                <span>Your Answer / Explanation:</span>
+                                <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">
+                                  {q.type === "LONG_ANSWER" ? "Descriptive / Long Answer" : "Short Answer"}
+                                </span>
+                              </label>
+                              <span className="text-[10px] font-mono text-slate-400">
+                                Word count: {selectedVal ? String(selectedVal).trim().split(/\s+/).filter(Boolean).length : 0} words
+                              </span>
+                            </div>
+                            <textarea
+                              rows={q.type === "LONG_ANSWER" ? 6 : 4}
+                              value={typeof selectedVal === "string" ? selectedVal : ""}
+                              onChange={(e) =>
+                                setQuizAnswers((prev) => ({
+                                  ...prev,
+                                  [q.id]: e.target.value,
+                                }))
+                              }
+                              placeholder="Type your explanation, formula, derivation, or answer here..."
+                              className="w-full p-3.5 border border-slate-200 rounded-xl bg-white text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition resize-y font-sans leading-relaxed shadow-sm"
+                            />
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span>
+                                {selectedVal && String(selectedVal).trim().length > 0 ? (
+                                  <span className="text-emerald-600 font-bold flex items-center gap-1">
+                                    ✓ Answer drafted ({String(selectedVal).trim().length} chars)
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400 italic">No answer written yet</span>
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
                           <div className="space-y-2 mt-3">
                             {optionsList.map((opt: string, optIdx: number) => {
                               const isChecked = selectedVal === optIdx;
@@ -1749,7 +1804,18 @@ export default function StudentLmsClient({
             {!quizSubmittedResult && (
               <div className="p-4 px-6 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
                 <span className="text-xs text-slate-500 font-medium">
-                  Answered: <strong className="text-slate-900">{Object.keys(quizAnswers).length}</strong> of {activeQuiz.questions.length}
+                  Answered:{" "}
+                  <strong className="text-slate-900">
+                    {
+                      activeQuiz.questions.filter((qq) => {
+                        const ans = quizAnswers[qq.questionBank.id];
+                        if (ans === undefined || ans === null) return false;
+                        if (typeof ans === "string") return ans.trim().length > 0;
+                        return true;
+                      }).length
+                    }
+                  </strong>{" "}
+                  of {activeQuiz.questions.length}
                 </span>
 
                 <div className="flex items-center gap-3">

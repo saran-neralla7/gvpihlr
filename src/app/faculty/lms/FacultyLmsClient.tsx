@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, Fragment } from "react";
 import Link from "next/link";
 import {
   BookOpen,
@@ -175,6 +175,7 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
   const [isSubmittingQuiz, setIsSubmittingQuiz] = useState(false);
   const [viewingQuizAttempts, setViewingQuizAttempts] = useState<any | null>(null);
+  const [expandedAttemptId, setExpandedAttemptId] = useState<string | null>(null);
 
   // Notification Banner
   const [notification, setNotification] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -2163,31 +2164,153 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
                       <th className="p-2 text-center">Score</th>
                       <th className="p-2 text-center">Proctor Tab Switches</th>
                       <th className="p-2 text-right">Submitted At</th>
+                      <th className="p-2 text-center">Answers</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {viewingQuizAttempts.attempts.map((att: any) => (
-                      <tr key={att.id}>
-                        <td className="p-2 font-mono font-bold text-slate-800">
-                          {att.student?.rollNumber || att.studentId}
-                        </td>
-                        <td className="p-2 text-center font-extrabold text-emerald-600">
-                          {att.score} / {viewingQuizAttempts.totalMarks}
-                        </td>
-                        <td className="p-2 text-center font-mono font-bold">
-                          {att.tabSwitchCount > 0 ? (
-                            <span className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
-                              {att.tabSwitchCount} alert(s)
-                            </span>
-                          ) : (
-                            <span className="text-emerald-600">0</span>
+                    {viewingQuizAttempts.attempts.map((att: any) => {
+                      const isExpanded = expandedAttemptId === att.id;
+                      const submittedMap =
+                        typeof att.submittedAnswers === "object" && att.submittedAnswers !== null
+                          ? att.submittedAnswers
+                          : {};
+
+                      return (
+                        <Fragment key={att.id}>
+                          <tr className={isExpanded ? "bg-slate-50/80" : ""}>
+                            <td className="p-2 font-mono font-bold text-slate-800">
+                              {att.student?.rollNumber || att.studentId}
+                            </td>
+                            <td className="p-2 text-center font-extrabold text-emerald-600">
+                              {att.score} / {viewingQuizAttempts.totalMarks}
+                            </td>
+                            <td className="p-2 text-center font-mono font-bold">
+                              {att.tabSwitchCount > 0 ? (
+                                <span className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
+                                  {att.tabSwitchCount} alert(s)
+                                </span>
+                              ) : (
+                                <span className="text-emerald-600">0</span>
+                              )}
+                            </td>
+                            <td className="p-2 text-right text-slate-400 text-[11px]">
+                              {att.completedAt ? new Date(att.completedAt).toLocaleTimeString() : "In progress"}
+                            </td>
+                            <td className="p-2 text-center">
+                              <button
+                                type="button"
+                                onClick={() => setExpandedAttemptId(isExpanded ? null : att.id)}
+                                className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] transition shadow-xs"
+                              >
+                                {isExpanded ? "Hide" : "View Answers"}
+                              </button>
+                            </td>
+                          </tr>
+
+                          {/* Expanded Answer Sheet */}
+                          {isExpanded && (
+                            <tr>
+                              <td colSpan={5} className="p-3 bg-slate-50/80 border-y border-slate-200">
+                                <div className="space-y-3">
+                                  <div className="flex items-center justify-between pb-1 border-b border-slate-200">
+                                    <span className="font-bold text-xs text-slate-700">
+                                      Detailed Student Responses & Descriptive Submissions
+                                    </span>
+                                    <span className="text-[10px] text-slate-500 font-mono">
+                                      Roll: {att.student?.rollNumber || att.studentId}
+                                    </span>
+                                  </div>
+
+                                  {viewingQuizAttempts.questions?.map((qq: any, qIdx: number) => {
+                                    const q = qq.questionBank;
+                                    const userAns = submittedMap[q.id];
+                                    const optionsList = Array.isArray(q.options)
+                                      ? q.options
+                                      : typeof q.options === "string"
+                                      ? JSON.parse(q.options || "[]")
+                                      : [];
+                                    const isDescriptive =
+                                      optionsList.length === 0 ||
+                                      q.type === "SHORT_ANSWER" ||
+                                      q.type === "LONG_ANSWER";
+
+                                    return (
+                                      <div
+                                        key={q.id}
+                                        className="p-3 bg-white rounded-xl border border-slate-200 space-y-2 text-xs shadow-xs"
+                                      >
+                                        <div className="flex items-center justify-between text-[11px]">
+                                          <span className="font-bold text-indigo-600 font-mono">
+                                            Q{qIdx + 1}. {q.type} ({qq.marks || q.marks} Mark{qq.marks > 1 ? "s" : ""})
+                                          </span>
+                                          {isDescriptive ? (
+                                            <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full font-bold text-[10px]">
+                                              Descriptive Answer
+                                            </span>
+                                          ) : (
+                                            <span
+                                              className={`font-bold ${
+                                                Number(userAns) === q.correctOption
+                                                  ? "text-emerald-600"
+                                                  : "text-rose-600"
+                                              }`}
+                                            >
+                                              {Number(userAns) === q.correctOption ? "✓ Correct" : "✗ Incorrect"}
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        <p className="font-medium text-slate-800">{q.questionText}</p>
+
+                                        {isDescriptive ? (
+                                          <div className="mt-2 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                            <span className="text-[10px] font-bold text-slate-500 block mb-1 uppercase tracking-wider">
+                                              Student's Written Answer:
+                                            </span>
+                                            {userAns && String(userAns).trim().length > 0 ? (
+                                              <p className="text-xs text-slate-900 whitespace-pre-wrap font-sans leading-relaxed">
+                                                {String(userAns)}
+                                              </p>
+                                            ) : (
+                                              <p className="text-xs text-rose-500 italic">
+                                                No answer submitted for this question.
+                                              </p>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <div className="mt-1 text-[11px] space-y-1">
+                                            <div className="text-slate-600">
+                                              Selected:{" "}
+                                              <strong className="text-slate-900 font-mono">
+                                                {userAns !== undefined
+                                                  ? `${String.fromCharCode(65 + Number(userAns))}: ${
+                                                      optionsList[Number(userAns)] || ""
+                                                    }`
+                                                  : "None"}
+                                              </strong>
+                                            </div>
+                                            <div className="text-emerald-700">
+                                              Correct:{" "}
+                                              <strong className="font-mono">
+                                                {q.correctOption !== null
+                                                  ? `${String.fromCharCode(65 + q.correctOption)}: ${
+                                                      optionsList[q.correctOption] || ""
+                                                    }`
+                                                  : "N/A"}
+                                              </strong>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </td>
+                            </tr>
                           )}
-                        </td>
-                        <td className="p-2 text-right text-slate-400 text-[11px]">
-                          {att.completedAt ? new Date(att.completedAt).toLocaleTimeString() : "In progress"}
-                        </td>
-                      </tr>
-                    ))}
+                        </Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

@@ -109,6 +109,12 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploadingMaterial, setIsUploadingMaterial] = useState(false);
 
+  // Syllabus PDF Upload State (strict 5MB limit)
+  const [isUploadSyllabusModalOpen, setIsUploadSyllabusModalOpen] = useState(false);
+  const [syllabusFile, setSyllabusFile] = useState<File | null>(null);
+  const [syllabusTitle, setSyllabusTitle] = useState("Official Course Syllabus & Lecture Plan");
+  const [isUploadingSyllabus, setIsUploadingSyllabus] = useState(false);
+
   // 3. QUESTION BANK STATE (Difficulty levels Easy/Medium/Hard, types, marks)
   const [questions, setQuestions] = useState<any[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
@@ -289,6 +295,12 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
       return;
     }
 
+    // STRICT 5MB VALIDATION
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      showNotify("error", `File exceeds the 5MB limit (${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB). Please select a file under 5MB.`);
+      return;
+    }
+
     setIsUploadingMaterial(true);
     try {
       const fd = new FormData();
@@ -322,6 +334,48 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
       showNotify("error", "Server error while saving material");
     } finally {
       setIsUploadingMaterial(false);
+    }
+  };
+
+  // --- OFFICIAL SYLLABUS PDF UPLOAD (STRICT 5MB) ---
+  const handleUploadSyllabus = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!syllabusFile || !selectedAssignmentId) {
+      showNotify("error", "Please select a PDF document");
+      return;
+    }
+    if (syllabusFile.size > 5 * 1024 * 1024) {
+      showNotify("error", `Syllabus file exceeds 5MB limit (${(syllabusFile.size / (1024 * 1024)).toFixed(2)} MB)`);
+      return;
+    }
+
+    setIsUploadingSyllabus(true);
+    try {
+      const fd = new FormData();
+      fd.append("assignmentId", selectedAssignmentId);
+      fd.append("unitNumber", "1");
+      fd.append("title", syllabusTitle.trim() || "Official Course Syllabus & Lecture Plan");
+      fd.append("type", "SYLLABUS_COPY");
+      fd.append("description", "Institutional syllabus copy and lecture schedule");
+      fd.append("file", syllabusFile);
+
+      const res = await fetch("/api/lms/materials", {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMaterials((prev) => [data.material, ...prev]);
+        setIsUploadSyllabusModalOpen(false);
+        setSyllabusFile(null);
+        showNotify("success", "Official syllabus document uploaded successfully!");
+      } else {
+        showNotify("error", data.error || "Failed to upload syllabus PDF");
+      }
+    } catch {
+      showNotify("error", "Error uploading syllabus PDF");
+    } finally {
+      setIsUploadingSyllabus(false);
     }
   };
 
@@ -406,6 +460,10 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
     e.preventDefault();
     if (!importExcelFile || !selectedAssignment) {
       showNotify("error", "Please select an Excel file (.xlsx)");
+      return;
+    }
+    if (importExcelFile.size > 5 * 1024 * 1024) {
+      showNotify("error", `Excel file exceeds 5MB limit (${(importExcelFile.size / (1024 * 1024)).toFixed(2)} MB).`);
       return;
     }
     setIsImportingExcel(true);
@@ -830,18 +888,86 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
                       </p>
                     </div>
 
-                    <button
-                      onClick={() => {
-                        setNewTopicUnit(1);
-                        setNewTopicTitle("");
-                        setIsAddTopicModalOpen(true);
-                      }}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition shadow-xs"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Add Lecture Topic</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSyllabusFile(null);
+                          setIsUploadSyllabusModalOpen(true);
+                        }}
+                        className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50/70 text-indigo-700 hover:bg-indigo-100 text-xs font-bold transition shadow-2xs"
+                      >
+                        <UploadCloud className="w-3.5 h-3.5" />
+                        <span>Upload Syllabus PDF (≤5MB)</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setNewTopicUnit(1);
+                          setNewTopicTitle("");
+                          setIsAddTopicModalOpen(true);
+                        }}
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition shadow-xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add Lecture Topic</span>
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Official Syllabus Copy Banner if Uploaded */}
+                  {materials
+                    .filter((m) => m.type === "SYLLABUS_COPY")
+                    .map((syl) => (
+                      <div
+                        key={syl.id}
+                        className="bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 rounded-2xl p-4 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md border border-white/10"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                            <FileText className="w-5 h-5 text-indigo-300" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-indigo-500/30 text-indigo-200 font-mono">
+                                Official Syllabus Copy (PDF)
+                              </span>
+                              <span className="text-[11px] text-slate-300">
+                                {syl.fileSize ? `${(syl.fileSize / (1024 * 1024)).toFixed(2)} MB` : "PDF"}
+                              </span>
+                            </div>
+                            <h4 className="font-extrabold text-sm text-white mt-0.5">{syl.title}</h4>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={syl.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-xl bg-white text-slate-900 text-xs font-bold hover:bg-slate-100 transition shadow-2xs flex items-center gap-1"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>View Document</span>
+                          </a>
+                          <a
+                            href={syl.fileUrl}
+                            download={syl.fileName}
+                            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition flex items-center gap-1"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Download</span>
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteMaterial(syl.id)}
+                            className="p-1.5 rounded-lg text-rose-300 hover:text-white hover:bg-rose-500/20 transition"
+                            title="Remove Syllabus Copy"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
 
                   {isLoadingTopics ? (
                     <div className="py-12 text-center text-slate-400">
@@ -2024,6 +2150,117 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
                   <>
                     <UploadCloud className="w-3.5 h-3.5" />
                     <span>Import Questions</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </CustomModal>
+      )}
+
+      {/* 7. Upload Official Syllabus PDF Modal (Strict 5MB limit) */}
+      {isUploadSyllabusModalOpen && (
+        <CustomModal
+          title="Upload Course Syllabus & Lecture Plan (PDF)"
+          isOpen={isUploadSyllabusModalOpen}
+          onClose={() => {
+            if (!isUploadingSyllabus) {
+              setIsUploadSyllabusModalOpen(false);
+              setSyllabusFile(null);
+            }
+          }}
+        >
+          <form onSubmit={handleUploadSyllabus} className="p-6 space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div>
+                <h3 className="font-bold text-sm text-slate-900">Upload Course Syllabus Document</h3>
+                <p className="text-xs text-slate-500">
+                  Upload official syllabus copy for {selectedAssignment?.subjectCode} (Strict 5MB limit).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isUploadingSyllabus) {
+                    setIsUploadSyllabusModalOpen(false);
+                    setSyllabusFile(null);
+                  }
+                }}
+              >
+                <X className="w-4 h-4 text-slate-400 hover:text-slate-600" />
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Document Title</label>
+              <input
+                type="text"
+                value={syllabusTitle}
+                onChange={(e) => setSyllabusTitle(e.target.value)}
+                placeholder="e.g. Official Course Syllabus & Lecture Plan 2026-27"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                required
+              />
+            </div>
+
+            {/* File Dropzone */}
+            <div className="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center hover:border-indigo-400 transition bg-slate-50/50">
+              <FileText className="w-10 h-10 text-indigo-600 mx-auto mb-2" />
+              <label className="block cursor-pointer">
+                <span className="text-xs font-bold text-indigo-600 hover:underline">Choose PDF Document</span>
+                <input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] || null;
+                    if (f && f.size > 5 * 1024 * 1024) {
+                      showNotify("error", `File exceeds 5MB limit (${(f.size / (1024 * 1024)).toFixed(2)} MB)`);
+                      return;
+                    }
+                    setSyllabusFile(f);
+                  }}
+                  className="hidden"
+                />
+              </label>
+              {syllabusFile ? (
+                <div className="mt-3 p-2 px-3 bg-white border border-slate-200 rounded-xl inline-flex items-center gap-2 text-xs font-mono font-bold text-slate-800">
+                  <CheckCircle className="w-4 h-4 text-emerald-600" />
+                  <span>{syllabusFile.name}</span>
+                  <span className="text-slate-400 font-normal">
+                    ({(syllabusFile.size / (1024 * 1024)).toFixed(2)} MB)
+                  </span>
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-400 mt-1">Strict maximum size: 5 MB (PDF format only)</p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t">
+              <button
+                type="button"
+                disabled={isUploadingSyllabus}
+                onClick={() => {
+                  setIsUploadSyllabusModalOpen(false);
+                  setSyllabusFile(null);
+                }}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isUploadingSyllabus || !syllabusFile}
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 disabled:opacity-50 shadow-xs"
+              >
+                {isUploadingSyllabus ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud className="w-3.5 h-3.5" />
+                    <span>Upload Syllabus</span>
                   </>
                 )}
               </button>

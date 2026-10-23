@@ -113,7 +113,7 @@ export default function LoginPage() {
         </p>
         <div className="pt-2">
           <span className="inline-block px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-xs sm:text-sm font-extrabold text-blue-950 uppercase tracking-wider shadow-2xs">
-            CAMPUS MANAGEMENT SYSTEM
+            LEARNING MANAGEMENT SYSTEM (LMS)
           </span>
         </div>
       </div>

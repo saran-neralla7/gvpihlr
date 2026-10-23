@@ -51,6 +51,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Missing required fields or file" }, { status: 400 });
     }
 
+    // STRICT 5MB FILE SIZE LIMIT
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `File size exceeds the 5MB limit (${(file.size / (1024 * 1024)).toFixed(2)} MB). Please select a file under 5MB.`,
+        },
+        { status: 400 }
+      );
+    }
+
     const unitNumber = parseInt(unitNumberStr, 10);
 
     // Look up assignment to get subject code

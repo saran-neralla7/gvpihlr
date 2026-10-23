@@ -20,6 +20,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Please select an Excel file (.xlsx)" }, { status: 400 });
     }
 
+    // STRICT 5MB LIMIT
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `File size exceeds the 5MB limit (${(file.size / (1024 * 1024)).toFixed(2)} MB). Please select an Excel file under 5MB.`,
+        },
+        { status: 400 }
+      );
+    }
+
     if (!subjectId) {
       return NextResponse.json({ success: false, error: "subjectId is required" }, { status: 400 });
     }

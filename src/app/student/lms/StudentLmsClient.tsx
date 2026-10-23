@@ -883,6 +883,52 @@ export default function StudentLmsClient({
               ===================================================================== */}
           {activeTab === "topics" && (
             <div className="p-6">
+              {/* Official Course Syllabus Document if Uploaded by Faculty */}
+              {currentAssignment.courseMaterials
+                .filter((m) => m.type === "SYLLABUS_COPY")
+                .map((syl) => (
+                  <div
+                    key={syl.id}
+                    className="bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 rounded-2xl p-5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 shadow-md border border-white/10"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/10">
+                        <FileText className="w-6 h-6 text-indigo-300" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-indigo-500/30 text-indigo-200 font-mono">
+                            Official Course Syllabus (PDF)
+                          </span>
+                          <span className="text-[11px] text-slate-300">
+                            {syl.fileSize ? `${(syl.fileSize / (1024 * 1024)).toFixed(2)} MB` : "PDF Document"}
+                          </span>
+                        </div>
+                        <h4 className="font-extrabold text-sm sm:text-base text-white mt-1">{syl.title}</h4>
+                        <p className="text-xs text-slate-300">Official syllabus copy and lecture schedule for this course</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => handleViewMaterial(syl)}
+                        className="px-4 py-2 rounded-xl bg-white text-slate-900 text-xs font-bold hover:bg-slate-100 transition shadow-xs flex items-center gap-1.5"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>View Document</span>
+                      </button>
+                      <a
+                        href={syl.fileUrl}
+                        download={syl.fileName}
+                        onClick={() => handleDownloadMaterial(syl)}
+                        className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition flex items-center gap-1.5"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download</span>
+                      </a>
+                    </div>
+                  </div>
+                ))}
+
               {currentAssignment.lecturePlanTopics.length === 0 ? (
                 <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
                   <Layers className="w-10 h-10 text-slate-400 mx-auto mb-2" />
@@ -1253,14 +1299,69 @@ export default function StudentLmsClient({
               </div>
             </div>
 
-            {/* In-Browser PDF Frame */}
-            <div className="flex-1 bg-slate-100 relative">
-              <iframe
-                src={`${previewMaterial.fileUrl}#toolbar=1&navpanes=0`}
-                className="w-full h-full border-0"
-                title={previewMaterial.title}
-              />
-            </div>
+            {/* Modal Body: Styled Document Presentation for PDF & PPT */}
+            {(() => {
+              const fname = previewMaterial.fileName.toLowerCase();
+              const isPpt =
+                fname.endsWith(".ppt") ||
+                fname.endsWith(".pptx") ||
+                previewMaterial.type === "SLIDES_PPT";
+
+              if (isPpt) {
+                return (
+                  <div className="flex-1 bg-slate-900 text-white flex flex-col items-center justify-center p-8 text-center relative overflow-hidden">
+                    <div className="max-w-md w-full bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-8 shadow-2xl flex flex-col items-center">
+                      <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-amber-500 to-rose-500 flex items-center justify-center mb-5 shadow-lg shadow-amber-500/20">
+                        <FileText className="w-10 h-10 text-white" />
+                      </div>
+                      <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 font-mono text-xs font-bold uppercase mb-2">
+                        PowerPoint Slide Deck
+                      </span>
+                      <h4 className="font-black text-lg sm:text-xl text-white mb-2">
+                        {previewMaterial.title}
+                      </h4>
+                      <p className="text-xs text-slate-300 mb-6">
+                        {previewMaterial.fileName}{" "}
+                        {previewMaterial.fileSize
+                          ? `(${(previewMaterial.fileSize / (1024 * 1024)).toFixed(2)} MB)`
+                          : ""}
+                      </p>
+
+                      <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+                        <a
+                          href={previewMaterial.fileUrl}
+                          download={previewMaterial.fileName}
+                          onClick={() => handleDownloadMaterial(previewMaterial)}
+                          className="w-full flex items-center justify-center gap-2 py-3 px-5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs transition shadow-lg shadow-amber-500/25"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>Download Slide Deck (.pptx)</span>
+                        </a>
+                        <a
+                          href={previewMaterial.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full flex items-center justify-center gap-2 py-3 px-5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          <span>Open in App</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="flex-1 bg-slate-100 relative">
+                  <iframe
+                    src={`${previewMaterial.fileUrl}#toolbar=1&navpanes=0`}
+                    className="w-full h-full border-0"
+                    title={previewMaterial.title}
+                  />
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

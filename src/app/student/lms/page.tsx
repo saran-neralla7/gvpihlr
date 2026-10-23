@@ -120,7 +120,17 @@ export default async function StudentLmsPage() {
       })
     : [];
 
-  // 3. Fetch all co-faculty assigned to these course offerings & sections
+  // 3. Group by (subjectOfferingId, sectionId) so that multiple co-faculty teaching
+  // the same section are consolidated into ONE unified course card for the student.
+  const groupedOfferings = new Map<string, typeof assignments>();
+  for (const a of assignments) {
+    const key = `${a.subjectOfferingId}_${a.sectionId}`;
+    const list = groupedOfferings.get(key) || [];
+    list.push(a);
+    groupedOfferings.set(key, list);
+  }
+
+  // 4. Fetch all co-faculty assigned to these course offerings & sections
   const coAssignments =
     assignments.length > 0
       ? await prisma.facultySubjectAssignment.findMany({
@@ -141,9 +151,13 @@ export default async function StudentLmsPage() {
         })
       : [];
 
-  const enrichedAssignments = assignments.map((a) => {
+  const consolidatedAssignments = Array.from(groupedOfferings.values()).map((group) => {
+    // Pick the primary assignment or first in group as base
+    const base = group.find((a) => a.isPrimary) || group[0];
+
+    // Find all faculty assigned to this offering and section
     const matchedCo = coAssignments
-      .filter((c) => c.subjectOfferingId === a.subjectOfferingId && c.sectionId === a.sectionId)
+      .filter((c) => c.subjectOfferingId === base.subjectOfferingId && c.sectionId === base.sectionId)
       .map((c) => ({
         id: c.facultyId,
         fullName: c.faculty.user.fullName,
@@ -151,19 +165,55 @@ export default async function StudentLmsPage() {
         isPrimary: c.isPrimary,
       }));
 
+    // Merge and deduplicate courseMaterials from all co-instructors
+    const allMaterialsMap = new Map<string, any>();
+    for (const a of group) {
+      for (const m of a.courseMaterials) {
+        allMaterialsMap.set(m.id, m);
+      }
+    }
+    const mergedMaterials = Array.from(allMaterialsMap.values()).sort(
+      (m1, m2) => m1.unitNumber - m2.unitNumber || new Date(m2.createdAt).getTime() - new Date(m1.createdAt).getTime()
+    );
+
+    // Merge and deduplicate lecturePlanTopics from all co-instructors
+    const allTopicsMap = new Map<string, any>();
+    for (const a of group) {
+      for (const t of a.lecturePlanTopics) {
+        allTopicsMap.set(t.id, t);
+      }
+    }
+    const mergedTopics = Array.from(allTopicsMap.values()).sort(
+      (t1, t2) => t1.unitNumber - t2.unitNumber || t1.topicSequence - t2.topicSequence
+    );
+
+    // Merge and deduplicate quizzes from all co-instructors
+    const allQuizzesMap = new Map<string, any>();
+    for (const a of group) {
+      for (const q of a.courseQuizzes) {
+        allQuizzesMap.set(q.id, q);
+      }
+    }
+    const mergedQuizzes = Array.from(allQuizzesMap.values()).sort(
+      (q1, q2) => new Date(q2.createdAt).getTime() - new Date(q1.createdAt).getTime()
+    );
+
     return {
-      ...a,
+      ...base,
       allFaculty:
         matchedCo.length > 0
           ? matchedCo
           : [
               {
-                id: a.facultyId,
-                fullName: a.faculty.user.fullName,
-                email: a.faculty.user.email,
+                id: base.facultyId,
+                fullName: base.faculty.user.fullName,
+                email: base.faculty.user.email,
                 isPrimary: true,
               },
             ],
+      courseMaterials: mergedMaterials,
+      lecturePlanTopics: mergedTopics,
+      courseQuizzes: mergedQuizzes,
     };
   });
 
@@ -180,7 +230,7 @@ export default async function StudentLmsPage() {
           semester: enrollment?.semester || 1,
           academicYear: enrollment?.academicYear.code || "2026-27",
         }}
-        assignments={JSON.parse(JSON.stringify(enrichedAssignments))}
+        assignments={JSON.parse(JSON.stringify(consolidatedAssignments))}
       />
     </div>
   );

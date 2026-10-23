@@ -116,7 +116,7 @@ export default function Header({ user }: HeaderProps) {
               GVPIHLR
             </span>
             <span className="hidden md:inline-block text-[11px] font-semibold text-slate-400 border-l border-slate-200 pl-2">
-              Campus Management System
+              Learning Management System (LMS)
             </span>
           </div>
         </Link>

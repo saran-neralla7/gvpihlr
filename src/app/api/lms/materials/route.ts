@@ -14,7 +14,29 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: false, error: "assignmentId is required" }, { status: 400 });
     }
 
-    const where: any = { assignmentId };
+    // Resolve sibling assignments sharing the same subject offering & section
+    // so all co-faculty and students see the shared pool of materials
+    const currentAssignment = await prisma.facultySubjectAssignment.findUnique({
+      where: { id: assignmentId },
+      select: { subjectOfferingId: true, sectionId: true },
+    });
+
+    let assignmentIds = [assignmentId];
+    if (currentAssignment) {
+      const siblings = await prisma.facultySubjectAssignment.findMany({
+        where: {
+          subjectOfferingId: currentAssignment.subjectOfferingId,
+          sectionId: currentAssignment.sectionId,
+          isActive: true,
+        },
+        select: { id: true },
+      });
+      if (siblings.length > 0) {
+        assignmentIds = siblings.map((s) => s.id);
+      }
+    }
+
+    const where: any = { assignmentId: { in: assignmentIds } };
     if (unitNumber) {
       where.unitNumber = parseInt(unitNumber, 10);
     }
@@ -45,22 +67,21 @@ export async function POST(req: Request) {
     const title = formData.get("title") as string;
     const description = (formData.get("description") as string) || "";
     const typeStr = (formData.get("type") as string) || "LECTURE_NOTES_PDF";
+    const videoUrl = (formData.get("videoUrl") as string) || (formData.get("fileUrl") as string) || "";
     const file = formData.get("file") as File | null;
 
-    if (!assignmentId || !unitNumberStr || !title || !file) {
-      return NextResponse.json({ success: false, error: "Missing required fields or file" }, { status: 400 });
+    const isLinkType = typeStr === "VIDEO_LECTURE" || typeStr === "REFERENCE_LINK";
+
+    if (!assignmentId || !unitNumberStr || !title) {
+      return NextResponse.json({ success: false, error: "Missing required fields (assignmentId, unitNumber, title)" }, { status: 400 });
     }
 
-    // STRICT 5MB FILE SIZE LIMIT
-    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `File size exceeds the 5MB limit (${(file.size / (1024 * 1024)).toFixed(2)} MB). Please select a file under 5MB.`,
-        },
-        { status: 400 }
-      );
+    if (!isLinkType && !file) {
+      return NextResponse.json({ success: false, error: "Please select a file to upload" }, { status: 400 });
+    }
+
+    if (isLinkType && !videoUrl && !file) {
+      return NextResponse.json({ success: false, error: "Please provide a valid video lecture URL or link" }, { status: 400 });
     }
 
     const unitNumber = parseInt(unitNumberStr, 10);
@@ -81,17 +102,44 @@ export async function POST(req: Request) {
 
     const subjectCode = assignment.subjectOffering.subject.code;
 
-    // Convert file to Buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    let savedFileUrl = "";
+    let savedFileName = "";
+    let savedFileSize = 0;
 
-    // Save file to Option A storage (public/uploads/materials/[subjectCode]/unit-[unitNumber]/)
-    const saved = await saveCourseMaterialFile({
-      subjectCode,
-      unitNumber,
-      originalFileName: file.name,
-      buffer,
-    });
+    if (file && file.size > 0) {
+      // STRICT 5MB FILE SIZE LIMIT
+      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+      if (file.size > MAX_FILE_SIZE) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `File size exceeds the 5MB limit (${(file.size / (1024 * 1024)).toFixed(2)} MB). Please select a file under 5MB.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Convert file to Buffer
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      // Save file to Option A storage
+      const saved = await saveCourseMaterialFile({
+        subjectCode,
+        unitNumber,
+        originalFileName: file.name,
+        buffer,
+      });
+
+      savedFileUrl = saved.fileUrl;
+      savedFileName = saved.fileName;
+      savedFileSize = saved.fileSize;
+    } else if (isLinkType && videoUrl) {
+      // Video or reference link
+      savedFileUrl = videoUrl.trim();
+      savedFileName = title.trim();
+      savedFileSize = 0;
+    }
 
     // Create CourseMaterial record in PostgreSQL
     const material = await prisma.courseMaterial.create({
@@ -99,12 +147,12 @@ export async function POST(req: Request) {
         assignmentId,
         unitNumber,
         topicId: topicId || null,
-        title,
-        description,
+        title: title.trim(),
+        description: description.trim(),
         type: (typeStr in MaterialType ? typeStr : "LECTURE_NOTES_PDF") as MaterialType,
-        fileUrl: saved.fileUrl,
-        fileName: saved.fileName,
-        fileSize: saved.fileSize,
+        fileUrl: savedFileUrl,
+        fileName: savedFileName || "Resource Link",
+        fileSize: savedFileSize,
       },
     });
 

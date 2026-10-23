@@ -15,6 +15,8 @@ import {
   ArrowLeft,
   AlertTriangle,
   PlayCircle,
+  Play,
+  Video,
   Sparkles,
   Filter,
   Layers,
@@ -25,6 +27,31 @@ import {
   GraduationCap,
   User,
 } from "lucide-react";
+
+function getEmbedUrl(url: string): string | null {
+  if (!url) return null;
+  // YouTube watch, share, short
+  const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+  if (ytMatch && ytMatch[1]) {
+    return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?rel=0&modestbranding=1`;
+  }
+  // Vimeo
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch && vimeoMatch[1]) {
+    return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  }
+  // Google Drive
+  const gdriveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (gdriveMatch && gdriveMatch[1]) {
+    return `https://drive.google.com/file/d/${gdriveMatch[1]}/preview`;
+  }
+  // Loom
+  const loomMatch = url.match(/loom\.com\/share\/([a-zA-Z0-9_-]+)/);
+  if (loomMatch && loomMatch[1]) {
+    return `https://www.loom.com/embed/${loomMatch[1]}`;
+  }
+  return null;
+}
 
 interface StudentProps {
   id: string;
@@ -815,7 +842,20 @@ export default function StudentLmsClient({
                   {filteredMaterials.map((mat) => {
                     const isPdf =
                       mat.fileUrl.toLowerCase().endsWith(".pdf") ||
-                      mat.fileName.toLowerCase().endsWith(".pdf");
+                      mat.fileName.toLowerCase().endsWith(".pdf") ||
+                      mat.type === "LECTURE_NOTES_PDF" ||
+                      mat.type === "SYLLABUS_COPY";
+                    const isPpt =
+                      mat.fileUrl.toLowerCase().endsWith(".ppt") ||
+                      mat.fileUrl.toLowerCase().endsWith(".pptx") ||
+                      mat.fileName.toLowerCase().endsWith(".ppt") ||
+                      mat.fileName.toLowerCase().endsWith(".pptx") ||
+                      mat.type === "SLIDES_PPT";
+                    const isVideo =
+                      mat.type === "VIDEO_LECTURE" ||
+                      Boolean(getEmbedUrl(mat.fileUrl)) ||
+                      Boolean(mat.fileUrl.match(/\.(mp4|webm|ogg)(\?.*)?$/i));
+                    const isExternalLink = mat.fileUrl.startsWith("http");
 
                     return (
                       <div
@@ -827,8 +867,16 @@ export default function StudentLmsClient({
                             <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-extrabold text-[10px]">
                               UNIT {mat.unitNumber}
                             </span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                              {mat.type.replace(/_/g, " ")}
+                            <span
+                              className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                                isVideo
+                                  ? "bg-rose-50 text-rose-600 font-extrabold"
+                                  : isPpt
+                                  ? "bg-amber-50 text-amber-600"
+                                  : "text-slate-400"
+                              }`}
+                            >
+                              {isVideo ? "Video Lecture" : mat.type.replace(/_/g, " ")}
                             </span>
                           </div>
 
@@ -844,14 +892,22 @@ export default function StudentLmsClient({
                           <div className="mt-4 flex items-center gap-2 text-[11px] text-slate-400">
                             <Clock className="w-3 h-3" />
                             <span>Uploaded {new Date(mat.createdAt).toLocaleDateString()}</span>
-                            {mat.fileSize && (
-                              <span>• {(mat.fileSize / (1024 * 1024)).toFixed(1)} MB</span>
+                            {Boolean(mat.fileSize && mat.fileSize > 0) && (
+                              <span>• {((mat.fileSize || 0) / (1024 * 1024)).toFixed(1)} MB</span>
                             )}
                           </div>
                         </div>
 
                         <div className="mt-5 pt-3 border-t border-slate-100 flex items-center gap-2">
-                          {isPdf && (
+                          {isVideo ? (
+                            <button
+                              onClick={() => handleViewMaterial(mat)}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition shadow-xs"
+                            >
+                              <Play className="w-3.5 h-3.5 fill-current" />
+                              <span>Watch Lecture</span>
+                            </button>
+                          ) : isPdf ? (
                             <button
                               onClick={() => handleViewMaterial(mat)}
                               className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold hover:bg-indigo-100 transition"
@@ -859,16 +915,37 @@ export default function StudentLmsClient({
                               <Eye className="w-3.5 h-3.5" />
                               <span>Read in Browser</span>
                             </button>
+                          ) : isPpt ? (
+                            <button
+                              onClick={() => handleViewMaterial(mat)}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-amber-50 text-amber-700 text-xs font-bold hover:bg-amber-100 transition"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>View Slides</span>
+                            </button>
+                          ) : (
+                            <a
+                              href={mat.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-50 text-slate-700 text-xs font-bold hover:bg-slate-100 transition"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span>Open Resource</span>
+                            </a>
                           )}
-                          <a
-                            href={mat.fileUrl}
-                            download={mat.fileName}
-                            onClick={() => handleDownloadMaterial(mat)}
-                            className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            <span>Download</span>
-                          </a>
+
+                          {!isExternalLink && (
+                            <a
+                              href={mat.fileUrl}
+                              download={mat.fileName}
+                              onClick={() => handleDownloadMaterial(mat)}
+                              className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              <span>Download</span>
+                            </a>
+                          )}
                         </div>
                       </div>
                     );
@@ -1299,13 +1376,84 @@ export default function StudentLmsClient({
               </div>
             </div>
 
-            {/* Modal Body: Styled Document Presentation for PDF & PPT */}
+            {/* Modal Body: Styled Document Presentation for Video, PDF & PPT */}
             {(() => {
               const fname = previewMaterial.fileName.toLowerCase();
+              const embedUrl = getEmbedUrl(previewMaterial.fileUrl);
+              const isDirectVideo = Boolean(previewMaterial.fileUrl.match(/\.(mp4|webm|ogg)(\?.*)?$/i));
+              const isVideo = previewMaterial.type === "VIDEO_LECTURE" || Boolean(embedUrl) || isDirectVideo;
               const isPpt =
                 fname.endsWith(".ppt") ||
                 fname.endsWith(".pptx") ||
                 previewMaterial.type === "SLIDES_PPT";
+
+              if (isVideo) {
+                return (
+                  <div className="flex-1 bg-slate-950 flex flex-col items-center justify-center p-3 sm:p-6 overflow-y-auto">
+                    <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
+                      {/* Responsive 16:9 Video Player */}
+                      <div className="w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-slate-800 relative flex items-center justify-center">
+                        {embedUrl ? (
+                          <iframe
+                            src={embedUrl}
+                            title={previewMaterial.title}
+                            className="w-full h-full border-0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                          />
+                        ) : isDirectVideo ? (
+                          <video
+                            src={previewMaterial.fileUrl}
+                            controls
+                            className="w-full h-full object-contain"
+                          >
+                            Your browser does not support HTML5 video playback.
+                          </video>
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-white">
+                            <Play className="w-16 h-16 text-rose-500 mb-4" />
+                            <h4 className="text-lg font-bold mb-2">Video Lecture Stream</h4>
+                            <p className="text-xs text-slate-400 max-w-md mb-4 truncate">{previewMaterial.fileUrl}</p>
+                            <a
+                              href={previewMaterial.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-lg transition"
+                            >
+                              Open Video Link
+                            </a>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Video Information & Instructor Notes */}
+                      <div className="w-full mt-4 bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold text-[10px] uppercase">
+                              Video Lecture
+                            </span>
+                            <span className="text-xs text-slate-400 font-medium">Unit {previewMaterial.unitNumber}</span>
+                          </div>
+                          <h4 className="font-bold text-base text-white">{previewMaterial.title}</h4>
+                          {previewMaterial.description && (
+                            <p className="text-xs text-slate-300 mt-1 max-w-2xl">{previewMaterial.description}</p>
+                          )}
+                        </div>
+                        <a
+                          href={previewMaterial.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition flex items-center justify-center gap-2 shrink-0 border border-white/10"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>Open in New Tab</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
 
               if (isPpt) {
                 return (

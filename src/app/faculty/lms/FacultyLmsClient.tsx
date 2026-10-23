@@ -33,6 +33,8 @@ import {
   Calendar,
   Users,
   FileSpreadsheet,
+  Video,
+  Play,
 } from "lucide-react";
 import CustomModal from "@/components/ui/CustomModal";
 
@@ -105,6 +107,7 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
   const [newMaterialTopicId, setNewMaterialTopicId] = useState<string>("");
   const [newMaterialTitle, setNewMaterialTitle] = useState("");
   const [newMaterialType, setNewMaterialType] = useState("LECTURE_NOTES_PDF");
+  const [newMaterialUrl, setNewMaterialUrl] = useState("");
   const [newMaterialDescription, setNewMaterialDescription] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploadingMaterial, setIsUploadingMaterial] = useState(false);
@@ -283,20 +286,33 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
     setNewMaterialTopicId(topicId || "");
     setNewMaterialTitle("");
     setNewMaterialDescription("");
+    setNewMaterialUrl("");
     setSelectedFile(null);
     setIsAddMaterialModalOpen(true);
   };
 
-  // --- MATERIAL UPLOAD ACTIONS (OPTION A - MULTIPLE FILES PER TOPIC) ---
+  // --- MATERIAL UPLOAD ACTIONS (OPTION A - MULTIPLE FILES PER TOPIC & VIDEO LINKS) ---
   const handleUploadMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedFile || !newMaterialTitle.trim() || !selectedAssignmentId) {
-      showNotify("error", "Please provide a document title and file");
+    const isLinkType = newMaterialType === "VIDEO_LECTURE" || newMaterialType === "REFERENCE_LINK";
+
+    if (!newMaterialTitle.trim() || !selectedAssignmentId) {
+      showNotify("error", "Please provide a material title");
+      return;
+    }
+
+    if (!isLinkType && !selectedFile) {
+      showNotify("error", "Please select a file to upload");
+      return;
+    }
+
+    if (isLinkType && !newMaterialUrl.trim() && !selectedFile) {
+      showNotify("error", "Please provide a valid video lecture or resource link");
       return;
     }
 
     // STRICT 5MB VALIDATION
-    if (selectedFile.size > 5 * 1024 * 1024) {
+    if (selectedFile && selectedFile.size > 5 * 1024 * 1024) {
       showNotify("error", `File exceeds the 5MB limit (${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB). Please select a file under 5MB.`);
       return;
     }
@@ -312,7 +328,12 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
       fd.append("title", newMaterialTitle.trim());
       fd.append("type", newMaterialType);
       fd.append("description", newMaterialDescription);
-      fd.append("file", selectedFile);
+      if (selectedFile) {
+        fd.append("file", selectedFile);
+      }
+      if (newMaterialUrl.trim()) {
+        fd.append("videoUrl", newMaterialUrl.trim());
+      }
 
       const res = await fetch("/api/lms/materials", {
         method: "POST",
@@ -324,11 +345,12 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
         setIsAddMaterialModalOpen(false);
         setNewMaterialTitle("");
         setNewMaterialDescription("");
+        setNewMaterialUrl("");
         setNewMaterialTopicId("");
         setSelectedFile(null);
-        showNotify("success", "Course material file attached and saved to server storage!");
+        showNotify("success", isLinkType ? "Video lecture link added successfully!" : "Course material file uploaded successfully!");
       } else {
-        showNotify("error", data.error || "Failed to upload file");
+        showNotify("error", data.error || "Failed to upload material");
       }
     } catch {
       showNotify("error", "Server error while saving material");
@@ -1162,13 +1184,17 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
                                 <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-extrabold text-[10px]">
                                   UNIT {m.unitNumber}
                                 </span>
-                                {boundTopic ? (
+                                {m.type === "VIDEO_LECTURE" ? (
+                                  <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                    <Video className="w-3 h-3" /> Video Lecture
+                                  </span>
+                                ) : boundTopic ? (
                                   <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50/80 px-2 py-0.5 rounded-md truncate max-w-[160px]">
                                     Topic: {boundTopic.topicTitle}
                                   </span>
                                 ) : (
                                   <span className="text-[10px] font-bold text-slate-400 uppercase">
-                                    General Unit File
+                                    {m.type.replace(/_/g, " ")}
                                   </span>
                                 )}
                               </div>
@@ -1183,8 +1209,8 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
                               )}
 
                               <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-400">
-                                <span>{m.fileName}</span>
-                                {m.fileSize && <span>• {(m.fileSize / 1024).toFixed(0)} KB</span>}
+                                <span className="truncate max-w-[200px]">{m.fileName}</span>
+                                {m.fileSize > 0 && <span>• {(m.fileSize / 1024).toFixed(0)} KB</span>}
                               </div>
                             </div>
 
@@ -1193,9 +1219,19 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
                                 href={m.fileUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs font-bold text-indigo-600 hover:underline flex items-center gap-1"
+                                className="text-xs font-bold hover:underline flex items-center gap-1.5"
                               >
-                                <Eye className="w-3.5 h-3.5" /> View File
+                                {m.type === "VIDEO_LECTURE" ? (
+                                  <>
+                                    <Play className="w-3.5 h-3.5 fill-current text-rose-600" />
+                                    <span className="text-rose-600 font-extrabold">Watch Video</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Eye className="w-3.5 h-3.5 text-indigo-600" />
+                                    <span className="text-indigo-600">View File</span>
+                                  </>
+                                )}
                               </a>
                               <button
                                 onClick={() => handleDeleteMaterial(m.id)}
@@ -1653,21 +1689,51 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
                 >
                   <option value="LECTURE_NOTES_PDF">Lecture Notes (PDF)</option>
                   <option value="SLIDES_PPT">Slides / PPT</option>
+                  <option value="VIDEO_LECTURE">Video Lecture (YouTube / Cloud Link)</option>
                   <option value="SYLLABUS_COPY">Syllabus Copy</option>
-                  <option value="ASSIGNMENT_SHEET">Assignment Sheet</option>
-                  <option value="REFERENCE_BOOK">Reference Material</option>
+                  <option value="FORMULA_SHEET">Formula Sheet</option>
+                  <option value="REFERENCE_LINK">Web / Reference Link</option>
                 </select>
               </div>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Select File (PDF / Doc)</label>
-                <input
-                  type="file"
-                  required
-                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                  className="w-full p-2 border rounded-xl text-xs bg-slate-50"
-                />
-              </div>
+              {newMaterialType === "VIDEO_LECTURE" || newMaterialType === "REFERENCE_LINK" ? (
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    {newMaterialType === "VIDEO_LECTURE" ? "Video Lecture URL (YouTube / Vimeo / Cloud Link)" : "Resource Web Link"}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="url"
+                      required
+                      placeholder={
+                        newMaterialType === "VIDEO_LECTURE"
+                          ? "https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                          : "https://example.com/notes"
+                      }
+                      value={newMaterialUrl}
+                      onChange={(e) => setNewMaterialUrl(e.target.value)}
+                      className="w-full p-2.5 border rounded-xl font-medium focus:outline-none pl-9 bg-slate-50"
+                    />
+                    <Video className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    YouTube links automatically render inside our responsive 16:9 theater player for students.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Select File (PDF / PPT - Max 5MB)</label>
+                  <input
+                    type="file"
+                    required
+                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    className="w-full p-2 border rounded-xl text-xs bg-slate-50"
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Strict institutional limit: 5MB maximum file size.
+                  </p>
+                </div>
+              )}
 
               <div className="pt-2 flex justify-end gap-2">
                 <button

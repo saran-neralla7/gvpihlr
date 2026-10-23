@@ -105,8 +105,9 @@ export default function LoginPage() {
     <div className="flex flex-col items-center justify-center py-6 sm:py-12">
       {/* Institutional Title & Subtitle matching user specification */}
       <div className="text-center mb-8 sm:mb-12 max-w-4xl px-4 space-y-2">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#0B2545] tracking-tight uppercase">
-          GAYATRI VIDYA PARISHAD INSTITUTE OF HIGHER LEARNING AND RESEARCH
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#0B2545] tracking-tight uppercase leading-snug">
+          <span>GAYATRI VIDYA PARISHAD</span>
+          <span className="block mt-1 sm:mt-1.5">INSTITUTE OF HIGHER LEARNING AND RESEARCH</span>
         </h1>
         <p className="text-base sm:text-xl font-bold text-slate-700 tracking-wide">
           (Deemed to be University under Distinct Category under Section 3 of the UGC Act, 1956)

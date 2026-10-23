@@ -13,9 +13,31 @@ export async function GET(req: Request) {
     const assignmentId = searchParams.get("assignmentId");
     const sectionId = searchParams.get("sectionId");
 
-    const where: any = {};
+    let assignmentIds: string[] | undefined = undefined;
     if (assignmentId) {
-      where.assignmentId = assignmentId;
+      const currentAssignment = await prisma.facultySubjectAssignment.findUnique({
+        where: { id: assignmentId },
+        select: { subjectOfferingId: true, sectionId: true },
+      });
+      if (currentAssignment) {
+        const siblings = await prisma.facultySubjectAssignment.findMany({
+          where: {
+            subjectOfferingId: currentAssignment.subjectOfferingId,
+            sectionId: currentAssignment.sectionId,
+            isActive: true,
+          },
+          select: { id: true },
+        });
+        if (siblings.length > 0) {
+          assignmentIds = siblings.map((s) => s.id);
+        }
+      }
+      if (!assignmentIds) assignmentIds = [assignmentId];
+    }
+
+    const where: any = {};
+    if (assignmentIds) {
+      where.assignmentId = { in: assignmentIds };
     } else if (sectionId) {
       where.assignment = { sectionId };
     }

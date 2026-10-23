@@ -13,13 +13,38 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: false, error: "assignmentId is required" }, { status: 400 });
     }
 
-    const where: any = { assignmentId };
+    // Resolve sibling assignments sharing the same subject offering & section
+    // so all co-faculty and students share the lecture plan
+    const currentAssignment = await prisma.facultySubjectAssignment.findUnique({
+      where: { id: assignmentId },
+      select: { subjectOfferingId: true, sectionId: true },
+    });
+
+    let assignmentIds = [assignmentId];
+    if (currentAssignment) {
+      const siblings = await prisma.facultySubjectAssignment.findMany({
+        where: {
+          subjectOfferingId: currentAssignment.subjectOfferingId,
+          sectionId: currentAssignment.sectionId,
+          isActive: true,
+        },
+        select: { id: true },
+      });
+      if (siblings.length > 0) {
+        assignmentIds = siblings.map((s) => s.id);
+      }
+    }
+
+    const where: any = { assignmentId: { in: assignmentIds } };
     if (unitNumber) {
       where.unitNumber = parseInt(unitNumber, 10);
     }
 
     const topics = await prisma.lecturePlanTopic.findMany({
       where,
+      include: {
+        materials: true,
+      },
       orderBy: [{ unitNumber: "asc" }, { topicSequence: "asc" }, { plannedDate: "asc" }],
     });
 

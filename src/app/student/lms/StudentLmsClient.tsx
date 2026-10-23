@@ -69,7 +69,7 @@ interface QuestionItem {
   id: string;
   unitNumber: number;
   questionText: string;
-  type: "MCQ" | "SHORT_ANSWER" | "LONG_ANSWER";
+  type: "MCQ" | "SHORT_ANSWER" | "DESCRIPTIVE" | "LONG_ANSWER" | string;
   difficulty: "EASY" | "MEDIUM" | "HARD";
   marks: number;
   bloomsLevel?: string | null;
@@ -1262,6 +1262,20 @@ export default function StudentLmsClient({
                           </div>
                         )}
 
+                        {/* Descriptive / Short Answer Self-Study Practice Box */}
+                        {q.type !== "MCQ" && (
+                          <div className="mt-4 p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                              Practice Writing Your Answer:
+                            </span>
+                            <textarea
+                              rows={3}
+                              placeholder="Type your notes, formulas, or answer here to test yourself..."
+                              className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+                            />
+                          </div>
+                        )}
+
                         {/* Reveal Answer Toggle */}
                         <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
                           <button
@@ -1719,13 +1733,19 @@ export default function StudentLmsClient({
                         </p>
 
                         {/* Descriptive Question vs Multiple Choice */}
-                        {optionsList.length === 0 || q.type === "SHORT_ANSWER" || q.type === "LONG_ANSWER" ? (
+                        {q.type === "DESCRIPTIVE" ||
+                        q.type === "SHORT_ANSWER" ||
+                        q.type === "LONG_ANSWER" ||
+                        q.type !== "MCQ" ||
+                        optionsList.length === 0 ? (
                           <div className="mt-3 space-y-2">
                             <div className="flex items-center justify-between text-xs">
                               <label className="font-bold text-slate-700 flex items-center gap-1.5">
                                 <span>Your Answer / Explanation:</span>
                                 <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">
-                                  {q.type === "LONG_ANSWER" ? "Descriptive / Long Answer" : "Short Answer"}
+                                  {q.type === "LONG_ANSWER" || q.type === "DESCRIPTIVE"
+                                    ? "Descriptive / Long Answer"
+                                    : "Short Answer"}
                                 </span>
                               </label>
                               <span className="text-[10px] font-mono text-slate-400">
@@ -1733,7 +1753,7 @@ export default function StudentLmsClient({
                               </span>
                             </div>
                             <textarea
-                              rows={q.type === "LONG_ANSWER" ? 6 : 4}
+                              rows={q.type === "LONG_ANSWER" || q.type === "DESCRIPTIVE" ? 6 : 4}
                               value={typeof selectedVal === "string" ? selectedVal : ""}
                               onChange={(e) =>
                                 setQuizAnswers((prev) => ({

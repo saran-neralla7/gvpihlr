@@ -5,7 +5,27 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: "/:path*",
+        // For uploaded files (PDFs, PPTs, etc.): Allow embedding in iframes by setting frame-ancestors 'self'
+        // and omitting X-Frame-Options (which blocks Chrome's internal PDF viewer extension from rendering in iframes).
+        source: "/uploads/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors 'self'",
+          },
+          {
+            key: "Content-Disposition",
+            value: "inline",
+          },
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+        ],
+      },
+      {
+        // For all other application pages, enforce strict clickjacking protection
+        source: "/((?!uploads/).*)",
         headers: [
           {
             key: "X-Frame-Options",

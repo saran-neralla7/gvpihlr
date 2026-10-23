@@ -853,8 +853,337 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
             </div>
           </div>
 
-          {/* Studio Layout: Dedicated Left Sidebar + Right Content Workspace */}
-          <div className="flex flex-col lg:flex-row gap-6 items-start">
+          {viewingQuizAttempts ? (
+            /* =========================================================================
+               FULL PAGE VIEW: QUIZ SUBMISSIONS & STUDENT DESCRIPTIVE ANSWERS
+               (Replaces cramped modal popup with expansive full-width evaluation page)
+               ========================================================================= */
+            <div className="space-y-6 animate-in fade-in duration-200">
+              {/* Top Navigation Bar */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-white rounded-3xl border border-slate-200 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setViewingQuizAttempts(null);
+                      setExpandedAttemptId(null);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition shadow-xs"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Back to Quizzes Dashboard</span>
+                  </button>
+                  <div>
+                    <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+                      <span>{selectedAssignment?.subjectCode}</span>
+                      <span>•</span>
+                      <span>Section {selectedAssignment?.sectionName}</span>
+                      <span>•</span>
+                      <span>Quizzes</span>
+                    </div>
+                    <h2 className="text-lg font-black text-slate-900">
+                      {viewingQuizAttempts.title} — Student Submissions
+                    </h2>
+                  </div>
+                </div>
+
+                {/* Statistics Chips */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold text-xs">
+                    {viewingQuizAttempts.attempts?.length || 0} Attempt{viewingQuizAttempts.attempts?.length === 1 ? "" : "s"} Submitted
+                  </span>
+                  <span className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold text-xs">
+                    Total Marks: {viewingQuizAttempts.totalMarks}
+                  </span>
+                  <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs">
+                    {viewingQuizAttempts.questions?.length || 0} Questions
+                  </span>
+                </div>
+              </div>
+
+              {/* Quiz Info Summary Card */}
+              <div className="p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl shadow-xl border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                <div className="space-y-1 max-w-xl">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-mono text-xs font-bold uppercase">
+                      Evaluation &amp; Answer Review Suite
+                    </span>
+                    <span className="text-xs text-slate-400 font-medium">
+                      Unit {viewingQuizAttempts.unitNumber || "General"}
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-black text-white tracking-tight">
+                    {viewingQuizAttempts.title}
+                  </h3>
+                  <p className="text-xs text-slate-300">
+                    Review student multiple choice selections and grade in-depth descriptive answers, derivations, and explanations below.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full md:w-auto">
+                  <div className="p-3 bg-white/5 border border-white/10 rounded-2xl text-center">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Duration</span>
+                    <span className="text-sm font-black text-white">{viewingQuizAttempts.durationMinutes} mins</span>
+                  </div>
+                  <div className="p-3 bg-white/5 border border-white/10 rounded-2xl text-center">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Marks</span>
+                    <span className="text-sm font-black text-amber-400">{viewingQuizAttempts.totalMarks} Marks</span>
+                  </div>
+                  <div className="p-3 bg-white/5 border border-white/10 rounded-2xl text-center col-span-2 sm:col-span-1">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Submissions</span>
+                    <span className="text-sm font-black text-emerald-400">{viewingQuizAttempts.attempts?.length || 0} Students</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Student Submissions List & Detailed Answers */}
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                  <div>
+                    <h4 className="font-bold text-base text-slate-900">Student Attempts &amp; Written Exam Papers</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Click &quot;View Detailed Answers&quot; on any student to inspect their full answer sheet and evaluate descriptive responses.
+                    </p>
+                  </div>
+                </div>
+
+                {(!viewingQuizAttempts.attempts || viewingQuizAttempts.attempts.length === 0) ? (
+                  <div className="text-center py-16 px-4">
+                    <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-3">
+                      <Users className="w-7 h-7" />
+                    </div>
+                    <h5 className="font-bold text-sm text-slate-700">No Student Submissions Yet</h5>
+                    <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                      Students will appear here once they start and submit their attempt for this timed quiz.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {viewingQuizAttempts.attempts.map((att: any, attIdx: number) => {
+                      const isExpanded = expandedAttemptId === att.id;
+                      const submittedMap =
+                        typeof att.submittedAnswers === "object" && att.submittedAnswers !== null
+                          ? att.submittedAnswers
+                          : {};
+
+                      return (
+                        <div key={att.id} className="p-6 transition hover:bg-slate-50/50">
+                          {/* Summary Row */}
+                          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                              <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-mono font-black text-xs flex items-center justify-center shrink-0">
+                                {attIdx + 1}
+                              </span>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-black text-sm text-slate-900">
+                                    {att.student?.rollNumber || att.studentId}
+                                  </span>
+                                  {att.student?.user?.fullName && (
+                                    <span className="text-xs font-bold text-slate-600">
+                                      • {att.student.user.fullName}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
+                                  <span>
+                                    Submitted at {att.completedAt ? new Date(att.completedAt).toLocaleTimeString() : "In progress"}
+                                  </span>
+                                  {att.completedAt && (
+                                    <span>
+                                      ({new Date(att.completedAt).toLocaleDateString()})
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
+                              {/* Score Display */}
+                              <div className="text-right">
+                                <span className="text-[10px] uppercase font-bold text-slate-400 block">Score</span>
+                                <span className="text-base font-black text-emerald-600">
+                                  {att.score} / {viewingQuizAttempts.totalMarks}
+                                </span>
+                              </div>
+
+                              {/* Anti-cheat Proctor Badge */}
+                              <div className="text-center">
+                                <span className="text-[10px] uppercase font-bold text-slate-400 block">Proctor Alerts</span>
+                                {att.tabSwitchCount > 0 ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-bold text-xs">
+                                    <AlertTriangle className="w-3 h-3 text-rose-600" />
+                                    <span>{att.tabSwitchCount} tab switch(es)</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs">
+                                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                                    <span>Clean (0 alerts)</span>
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* View / Hide Answers Button */}
+                              <button
+                                type="button"
+                                onClick={() => setExpandedAttemptId(isExpanded ? null : att.id)}
+                                className={`px-4 py-2 rounded-xl font-bold text-xs transition flex items-center gap-2 ${
+                                  isExpanded
+                                    ? "bg-slate-900 text-white hover:bg-slate-800"
+                                    : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
+                                }`}
+                              >
+                                <span>{isExpanded ? "Collapse Answer Sheet" : "View Detailed Answers"}</span>
+                                <ChevronRight className={`w-3.5 h-3.5 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Expanded Full Exam Paper & Evaluation */}
+                          {isExpanded && (
+                            <div className="mt-6 pt-6 border-t border-slate-200 space-y-4 animate-in fade-in duration-150">
+                              <div className="flex items-center justify-between">
+                                <h5 className="font-extrabold text-xs uppercase tracking-wider text-slate-500">
+                                  Student Answer Sheet — {att.student?.rollNumber || att.studentId}
+                                </h5>
+                                <span className="text-xs text-slate-400">
+                                  {viewingQuizAttempts.questions?.length || 0} Questions Evaluated
+                                </span>
+                              </div>
+
+                              <div className="space-y-4">
+                                {viewingQuizAttempts.questions?.map((qq: any, qIdx: number) => {
+                                  const q = qq.questionBank;
+                                  const userAns = submittedMap[q.id];
+                                  const optionsList = Array.isArray(q.options)
+                                    ? q.options
+                                    : typeof q.options === "string"
+                                    ? JSON.parse(q.options || "[]")
+                                    : [];
+                                  const isDescriptive =
+                                    q.type === "DESCRIPTIVE" ||
+                                    q.type === "SHORT_ANSWER" ||
+                                    q.type === "LONG_ANSWER" ||
+                                    q.type !== "MCQ" ||
+                                    optionsList.length === 0;
+
+                                  return (
+                                    <div
+                                      key={q.id}
+                                      className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3"
+                                    >
+                                      <div className="flex items-center justify-between text-xs">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-mono font-black text-indigo-700">
+                                            Question {qIdx + 1}
+                                          </span>
+                                          <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-bold text-[10px]">
+                                            {qq.marks || q.marks} Mark{qq.marks > 1 ? "s" : ""}
+                                          </span>
+                                          <span className="px-2 py-0.5 rounded-md bg-indigo-100/60 text-indigo-800 font-mono text-[10px] font-bold">
+                                            {q.type}
+                                          </span>
+                                        </div>
+
+                                        {isDescriptive ? (
+                                          <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold text-[10px]">
+                                            Descriptive Evaluation
+                                          </span>
+                                        ) : (
+                                          <span
+                                            className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
+                                              Number(userAns) === q.correctOption
+                                                ? "bg-emerald-100 text-emerald-800"
+                                                : "bg-rose-100 text-rose-800"
+                                            }`}
+                                          >
+                                            {Number(userAns) === q.correctOption ? "✓ Correct (+Marks)" : "✗ Incorrect"}
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      <p className="text-sm font-bold text-slate-900 leading-relaxed">
+                                        {q.questionText}
+                                      </p>
+
+                                      {/* Student Response Rendering */}
+                                      {isDescriptive ? (
+                                        <div className="mt-3 p-4 rounded-xl bg-white border border-slate-200 shadow-xs space-y-2">
+                                          <div className="flex items-center justify-between text-[11px] pb-1.5 border-b border-slate-100">
+                                            <span className="font-bold text-slate-700 uppercase tracking-wider">
+                                              Student Written Answer:
+                                            </span>
+                                            <span className="text-slate-400 font-mono">
+                                              {userAns && String(userAns).trim().length > 0
+                                                ? `${String(userAns).trim().split(/\s+/).filter(Boolean).length} words • ${String(userAns).trim().length} chars`
+                                                : "0 words"}
+                                            </span>
+                                          </div>
+
+                                          {userAns && String(userAns).trim().length > 0 ? (
+                                            <p className="text-xs text-slate-900 whitespace-pre-wrap font-sans leading-relaxed">
+                                              {String(userAns)}
+                                            </p>
+                                          ) : (
+                                            <p className="text-xs text-rose-500 italic">
+                                              No answer submitted by student for this question.
+                                            </p>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="mt-3 space-y-2">
+                                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                            {optionsList.map((opt: string, optIdx: number) => {
+                                              const isSelected = Number(userAns) === optIdx;
+                                              const isCorrect = q.correctOption === optIdx;
+                                              const optLetter = String.fromCharCode(65 + optIdx);
+
+                                              return (
+                                                <div
+                                                  key={optIdx}
+                                                  className={`p-3 rounded-xl border flex items-center justify-between ${
+                                                    isSelected && isCorrect
+                                                      ? "bg-emerald-50 border-emerald-500 font-bold text-emerald-900"
+                                                      : isSelected && !isCorrect
+                                                      ? "bg-rose-50 border-rose-400 font-bold text-rose-900"
+                                                      : isCorrect
+                                                      ? "bg-emerald-50/50 border-emerald-300 text-emerald-800 font-medium"
+                                                      : "bg-white border-slate-200 text-slate-700"
+                                                  }`}
+                                                >
+                                                  <div className="flex items-center gap-2.5">
+                                                    <span className="w-5 h-5 rounded-md bg-slate-100 text-slate-700 font-mono text-[10px] font-bold flex items-center justify-center">
+                                                      {optLetter}
+                                                    </span>
+                                                    <span>{opt}</span>
+                                                  </div>
+                                                  {isSelected && (
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider">
+                                                      (Selected)
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Studio Layout: Dedicated Left Sidebar + Right Content Workspace */
+            <div className="flex flex-col lg:flex-row gap-6 items-start">
             {/* Left Sidebar */}
             <aside className="w-full lg:w-72 bg-[#0B2545] text-white rounded-3xl p-5 shadow-xl flex-shrink-0 flex flex-col justify-between">
               <div className="space-y-6">
@@ -1597,6 +1926,7 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
               )}
             </main>
           </div>
+          )}
         </div>
       )}
 
@@ -2130,194 +2460,7 @@ export default function FacultyLmsClient({ assignments }: { assignments: Assignm
         </CustomModal>
       )}
 
-      {/* 5. View Quiz Submissions Modal */}
-      {viewingQuizAttempts && (
-        <CustomModal
-          title={viewingQuizAttempts.title || "Quiz Submissions"}
-          isOpen={!!viewingQuizAttempts}
-          hideFooter={true}
-          onClose={() => setViewingQuizAttempts(null)}
-        >
-          <div className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b pb-3">
-              <div>
-                <h3 className="font-bold text-sm text-slate-900">{viewingQuizAttempts.title}</h3>
-                <span className="text-xs text-slate-400">
-                  {viewingQuizAttempts.attempts?.length || 0} student attempts submitted
-                </span>
-              </div>
-              <button onClick={() => setViewingQuizAttempts(null)}>
-                <X className="w-4 h-4 text-slate-400 hover:text-slate-600" />
-              </button>
-            </div>
 
-            {(!viewingQuizAttempts.attempts || viewingQuizAttempts.attempts.length === 0) ? (
-              <p className="text-center py-8 text-slate-400 text-xs italic">
-                No students have submitted this quiz yet.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b bg-slate-50 text-slate-500 font-bold">
-                      <th className="p-2">Student</th>
-                      <th className="p-2 text-center">Score</th>
-                      <th className="p-2 text-center">Proctor Tab Switches</th>
-                      <th className="p-2 text-right">Submitted At</th>
-                      <th className="p-2 text-center">Answers</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {viewingQuizAttempts.attempts.map((att: any) => {
-                      const isExpanded = expandedAttemptId === att.id;
-                      const submittedMap =
-                        typeof att.submittedAnswers === "object" && att.submittedAnswers !== null
-                          ? att.submittedAnswers
-                          : {};
-
-                      return (
-                        <Fragment key={att.id}>
-                          <tr className={isExpanded ? "bg-slate-50/80" : ""}>
-                            <td className="p-2 font-mono font-bold text-slate-800">
-                              {att.student?.rollNumber || att.studentId}
-                            </td>
-                            <td className="p-2 text-center font-extrabold text-emerald-600">
-                              {att.score} / {viewingQuizAttempts.totalMarks}
-                            </td>
-                            <td className="p-2 text-center font-mono font-bold">
-                              {att.tabSwitchCount > 0 ? (
-                                <span className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
-                                  {att.tabSwitchCount} alert(s)
-                                </span>
-                              ) : (
-                                <span className="text-emerald-600">0</span>
-                              )}
-                            </td>
-                            <td className="p-2 text-right text-slate-400 text-[11px]">
-                              {att.completedAt ? new Date(att.completedAt).toLocaleTimeString() : "In progress"}
-                            </td>
-                            <td className="p-2 text-center">
-                              <button
-                                type="button"
-                                onClick={() => setExpandedAttemptId(isExpanded ? null : att.id)}
-                                className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] transition shadow-xs"
-                              >
-                                {isExpanded ? "Hide" : "View Answers"}
-                              </button>
-                            </td>
-                          </tr>
-
-                          {/* Expanded Answer Sheet */}
-                          {isExpanded && (
-                            <tr>
-                              <td colSpan={5} className="p-3 bg-slate-50/80 border-y border-slate-200">
-                                <div className="space-y-3">
-                                  <div className="flex items-center justify-between pb-1 border-b border-slate-200">
-                                    <span className="font-bold text-xs text-slate-700">
-                                      Detailed Student Responses & Descriptive Submissions
-                                    </span>
-                                    <span className="text-[10px] text-slate-500 font-mono">
-                                      Roll: {att.student?.rollNumber || att.studentId}
-                                    </span>
-                                  </div>
-
-                                  {viewingQuizAttempts.questions?.map((qq: any, qIdx: number) => {
-                                    const q = qq.questionBank;
-                                    const userAns = submittedMap[q.id];
-                                    const optionsList = Array.isArray(q.options)
-                                      ? q.options
-                                      : typeof q.options === "string"
-                                      ? JSON.parse(q.options || "[]")
-                                      : [];
-                                    const isDescriptive =
-                                      optionsList.length === 0 ||
-                                      q.type === "SHORT_ANSWER" ||
-                                      q.type === "LONG_ANSWER";
-
-                                    return (
-                                      <div
-                                        key={q.id}
-                                        className="p-3 bg-white rounded-xl border border-slate-200 space-y-2 text-xs shadow-xs"
-                                      >
-                                        <div className="flex items-center justify-between text-[11px]">
-                                          <span className="font-bold text-indigo-600 font-mono">
-                                            Q{qIdx + 1}. {q.type} ({qq.marks || q.marks} Mark{qq.marks > 1 ? "s" : ""})
-                                          </span>
-                                          {isDescriptive ? (
-                                            <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full font-bold text-[10px]">
-                                              Descriptive Answer
-                                            </span>
-                                          ) : (
-                                            <span
-                                              className={`font-bold ${
-                                                Number(userAns) === q.correctOption
-                                                  ? "text-emerald-600"
-                                                  : "text-rose-600"
-                                              }`}
-                                            >
-                                              {Number(userAns) === q.correctOption ? "✓ Correct" : "✗ Incorrect"}
-                                            </span>
-                                          )}
-                                        </div>
-
-                                        <p className="font-medium text-slate-800">{q.questionText}</p>
-
-                                        {isDescriptive ? (
-                                          <div className="mt-2 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                                            <span className="text-[10px] font-bold text-slate-500 block mb-1 uppercase tracking-wider">
-                                              Student's Written Answer:
-                                            </span>
-                                            {userAns && String(userAns).trim().length > 0 ? (
-                                              <p className="text-xs text-slate-900 whitespace-pre-wrap font-sans leading-relaxed">
-                                                {String(userAns)}
-                                              </p>
-                                            ) : (
-                                              <p className="text-xs text-rose-500 italic">
-                                                No answer submitted for this question.
-                                              </p>
-                                            )}
-                                          </div>
-                                        ) : (
-                                          <div className="mt-1 text-[11px] space-y-1">
-                                            <div className="text-slate-600">
-                                              Selected:{" "}
-                                              <strong className="text-slate-900 font-mono">
-                                                {userAns !== undefined
-                                                  ? `${String.fromCharCode(65 + Number(userAns))}: ${
-                                                      optionsList[Number(userAns)] || ""
-                                                    }`
-                                                  : "None"}
-                                              </strong>
-                                            </div>
-                                            <div className="text-emerald-700">
-                                              Correct:{" "}
-                                              <strong className="font-mono">
-                                                {q.correctOption !== null
-                                                  ? `${String.fromCharCode(65 + q.correctOption)}: ${
-                                                      optionsList[q.correctOption] || ""
-                                                    }`
-                                                  : "N/A"}
-                                              </strong>
-                                            </div>
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </Fragment>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </CustomModal>
-      )}
 
       {/* 6. Import Questions from Excel Modal */}
       {isImportExcelModalOpen && (
